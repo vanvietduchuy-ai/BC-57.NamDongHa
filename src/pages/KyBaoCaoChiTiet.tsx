@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Bell, ChevronRight, FilePen, Lock, MoreHorizontal, Pencil, Trash2, Unlock, UserPlus } from 'lucide-react';
 import { supabase, loiDe } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
-import { laDauMoi, useAuth } from '../lib/auth';
+import { laDauMoi, useAuth, laQuanTri } from '../lib/auth';
 import { ngay, ngayGio, ngayGioDu } from '../lib/dinhDang';
 import { Chip, ChipHan, DangTai, HopLoi, HopThoai, lopO, Nut, O, Rong, The, TieuDeTrang, cx } from '../components/ui';
 import { DieuChinhDonVi, SuaKy, ThemDonVi } from '../components/DieuChinhKy';
@@ -31,7 +31,7 @@ export const TT_NOP: Record<string, { nhan: string; nen: string; chu: string }> 
 export default function KyBaoCaoChiTiet() {
   const { id } = useParams();
   const { hoSo } = useAuth();
-  const quanTri = hoSo?.vai_tro === 'quan_tri';
+  const quanTri = laQuanTri(hoSo);
   const dauMoi = hoSo?.vai_tro === 'don_vi' && laDauMoi(hoSo);        // đầu mối lĩnh vực: nhắc, xem, tiếp nhận
   const [xem, setXem] = useState<Nop | null>(null);
   const [dieuChinh, setDieuChinh] = useState<Nop | null>(null);

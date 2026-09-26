@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { CHE_DO_THU, datTokenThu, supabase, taiKhoanThu, tokenThu } from './supabase';
 import { goDayKhiDangXuat } from './ungDung';
 
-export type VaiTro = 'quan_tri' | 'lanh_dao' | 'don_vi';
+export type VaiTro = 'admin' | 'quan_tri' | 'lanh_dao' | 'don_vi';
 export type HoSo = {
   id: string; ho_ten: string; chuc_vu: string | null; email: string | null; vai_tro: VaiTro;
   don_vi_id: string | null; don_vi: { id: string; ma: string; ten: string } | null;
@@ -118,10 +118,14 @@ export function useAuth() {
   return c;
 }
 
-export const laQuanTri = (h: HoSo | null) => h?.vai_tro === 'quan_tri';
+// Thường trực hoặc Quản trị hệ thống: quyền nghiệp vụ của Cơ quan Thường trực
+export const laQuanTri = (h: HoSo | null) => h?.vai_tro === 'quan_tri' || h?.vai_tro === 'admin';
+// Chỉ Quản trị hệ thống: tài khoản, đơn vị, lưu trữ, nhật ký
+export const laAdmin = (h: HoSo | null) => h?.vai_tro === 'admin';
+export const TEN_VAI_TRO: Record<VaiTro, string> = { admin: 'Quản trị hệ thống', quan_tri: 'Cơ quan Thường trực', lanh_dao: 'Lãnh đạo BCĐ', don_vi: 'Tài khoản đơn vị' };
 // Đầu mối lĩnh vực: Phòng VH-XH (NQ 57, KHCN, CĐS), Tổ CSKV (Đề án 06)
 export const laDauMoi = (h: HoSo | null) => !!h?.dau_moi?.length;
 export const dauMoiDa06 = (h: HoSo | null) => !!h?.dau_moi?.includes('de_an_06');
 export const dauMoiCds = (h: HoSo | null) => !!h?.dau_moi?.some((x) => ['nq57', 'khcn_dmst', 'chuyen_doi_so'].includes(x));
 export const tenLinhVucDauMoi = (h: HoSo | null) => [dauMoiCds(h) ? 'NQ 57, chuyển đổi số' : '', dauMoiDa06(h) ? 'Đề án 06' : ''].filter(Boolean).join(' · ');
-export const laCQTTHoacLanhDao = (h: HoSo | null) => h?.vai_tro === 'quan_tri' || h?.vai_tro === 'lanh_dao';
+export const laCQTTHoacLanhDao = (h: HoSo | null) => laQuanTri(h) || h?.vai_tro === 'lanh_dao';

@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { supabase, loiDe } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
-import { laDauMoi, useAuth } from '../lib/auth';
+import { laDauMoi, useAuth, laQuanTri } from '../lib/auth';
 import LichDinhKy from '../components/LichDinhKy';
 import { ngay, ngayGioDu, tenNgan } from '../lib/dinhDang';
 import TheoDoiDonVi from '../components/TheoDoiDonVi';
@@ -17,7 +17,8 @@ export default function KyBaoCao() {
   const { hoSo } = useAuth();
   const dauMoi = hoSo?.vai_tro === 'don_vi' && laDauMoi(hoSo);         // đầu mối: chỉ kỳ mình giao
   const chuTri = dauMoi ? hoSo!.don_vi_id : null;
-  const taoDuoc = hoSo?.vai_tro === 'quan_tri' || dauMoi;
+  const quanTri = laQuanTri(hoSo);
+  const taoDuoc = quanTri || dauMoi;
   const [tab, setTab] = useState<'mo' | 'khoa' | 'theo_doi' | 'lich'>(() => (['theo_doi', 'lich'].includes(new URLSearchParams(window.location.search).get('tab') ?? '') ? new URLSearchParams(window.location.search).get('tab') as 'theo_doi' | 'lich' : 'mo'));
   const [giao, setGiao] = useState<string>('tat_ca');
   const [params, setParams] = useSearchParams();
@@ -40,7 +41,7 @@ export default function KyBaoCao() {
       <TieuDeTrang ten={dauMoi ? 'Kỳ báo cáo đơn vị giao' : 'Kỳ báo cáo'} tren={dauMoi ? hoSo?.don_vi?.ten : undefined}
         phai={taoDuoc && <Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setTaoMo(true)}>Tạo kỳ báo cáo đột xuất</Nut>} />
       <div role="tablist" className="flex gap-1.5 overflow-x-auto border-b border-vien">
-        {([['mo', `Đang mở · ${(data?.ky ?? []).filter((k) => k.trang_thai_ky === 'mo').length}`], ['theo_doi', 'Theo dõi đơn vị'], ['khoa', 'Đã khoá sổ'], ...(dauMoi ? [['lich', 'Lịch định kỳ']] : [])] as [string, string][]).map(([k, t]) => (
+        {([['mo', `Đang mở · ${(data?.ky ?? []).filter((k) => k.trang_thai_ky === 'mo').length}`], ['theo_doi', 'Theo dõi đơn vị'], ['khoa', 'Đã khoá sổ'], ...(taoDuoc ? [['lich', 'Lịch định kỳ']] : [])] as [string, string][]).map(([k, t]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k as typeof tab)}
             className={cx('h-11 whitespace-nowrap px-4 text-sm', tab === k ? 'border-b-[2.5px] border-ink font-bold' : 'font-medium text-mo')}>{t}</button>
         ))}
@@ -49,7 +50,7 @@ export default function KyBaoCao() {
       {dangTai && !data && <DangTai />}
 
       {tab === 'theo_doi' && <TheoDoiDonVi chuTri={chuTri} />}
-      {tab === 'lich' && chuTri && <LichDinhKy chuTri={chuTri} hanMacDinh={5} />}
+      {tab === 'lich' && taoDuoc && <LichDinhKy chuTri={chuTri} hanMacDinh={chuTri ? 5 : 8} />}
       {!dauMoi && (tab === 'mo' || tab === 'khoa') && dsGiao.length > 1 && (
         <div className="flex flex-wrap gap-2">
           {[['tat_ca', 'Tất cả'] as [string, string], ...dsGiao].map(([id, ten]) => (

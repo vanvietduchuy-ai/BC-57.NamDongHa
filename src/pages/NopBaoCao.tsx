@@ -120,7 +120,7 @@ function FormBaoCao({ nop, suaDuoc, xong }: { nop: Nop; suaDuoc: boolean; xong: 
         </The>
       ))}
       {suaDuoc && (
-        <div className="sticky bottom-20 z-10 flex flex-col gap-2 rounded-2xl border border-vien bg-white/95 p-3 shadow-lg backdrop-blur lg:bottom-4">
+        <div className="day-duoi sticky z-10 flex flex-col gap-2 rounded-2xl border border-vien bg-white/95 p-3 shadow-lg backdrop-blur">
           {loi && <HopLoi loi={loi} />}
           <label className="flex items-start gap-2.5 text-[13px] leading-relaxed text-mo-2">
             <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-ink" checked={camKet} onChange={(e) => setCamKet(e.target.checked)} />

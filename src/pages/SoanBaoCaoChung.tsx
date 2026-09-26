@@ -7,7 +7,7 @@ import { Link, useParams } from 'react-router-dom';
 import { FileUp } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
-import { useAuth } from '../lib/auth';
+import { useAuth, laQuanTri } from '../lib/auth';
 import { LV_CDS, type MoHinhA4 } from '../lib/baoCaoA4';
 import { lapBaoCaoChung, type DuLieuTH } from '../lib/tongHop';
 import { META_TRONG, soKyHieu, type MetaVb } from '../lib/docPdf';
@@ -54,7 +54,7 @@ async function taoMoi(kyId: string): Promise<MoHinhA4> {
 export default function SoanBaoCaoChung() {
   const { id } = useParams();
   const { hoSo } = useAuth();
-  const quanTri = hoSo?.vai_tro === 'quan_tri';
+  const quanTri = laQuanTri(hoSo);
   const { data, loi, dangTai, taiLai } = useDuLieu(() => taiNguon(id!), [id]);
   const [m, setM] = useState<MoHinhA4 | null>(null);
   const [moGan, setMoGan] = useState(false);

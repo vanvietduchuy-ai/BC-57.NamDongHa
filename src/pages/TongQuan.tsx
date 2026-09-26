@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Bell, ChevronRight, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
-import { useAuth } from '../lib/auth';
+import { useAuth, laQuanTri } from '../lib/auth';
 import { ngayGioDu, tenNgan, thuNgay } from '../lib/dinhDang';
 import { chuoiKyTiepTheo, type LichDk } from '../lib/lichDinhKy';
 import { HopNhac, type DonViNhac } from '../components/HopNhac';
@@ -58,7 +58,7 @@ function danhGia(dong: Dong[]): DanhGia[] {
 
 export default function TongQuan({ chuTri = null }: { chuTri?: string | null }) {
   const { hoSo } = useAuth();
-  const quanTri = hoSo?.vai_tro === 'quan_tri';
+  const quanTri = laQuanTri(hoSo);
   const nhacDuoc = quanTri || !!chuTri;
   const { data, loi, dangTai, taiLai } = useDuLieu(() => tai(chuTri), [chuTri]);
   const [tb, setTb] = useState<string | null>(null);

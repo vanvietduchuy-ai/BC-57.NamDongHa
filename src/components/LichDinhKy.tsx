@@ -1,20 +1,17 @@
 // Lịch báo cáo định kỳ (kỳ nối tiếp) của một đơn vị giao:
 //   chuTri = null  : Thường trực BCĐ giao 2 đầu mối (Tổ CSKV, Phòng VH-XH)
 //   chuTri = <id>  : đầu mối giao các phòng, đơn vị (chọn được đơn vị phải nộp)
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { CalendarClock, Play } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { ngayGio } from '../lib/dinhDang';
 import { CAP_LICH, chuoiKyTiepTheo, TEN_LOAI_LICH, type LichDk, type QuyTacLich } from '../lib/lichDinhKy';
-import { DangTai, HopLoi, lopO, Nut, The, TieuDeThe, cx } from './ui';
+import { DangTai, Hang, HopLoi, lopO, Nut, The, ThanhThaoTac, TieuDeThe, cx } from './ui';
 
 type LichSua = LichDk & { mau_bieu_id: string | null; don_vi_ap_dung: string[] | null; don_vi_id: string | null };
 type DonVi = { id: string; ten: string; phai_bao_cao: boolean };
 
-function Hang({ nhan, children }: { nhan: string; children: ReactNode }) {
-  return <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[#F1EEE7] py-3 text-sm"><span className="w-full font-semibold sm:w-56">{nhan}</span><div className="flex flex-wrap items-center gap-2">{children}</div></div>;
-}
 
 export default function LichDinhKy({ chuTri, hanMacDinh = 8 }: { chuTri: string | null; hanMacDinh?: number }) {
   const MAC_DINH: Record<string, QuyTacLich> = {
@@ -94,7 +91,7 @@ export default function LichDinhKy({ chuTri, hanMacDinh = 8 }: { chuTri: string 
             <TieuDeThe phai={
               <label className="flex min-h-10 items-center gap-2 text-sm font-semibold"><input type="checkbox" className="h-5 w-5 accent-[#A4161A]" checked={l.hoat_dong} onChange={(e) => doi(l, { hoat_dong: e.target.checked })} />Bật</label>
             }><span className="flex items-center gap-2"><CalendarClock className="h-5 w-5 text-mo" />{TEN_LOAI_LICH[l.loai]}</span></TieuDeThe>
-            <Hang nhan="Tên lịch"><input className={cx(lopO, 'w-72')} value={l.ten} onChange={(e) => doi(l, { ten: e.target.value })} /></Hang>
+            <Hang nhan="Tên lịch"><input className={cx(lopO, 'w-full sm:w-72')} value={l.ten} onChange={(e) => doi(l, { ten: e.target.value })} /></Hang>
             <Hang nhan="Số liệu tính từ">ngày {soO(l, 'mo_ngay', 15)} tháng trước tháng chốt</Hang>
             <Hang nhan="Hạn nộp">ngày {soO(l, 'han_ngay', hanMacDinh)} tháng chốt, lúc
               <input type="time" aria-label={`giờ hạn ${l.loai}`} className={lopO} value={l.quy_tac.han_gio ?? '17:00'} onChange={(e) => doi(l, { qt: { han_gio: e.target.value } })} /></Hang>
@@ -129,12 +126,11 @@ export default function LichDinhKy({ chuTri, hanMacDinh = 8 }: { chuTri: string 
         </The>
       </div>
       {tb?.loi && <HopLoi loi={tb.loi} />}
-      <div className="sticky bottom-20 z-10 flex flex-wrap items-center justify-end gap-3 rounded-2xl border border-vien bg-white/95 px-3 py-2 shadow-sm backdrop-blur lg:bottom-4">
-        {tb?.ok && <span className="text-sm font-semibold text-[#166534]">{tb.ok}</span>}
-        <Nut icon={<Play className="h-4 w-4" />} dangChay={dang} onClick={taoNgay}>Tạo kỳ tiếp theo ngay</Nut>
-        {coDoi && <Nut onClick={() => { setSua({}); setNhan(null); }}>Huỷ thay đổi</Nut>}
+      <ThanhThaoTac trai={tb?.ok}>
+        <Nut icon={<Play className="h-4 w-4" />} dangChay={dang} onClick={taoNgay}>Tạo kỳ ngay</Nut>
+        {coDoi && <Nut onClick={() => { setSua({}); setNhan(null); }}>Huỷ</Nut>}
         <Nut kieu="chinh" disabled={!coDoi} dangChay={dang} onClick={luu}>Lưu lịch</Nut>
-      </div>
+      </ThanhThaoTac>
     </div>
   );
 }

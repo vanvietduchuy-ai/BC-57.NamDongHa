@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ExternalLink, FileText, Folder, Pencil, Plus, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
-import { useAuth } from '../lib/auth';
+import { useAuth, laQuanTri } from '../lib/auth';
 import { ngay } from '../lib/dinhDang';
 import { khongDau } from '../lib/nhiemVu';
 import { moTepDrive } from '../components/TepDrive';
@@ -12,7 +12,7 @@ import FormVanBan from '../components/FormVanBan';
 
 export default function KhoVanBan() {
   const { hoSo } = useAuth();
-  const quanTri = hoSo?.vai_tro === 'quan_tri';
+  const quanTri = laQuanTri(hoSo);
   const { data, loi, dangTai, taiLai } = useDuLieu(async () => {
     const [a, b] = await Promise.all([
       supabase.from('van_ban').select(COT_VB).order('ngay_ban_hanh', { ascending: false, nullsFirst: true }).order('tai_len_luc', { ascending: false }),

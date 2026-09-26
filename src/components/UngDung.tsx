@@ -78,7 +78,7 @@ export function GoiYUngDung({ moLienHe }: { moLienHe: () => void }) {
 
   return (
     <>
-      <div role="status" className="truot-len fixed inset-x-3 bottom-[84px] z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-vien bg-white/95 p-3 shadow-[0_12px_40px_-12px_rgba(60,10,12,0.35)] backdrop-blur lg:inset-x-auto lg:bottom-6 lg:right-6">
+      <div role="status" className="truot-len fixed inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-vien bg-white/95 p-3 shadow-[0_12px_40px_-12px_rgba(60,10,12,0.35)] backdrop-blur lg:inset-x-auto lg:bottom-6 lg:right-6">
         {loai === 'cai' ? <LogoBcd className="h-11 w-11" /> : (
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-do/10 text-do">{loai === 'sdt' ? <MessageCircle className="h-5 w-5" /> : <BellRing className="lac-chuong h-5 w-5" />}</span>
         )}

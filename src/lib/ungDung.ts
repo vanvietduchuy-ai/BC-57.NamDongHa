@@ -7,8 +7,17 @@ let suKienCai: SuKienCai | null = null;
 const nghe = new Set<() => void>();
 const bao = () => nghe.forEach((f) => f());
 
+// Khoá phóng to / thu nhỏ bằng 2 ngón (iPhone bỏ qua user-scalable=no nên chặn bằng sự kiện)
+function khoaPhongTo() {
+  const chan = (e: Event) => e.preventDefault();
+  document.addEventListener('gesturestart', chan, { passive: false });
+  document.addEventListener('gesturechange', chan, { passive: false });
+  document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+}
+
 export function khoiDongUngDung() {
   if (typeof window === 'undefined') return;
+  khoaPhongTo();
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); suKienCai = e as SuKienCai; bao(); });
   window.addEventListener('appinstalled', () => { suKienCai = null; bao(); });
   if ('serviceWorker' in navigator) {

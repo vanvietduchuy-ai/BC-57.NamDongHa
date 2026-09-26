@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, Pencil, ShieldCheck, Trash2, Undo2 } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
-import { useAuth } from '../lib/auth';
+import { useAuth, laQuanTri } from '../lib/auth';
 import { ngay, ngayGio, ngayGioDu } from '../lib/dinhDang';
 import { COT_NV, LINH_VUC, NHOM_NV, thieu6Ro, TT_NV, type NhiemVu, type TrangThaiNv } from '../lib/nhiemVu';
 import { Chip, DangTai, HopLoi, lopO, Nut, O, Rong, The, TieuDeThe, TieuDeTrang, cx } from '../components/ui';
@@ -18,7 +18,7 @@ export default function NhiemVuChiTiet() {
   const { id } = useParams();
   const { hoSo } = useAuth();
   const nav = useNavigate();
-  const quanTri = hoSo?.vai_tro === 'quan_tri';
+  const quanTri = laQuanTri(hoSo);
   const lanhDao = hoSo?.vai_tro === 'lanh_dao';
 
   const { data, loi, dangTai, taiLai } = useDuLieu(async () => {

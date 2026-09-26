@@ -4,7 +4,7 @@ import { CheckCircle2, HardDrive, MessageCircle, PhoneCall, Play, Plus, XCircle 
 import { goiChucNang, loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { ngayGio } from '../lib/dinhDang';
-import { Chip, DangTai, HopLoi, HopThoai, lopO, Nut, O, The, TieuDeThe, TieuDeTrang, cx } from '../components/ui';
+import { Chip, DangTai, Hang, HopLoi, HopThoai, lopO, Nut, O, The, ThanhThaoTac, TieuDeThe, TieuDeTrang, cx } from '../components/ui';
 import { NutTepDrive } from '../components/TepDrive';
 import LichDinhKy from '../components/LichDinhKy';
 import { useAuth } from '../lib/auth';
@@ -19,7 +19,7 @@ export default function QuanTri() {
   const setTab = (k: Tab) => setSp({ tab: k }, { replace: true });
   return (
     <>
-      <TieuDeTrang ten="Quản trị" />
+      <TieuDeTrang ten="Quản trị hệ thống" />
       <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-vien">
         {TABS.map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cx('h-11 whitespace-nowrap px-4 text-sm', tab === k ? 'border-b-[2.5px] border-ink font-bold' : 'font-medium text-mo')}>{t}</button>)}
       </div>
@@ -34,7 +34,7 @@ export default function QuanTri() {
 }
 
 type Nd = { id: string; ho_ten: string; email: string | null; chuc_vu: string | null; vai_tro: string; don_vi_id: string | null; hoat_dong: boolean; don_vi: { ten: string } | null };
-const VT: Record<string, [string, string, string]> = { quan_tri: ['Quản trị', 'bg-ink', 'text-white'], lanh_dao: ['Lãnh đạo', 'bg-nguy-nhat', 'text-nguy'], don_vi: ['Đơn vị', 'bg-nen-3', 'text-mo-2'] };
+const VT: Record<string, [string, string, string]> = { admin: ['Quản trị hệ thống', 'bg-den', 'text-white'], quan_tri: ['Cơ quan Thường trực', 'bg-ink', 'text-white'], lanh_dao: ['Lãnh đạo', 'bg-nguy-nhat', 'text-nguy'], don_vi: ['Đơn vị', 'bg-nen-3', 'text-mo-2'] };
 
 function TaiKhoan() {
   const { hoSo } = useAuth();
@@ -204,7 +204,7 @@ function DonVi() {
           </table>
         </div>
         <div className="flex flex-wrap items-end gap-2 border-t border-vien bg-nen-2 p-4">
-          <input aria-label="Mã đơn vị" placeholder="MÃ (vd DOAN_TN)" className={cx(lopO, 'w-40')} value={moi.ma} onChange={(e) => setMoi({ ...moi, ma: e.target.value.toUpperCase() })} />
+          <input aria-label="Mã đơn vị" placeholder="MÃ (vd DOAN_TN)" className={cx(lopO, 'w-full sm:w-40')} value={moi.ma} onChange={(e) => setMoi({ ...moi, ma: e.target.value.toUpperCase() })} />
           <input aria-label="Tên đơn vị" placeholder="Tên đơn vị" className={cx(lopO, 'flex-1')} value={moi.ten} onChange={(e) => setMoi({ ...moi, ten: e.target.value })} />
           <select aria-label="Loại" className={lopO} value={moi.loai} onChange={(e) => setMoi({ ...moi, loai: e.target.value })}><option value="phong_ban">Phòng, ban</option><option value="doan_the">Đoàn thể</option><option value="truong_hoc">Trường học</option><option value="cong_an">Công an</option><option value="khac">Khác</option></select>
           <Nut disabled={!moi.ma || !moi.ten} onClick={() => chay(supabase.from('don_vi').insert({ ...moi, thu_tu: 95 }))}>Thêm đơn vị</Nut>
@@ -217,8 +217,10 @@ function DonVi() {
 type NguoiKy = { chuc_danh: string; ho_ten: string };
 type TheThuc = { co_quan_cap_tren: string; co_quan: string; ky_hieu: string; dia_danh: string; truong_ban: NguoiKy; cqtt_ky_to_trinh: NguoiKy };
 
-function Hang({ nhan, children }: { nhan: React.ReactNode; children: React.ReactNode }) {
-  return <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[#F1EEE7] py-3 text-sm"><span className="w-full font-semibold sm:w-56">{nhan}</span><div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 max-sm:w-full">{children}</div></div>;
+
+// Trang Cài đặt của Cơ quan Thường trực (nhắc hạn, kênh Zalo/gọi điện, người ký, thể thức văn bản)
+export function CaiDatTrang() {
+  return (<><TieuDeTrang ten="Cài đặt" /><CaiDat /></>);
 }
 
 // Cài đặt bằng biểu mẫu (không sửa JSON): lịch tự mở kỳ, nhắc hạn, người ký, thể thức văn bản BCĐ
@@ -299,23 +301,22 @@ function CaiDat() {
         </The>
         <The className="flex flex-col px-5 py-3">
           <TieuDeThe>Người ký báo cáo gửi Công an tỉnh</TieuDeThe>
-          <Hang nhan="Chức danh"><input className={cx(lopO, 'w-72')} value={String(v.nk_cd)} onChange={(e) => dat('nk_cd', e.target.value)} /></Hang>
-          <Hang nhan="Cấp bậc, họ tên"><input className={cx(lopO, 'w-72')} value={String(v.nk_ht)} onChange={(e) => dat('nk_ht', e.target.value)} /></Hang>
+          <Hang nhan="Chức danh"><input className={cx(lopO, 'w-full sm:w-72')} value={String(v.nk_cd)} onChange={(e) => dat('nk_cd', e.target.value)} /></Hang>
+          <Hang nhan="Cấp bậc, họ tên"><input className={cx(lopO, 'w-full sm:w-72')} value={String(v.nk_ht)} onChange={(e) => dat('nk_ht', e.target.value)} /></Hang>
         </The>
         <The className="flex flex-col px-5 py-3">
           <TieuDeThe>Văn bản của Ban Chỉ đạo</TieuDeThe>
-          <Hang nhan="Cơ quan cấp trên"><input className={cx(lopO, 'w-72')} value={String(v.cqt)} onChange={(e) => dat('cqt', e.target.value)} /></Hang>
-          <Hang nhan="Tên cơ quan ban hành"><input className={cx(lopO, 'w-72')} value={String(v.cq)} onChange={(e) => dat('cq', e.target.value)} /></Hang>
-          <Hang nhan="Ký hiệu"><input className={cx(lopO, 'w-32')} value={String(v.kh)} onChange={(e) => dat('kh', e.target.value)} /></Hang>
-          <Hang nhan="Người ký (Trưởng ban)"><input className={cx(lopO, 'w-40')} value={String(v.tb_cd)} onChange={(e) => dat('tb_cd', e.target.value)} /><input className={cx(lopO, 'w-56')} placeholder="Họ tên" value={String(v.tb_ht)} onChange={(e) => dat('tb_ht', e.target.value)} /></Hang>
+          <Hang nhan="Cơ quan cấp trên"><input className={cx(lopO, 'w-full sm:w-72')} value={String(v.cqt)} onChange={(e) => dat('cqt', e.target.value)} /></Hang>
+          <Hang nhan="Tên cơ quan ban hành"><input className={cx(lopO, 'w-full sm:w-72')} value={String(v.cq)} onChange={(e) => dat('cq', e.target.value)} /></Hang>
+          <Hang nhan="Ký hiệu"><input className={cx(lopO, 'w-full sm:w-32')} value={String(v.kh)} onChange={(e) => dat('kh', e.target.value)} /></Hang>
+          <Hang nhan="Người ký (Trưởng ban)"><input className={cx(lopO, 'w-full sm:w-40')} value={String(v.tb_cd)} onChange={(e) => dat('tb_cd', e.target.value)} /><input className={cx(lopO, 'w-full sm:w-56')} placeholder="Họ tên" value={String(v.tb_ht)} onChange={(e) => dat('tb_ht', e.target.value)} /></Hang>
         </The>
       </div>
       {tb?.loi && <HopLoi loi={tb.loi} />}
-      <div className="sticky bottom-20 z-10 flex items-center justify-end gap-3 rounded-2xl border border-vien bg-white/95 px-3 py-2 shadow-sm backdrop-blur lg:bottom-4">
-        {tb?.ok && <span className="text-sm font-semibold text-[#166534]">{tb.ok}</span>}
-        {g && <Nut onClick={() => setG(null)}>Huỷ thay đổi</Nut>}
+      <ThanhThaoTac trai={tb?.ok}>
+        {g && <Nut onClick={() => setG(null)}>Huỷ</Nut>}
         <Nut kieu="chinh" disabled={!g} dangChay={dangLuu} onClick={luu}>Lưu cài đặt</Nut>
-      </div>
+      </ThanhThaoTac>
     </div>
   );
 }

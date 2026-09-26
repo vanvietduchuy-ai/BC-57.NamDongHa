@@ -172,9 +172,30 @@ export function O({ nhan, children, goiY }: { nhan: string; children: ReactNode;
     </label>
   );
 }
-export const lopO = 'min-h-11 min-w-0 max-w-full rounded-xl border border-vien-2 bg-nen-2 px-3 text-[15px] font-normal text-den outline-none focus:border-do focus:bg-white disabled:opacity-60';
+export const lopO = 'min-h-11 min-w-0 max-w-full rounded-xl border border-vien-2 bg-nen-2 px-3 text-base font-normal text-den sm:text-[15px] outline-none focus:border-do focus:bg-white disabled:opacity-60';
 
 // Biểu trưng dùng chung (ảnh cờ Đảng — public/logo.jpg)
 export function LogoBcd({ className = 'h-11 w-11' }: { className?: string }) {
   return <img src="/logo.jpg" alt="Biểu trưng Ban Chỉ đạo 57" width={96} height={96} className={cx('shrink-0 rounded-xl object-cover ring-1 ring-black/10', className)} />;
+}
+
+// Một dòng biểu mẫu: điện thoại nhãn ở trên, ô rộng hết; máy tính nhãn bên trái
+export function Hang({ nhan, children }: { nhan: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5 border-t border-[#F1EEE7] py-3 text-sm sm:flex-row sm:items-center sm:gap-3">
+      <span className="font-semibold text-mo-2 sm:w-52 sm:shrink-0 sm:text-den">{nhan}</span>
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{children}</div>
+    </div>
+  );
+}
+
+// Thanh nút Lưu dính đáy màn hình; trên điện thoại các nút chia đều bề ngang
+export function ThanhThaoTac({ children, trai }: { children: ReactNode; trai?: ReactNode }) {
+  return (
+    <div className="day-duoi sticky z-10 flex flex-col gap-2 rounded-2xl border border-vien bg-white/95 p-2.5 shadow-[0_8px_24px_-12px_rgba(60,10,12,0.25)] backdrop-blur sm:flex-row sm:items-center sm:px-3">
+      {trai && <div className="min-w-0 flex-1 text-sm font-semibold text-[#166534]">{trai}</div>}
+      {!trai && <span className="hidden flex-1 sm:block" />}
+      <div className="grid auto-cols-fr grid-flow-col gap-2 sm:flex sm:justify-end">{children}</div>
+    </div>
+  );
 }

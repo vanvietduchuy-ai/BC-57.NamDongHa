@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { ExternalLink, FileSpreadsheet, Plus, Search } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
-import { useAuth } from '../lib/auth';
+import { useAuth, laQuanTri } from '../lib/auth';
 import { ngay } from '../lib/dinhDang';
 import { khongDau } from '../lib/nhiemVu';
 import { LOAI_VB, type LoaiVb } from '../lib/vanBan';
@@ -21,7 +21,7 @@ type Dong = {
 
 export default function SoCongVan() {
   const { hoSo } = useAuth();
-  const quanTri = hoSo?.vai_tro === 'quan_tri';
+  const quanTri = laQuanTri(hoSo);
   const xemMoi = hoSo?.vai_tro !== 'don_vi';
   const [so, setSo] = useState<'den' | 'di'>('den');
   const [nam, setNam] = useState(new Date().getFullYear());

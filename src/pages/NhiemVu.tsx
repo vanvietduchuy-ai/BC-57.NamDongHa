@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Download, Plus, Search, ShieldCheck } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
-import { useAuth } from '../lib/auth';
+import { useAuth, laQuanTri } from '../lib/auth';
 import { ngay } from '../lib/dinhDang';
 import { COT_NV, hanNv, khongDau, LINH_VUC, NHOM_NV, TT_NV, type NhiemVu, type NhomNv } from '../lib/nhiemVu';
 import { Chip, ChipHan, DangTai, HopLoi, lopO, Nut, Rong, The, TheSo, TieuDeTrang, cx } from '../components/ui';
@@ -22,7 +22,7 @@ export function ThanhNv({ n }: { n: Pick<NhiemVu, 'phan_tram' | 'trang_thai' | '
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 flex-1 rounded-full bg-[#EEEBE3]">
-        <div className={cx('h-1.5 rounded-full', n.qua_han ? 'bg-nguy' : TT_NV[n.trang_thai].thanh)} style={{ width: `${n.phan_tram}%` }} />
+        <div className={cx('thanh-chay h-1.5 rounded-full', n.qua_han ? 'bg-nguy' : TT_NV[n.trang_thai].thanh)} style={{ width: `${n.phan_tram}%` }} />
       </div>
       <span className="so w-9 text-right text-xs font-semibold">{n.phan_tram}%</span>
     </div>
@@ -32,7 +32,7 @@ export function ThanhNv({ n }: { n: Pick<NhiemVu, 'phan_tram' | 'trang_thai' | '
 export default function NhiemVuTrang() {
   const { hoSo } = useAuth();
   const nav = useNavigate();
-  const quanTri = hoSo?.vai_tro === 'quan_tri';
+  const quanTri = laQuanTri(hoSo);
   const lanhDao = hoSo?.vai_tro === 'lanh_dao';
   const donVi = hoSo?.vai_tro === 'don_vi';
   const [sp, setSp] = useSearchParams();
@@ -198,11 +198,13 @@ export default function NhiemVuTrang() {
                       <span className="text-[14.5px] font-semibold leading-snug text-den">{n.ten}</span>
                       <span className="line-clamp-2 text-xs leading-snug text-mo">{n.chu_tri_ten ?? 'Chưa rõ đơn vị chủ trì'}{n.san_pham ? ` · ${n.san_pham}` : ''}</span>
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Chip nen={tt.nen} chu={tt.chu} className="self-start">{tt.nhan}</Chip>
-                      <ThanhNv n={n} />
+                    <div className="flex items-center gap-2.5 md:contents">
+                      <div className="flex min-w-0 flex-1 items-center gap-2 md:flex-col md:items-stretch md:gap-1.5">
+                        <Chip nen={tt.nen} chu={tt.chu} className="md:self-start">{tt.nhan}</Chip>
+                        <div className="min-w-0 flex-1"><ThanhNv n={n} /></div>
+                      </div>
+                      <div className="flex shrink-0 md:justify-end"><HanNv n={n} /></div>
                     </div>
-                    <div className="flex md:justify-end"><HanNv n={n} /></div>
                   </Link>
                 </li>
               );

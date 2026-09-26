@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Archive, Bell, BookOpen, ChevronDown, ChevronUp, Radar, CheckSquare, FileText, Send, Home, LayoutGrid, LogOut, Menu, SlidersHorizontal,
+  Archive, Bell, BookOpen, ChevronDown, ChevronUp, Radar, CheckSquare, FileText, Send, Home, LayoutGrid, LogOut, Menu, ShieldCheck, SlidersHorizontal,
 } from 'lucide-react';
-import { laDauMoi, useAuth, type HoSo, type VaiTro } from '../lib/auth';
+import { laDauMoi, TEN_VAI_TRO, useAuth, type HoSo, type VaiTro } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { ngayGio } from '../lib/dinhDang';
 import { cx, LogoBcd, Nut } from './ui';
@@ -33,15 +33,21 @@ function menu(h: HoSo): Muc[] {
     { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ' },
     { den: '/so-cong-van', ten: 'Sổ công văn', icon: i(BookOpen), nhom: 'LƯU TRỮ' },
   ];
+  if (vt === 'quan_tri') return [
+    ...chung,
+    { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ' },
+    { den: '/so-cong-van', ten: 'Sổ công văn', icon: i(BookOpen), nhom: 'LƯU TRỮ' },
+    { den: '/cai-dat', ten: 'Cài đặt', icon: i(SlidersHorizontal), nhom: 'LƯU TRỮ' },
+  ];
   return [
     ...chung,
     { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ & HỆ THỐNG' },
     { den: '/so-cong-van', ten: 'Sổ công văn', icon: i(BookOpen), nhom: 'LƯU TRỮ & HỆ THỐNG' },
-    { den: '/quan-tri', ten: 'Quản trị', icon: i(SlidersHorizontal), nhom: 'LƯU TRỮ & HỆ THỐNG' },
+    { den: '/quan-tri', ten: 'Quản trị hệ thống', icon: i(ShieldCheck), nhom: 'LƯU TRỮ & HỆ THỐNG' },
   ];
 }
 
-const VAI_TRO: Record<VaiTro, string> = { quan_tri: 'Quản trị · Cơ quan Thường trực', lanh_dao: 'Lãnh đạo BCĐ', don_vi: 'Tài khoản đơn vị' };
+const VAI_TRO = TEN_VAI_TRO;
 
 function Logo({ toi = true }: { toi?: boolean }) {
   return (
@@ -126,7 +132,7 @@ export default function KhungTrang() {
   const Link = ({ m, gon = false }: { m: Muc; gon?: boolean }) => (
     <NavLink to={m.den} end={m.den === '/'}
       className={({ isActive }) => gon
-        ? cx('flex h-full flex-col items-center justify-center gap-0.5 text-[11px] transition-colors active:scale-95', isActive ? 'font-bold text-do' : 'text-mo')
+        ? cx('flex h-16 flex-col items-center justify-center gap-0.5 text-[11px] transition-colors active:scale-95', isActive ? 'font-bold text-do' : 'text-mo')
         : cx('flex h-11 items-center gap-3 rounded-xl px-3 text-[14px] transition-colors duration-200', isActive ? 'bg-white/10 font-semibold text-white shadow-[inset_3px_0_0_var(--color-vang)]' : 'text-[#F6E3E0] hover:bg-white/5')}>
       {m.icon}<span className={gon ? 'max-w-full truncate' : ''}>{m.ten}</span>
     </NavLink>
@@ -156,7 +162,7 @@ export default function KhungTrang() {
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-vien bg-nen/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-vien bg-nen/95 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur lg:hidden">
           <LogoBcd className="h-10 w-10" />
           <button onClick={() => setMoLienHe(true)} aria-label="Tài khoản" className="flex min-w-0 flex-1 items-center gap-1 text-left">
             <span className="flex min-w-0 flex-col">
@@ -167,15 +173,15 @@ export default function KhungTrang() {
           </button>
           <Chuong />
         </div>
-        <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-5 px-4 pb-28 pt-5 lg:px-8 lg:pb-10 lg:pt-6">
+        <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-5 px-4 pb-[calc(96px+env(safe-area-inset-bottom))] pt-5 lg:px-8 lg:pb-10 lg:pt-6">
           <div key={location.pathname} className="hien-trang flex flex-col gap-5"><Outlet /></div>
         </main>
       </div>
 
-      <nav aria-label="Thanh điều hướng" className="fixed inset-x-0 bottom-0 z-30 grid h-[72px] grid-cols-4 border-t border-vien bg-white px-1 pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <nav aria-label="Thanh điều hướng" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-vien bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur [transform:translateZ(0)] lg:hidden">
         {chinh.map((m) => <Link key={m.den} m={m} gon />)}
         {them.length > 0 && (
-          <button onClick={() => setMoThem(true)} className={cx('flex h-full flex-col items-center justify-center gap-0.5 text-[11px]', them.some((m) => m.den !== '/' && location.pathname.startsWith(m.den)) ? 'font-bold text-do' : 'text-mo')}>
+          <button onClick={() => setMoThem(true)} className={cx('flex h-16 flex-col items-center justify-center gap-0.5 text-[11px]', them.some((m) => m.den !== '/' && location.pathname.startsWith(m.den)) ? 'font-bold text-do' : 'text-mo')}>
             <Menu className="h-5 w-5" strokeWidth={1.8} /><span className="text-[11px]">Thêm</span>
           </button>
         )}

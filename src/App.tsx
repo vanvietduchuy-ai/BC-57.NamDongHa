@@ -17,6 +17,7 @@ const NhiemVuChiTiet = lazy(() => import('./pages/NhiemVuChiTiet'));
 const KhoVanBan = lazy(() => import('./pages/KhoVanBan'));
 const SoanBaoCaoChung = lazy(() => import('./pages/SoanBaoCaoChung'));
 const SoCongVan = lazy(() => import('./pages/SoCongVan'));
+const CaiDatTrang = lazy(() => import('./pages/QuanTri').then((m) => ({ default: m.CaiDatTrang })));
 
 function Chan({ cho, hoac = false, children }: { cho: VaiTro[]; hoac?: boolean; children: ReactNode }) {
   const { hoSo } = useAuth();
@@ -28,13 +29,13 @@ function CacTrang() {
   const { hoSo, dangTai, khoiPhuc } = useAuth();
   if (dangTai) return <DangTai chu="Đang kiểm tra đăng nhập…" />;
   if (!hoSo || khoiPhuc) return <DangNhap />;
-  const cqtt: VaiTro[] = ['quan_tri', 'lanh_dao'];
+  const cqtt: VaiTro[] = ['admin', 'quan_tri', 'lanh_dao'];
   return (
     <Suspense fallback={<DangTai />}>
       <Routes>
         <Route element={<KhungTrang />}>
           <Route index element={hoSo.vai_tro === 'don_vi' ? <TrangChuDonVi /> : <TongQuan />} />
-          <Route path="ky-bao-cao" element={<Chan cho={['quan_tri', 'lanh_dao']} hoac={laDauMoi(hoSo)}><KyBaoCao /></Chan>} />
+          <Route path="ky-bao-cao" element={<Chan cho={cqtt} hoac={laDauMoi(hoSo)}><KyBaoCao /></Chan>} />
           <Route path="ky-bao-cao/:id" element={<Chan cho={cqtt} hoac={laDauMoi(hoSo)}><KyBaoCaoChiTiet /></Chan>} />
           <Route path="ky-bao-cao/:id/bao-cao-chung" element={<Chan cho={cqtt}><SoanBaoCaoChung /></Chan>} />
           <Route path="theo-doi" element={<Chan cho={[]} hoac={laDauMoi(hoSo)}><TongQuan chuTri={hoSo.don_vi_id} /></Chan>} />
@@ -44,7 +45,8 @@ function CacTrang() {
           <Route path="nhiem-vu/:id" element={<NhiemVuChiTiet />} />
           <Route path="kho-van-ban" element={<KhoVanBan />} />
           <Route path="so-cong-van" element={<SoCongVan />} />
-          <Route path="quan-tri" element={<Chan cho={['quan_tri']}><QuanTri /></Chan>} />
+          <Route path="quan-tri" element={<Chan cho={['admin']}><QuanTri /></Chan>} />
+          <Route path="cai-dat" element={<Chan cho={['admin', 'quan_tri']}><CaiDatTrang /></Chan>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

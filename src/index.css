@@ -50,6 +50,12 @@
 
 @layer base {
   html, body, #root { min-height: 100%; }
+  /* Điện thoại: không phóng to/thu nhỏ, không trôi ngang, chữ không tự phóng */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; overscroll-behavior-x: none; }
+  #root { overflow-x: clip; max-width: 100vw; }
+  img, svg, video, canvas { max-width: 100%; }
+  /* iPhone tự phóng khi bấm vào ô nhập chữ nhỏ hơn 16px -> luôn 16px trên điện thoại */
+  @media (max-width: 639px) { input, select, textarea { font-size: 16px !important; } }
   body {
     margin: 0;
     background: var(--color-nen);
@@ -120,3 +126,9 @@
 /* Bảng: tiêu đề cột không xuống dòng; số canh thẳng */
 thead th { white-space: nowrap; }
 td.so, th.so { font-variant-numeric: tabular-nums; }
+
+@supports not (overflow: clip) { html, body { overflow-x: hidden; } #root { overflow-x: visible; } }
+
+/* Thanh thao tác dính đáy: nằm trên thanh điều hướng điện thoại (kể cả vùng vuốt của iPhone) */
+.day-duoi { bottom: calc(4.75rem + env(safe-area-inset-bottom)); }
+@media (min-width: 1024px) { .day-duoi { bottom: 1rem; } }
