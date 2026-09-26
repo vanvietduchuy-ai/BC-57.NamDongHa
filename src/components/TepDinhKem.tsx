@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { ExternalLink, Paperclip, Trash2, Upload } from 'lucide-react';
+import { Paperclip, Trash2, Upload } from 'lucide-react';
 import { goiChucNang, loiDe, supabase } from '../lib/supabase';
 import { HopLoi, cx } from './ui';
+import { NutTepDrive } from './TepDrive';
 
 export type Tep = { id: string; drive_file_id: string; ten: string };
-export const linkDrive = (id: string) => `https://drive.google.com/file/d/${id}/view`;
 
 // Danh sách tệp trên Google Drive + ô tải lên (qua Edge Function drive-upload)
 export default function TepDinhKem({ loai, dichId, thuMuc, suaDuoc, tep, xong, xoaDuoc = suaDuoc }: {
-  loai: 'nop_bao_cao' | 'so_lieu_da06' | 'nhiem_vu'; dichId: string; thuMuc?: string;
+  loai: 'nop_bao_cao' | 'nhiem_vu'; dichId: string; thuMuc?: string;
   suaDuoc: boolean; xoaDuoc?: boolean; tep: Tep[]; xong: () => void;
 }) {
   const [dangChay, setDangChay] = useState(false);
@@ -33,8 +33,8 @@ export default function TepDinhKem({ loai, dichId, thuMuc, suaDuoc, tep, xong, x
       {tep.map((t) => (
         <div key={t.id} className="flex items-center gap-2 rounded-xl bg-nen px-3 py-2 text-sm">
           <Paperclip className="h-4 w-4 shrink-0 text-do" />
-          <a href={linkDrive(t.drive_file_id)} target="_blank" rel="noreferrer" className="flex-1 truncate text-[#A4161A]">{t.ten}</a>
-          <ExternalLink className="h-3.5 w-3.5 text-mo" />
+          <span className="flex-1 truncate">{t.ten}</span>
+          {t.drive_file_id.startsWith('thu-') ? <span className="text-xs text-mo">bản thử</span> : <NutTepDrive loai="tep" id={t.id} ten={t.ten} />}
           {xoaDuoc && <button aria-label={`Gỡ ${t.ten}`} onClick={() => xoa(t)} className="flex h-9 w-9 items-center justify-center rounded-lg text-nguy hover:bg-nguy-nhat"><Trash2 className="h-4 w-4" /></button>}
         </div>
       ))}

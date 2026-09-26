@@ -3,12 +3,17 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 // Khi chạy thử cục bộ với PostgREST (không có Supabase), đặt THU_POSTGREST=http://127.0.0.1:3000
+// (tuỳ chọn) THU_FUNCTIONS=http://127.0.0.1:8099 : Edge Function chạy thử cục bộ
 const postgrest = process.env.THU_POSTGREST;
+const functions = process.env.THU_FUNCTIONS;
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: postgrest
-    ? { proxy: { '/rest/v1': { target: postgrest, changeOrigin: true, rewrite: (p) => p.replace(/^\/rest\/v1/, '') } } }
+    ? { proxy: {
+        '/rest/v1': { target: postgrest, changeOrigin: true, rewrite: (p) => p.replace(/^\/rest\/v1/, '') },
+        ...(functions ? { '/functions/v1': { target: functions, changeOrigin: true } } : {}),
+      } }
     : undefined,
   build: {
     rollupOptions: {

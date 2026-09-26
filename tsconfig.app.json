@@ -22,5 +22,12 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Tệp của module đã gỡ (Đề án 06, Họp BCĐ): nếu còn sót trên GitHub cũng không làm hỏng bản build
+  "exclude": [
+    "src/pages/DeAn06.tsx", "src/pages/Hop.tsx", "src/pages/HopChiTiet.tsx", "src/pages/SoanHoSoHop.tsx",
+    "src/pages/ChiTieuChiTiet.tsx", "src/pages/ChiTieuCuaToi.tsx", "src/pages/PhanCong.tsx",
+    "src/lib/da06.ts", "src/lib/docFileTinh.ts", "src/lib/hoSoHopA4.ts", "src/lib/duLieuBaoCao.ts", "src/lib/kiemTraSoLieu.ts",
+    "src/components/BieuDoChiTieu.tsx", "src/pages/BaoCaoTuSinh.tsx", "src/pages/TheoDoiLinhVuc.tsx", "src/components/DuThaoTuSinh.tsx"
+  ]
 }

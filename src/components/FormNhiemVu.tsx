@@ -5,24 +5,23 @@ import { HopLoi, HopThoai, lopO, Nut, O, cx } from './ui';
 
 type DonVi = { id: string; ten: string; loai: string };
 type VanBan = { id: string; so_ky_hieu: string | null; trich_yeu: string };
-type ChiTieu = { id: string; ma: string; ten: string };
 
 export type GiaTriNv = {
   nhom: NhomNv; linh_vuc: LinhVuc; ten: string; mo_ta: string; chu_tri_don_vi_id: string; lanh_dao_phu_trach: string;
-  han: string; san_pham: string; tham_quyen: string; can_cu_van_ban_id: string; chi_tieu_id: string; ket_luan_id: string | null;
+  han: string; san_pham: string; tham_quyen: string; can_cu_van_ban_id: string;
   phoi_hop: string[];
 };
 
 const RONG: GiaTriNv = {
   nhom: 'chuong_trinh_cong_tac', linh_vuc: 'chung', ten: '', mo_ta: '', chu_tri_don_vi_id: '', lanh_dao_phu_trach: '',
-  han: '', san_pham: '', tham_quyen: '', can_cu_van_ban_id: '', chi_tieu_id: '', ket_luan_id: null, phoi_hop: [],
+  han: '', san_pham: '', tham_quyen: '', can_cu_van_ban_id: '', phoi_hop: [],
 };
 
 export function tuNhiemVu(n: NhiemVu): GiaTriNv {
   return {
     nhom: n.nhom, linh_vuc: n.linh_vuc, ten: n.ten, mo_ta: n.mo_ta ?? '', chu_tri_don_vi_id: n.chu_tri_don_vi_id ?? '',
     lanh_dao_phu_trach: n.lanh_dao_phu_trach ?? '', han: n.han ?? '', san_pham: n.san_pham ?? '', tham_quyen: n.tham_quyen ?? '',
-    can_cu_van_ban_id: n.can_cu_van_ban_id ?? '', chi_tieu_id: n.chi_tieu_id ?? '', ket_luan_id: n.ket_luan_id, phoi_hop: n.phoi_hop_ids ?? [],
+    can_cu_van_ban_id: n.can_cu_van_ban_id ?? '', phoi_hop: n.phoi_hop_ids ?? [],
   };
 }
 
@@ -31,7 +30,7 @@ export default function FormNhiemVu({ mo, dong, id, dau, xong, tieuDe }: {
   mo: boolean; dong: () => void; id?: string; dau?: Partial<GiaTriNv>; xong: (id: string) => void; tieuDe?: string;
 }) {
   const [g, setG] = useState<GiaTriNv>({ ...RONG, ...dau });
-  const [dm, setDm] = useState<{ dv: DonVi[]; vb: VanBan[]; ct: ChiTieu[] }>({ dv: [], vb: [], ct: [] });
+  const [dm, setDm] = useState<{ dv: DonVi[]; vb: VanBan[] }>({ dv: [], vb: [] });
   const [dangChay, setDangChay] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
 
@@ -41,8 +40,7 @@ export default function FormNhiemVu({ mo, dong, id, dau, xong, tieuDe }: {
     void Promise.all([
       supabase.from('don_vi').select('id, ten, loai').eq('hoat_dong', true).order('thu_tu'),
       supabase.from('van_ban').select('id, so_ky_hieu, trich_yeu').neq('trang_thai', 'het_hieu_luc').order('ngay_ban_hanh', { ascending: false }),
-      supabase.from('da06_chi_tieu').select('id, ma, ten').order('thu_tu'),
-    ]).then(([a, b, c]) => setDm({ dv: (a.data ?? []) as DonVi[], vb: (b.data ?? []) as VanBan[], ct: (c.data ?? []) as ChiTieu[] }));
+    ]).then(([a, b]) => setDm({ dv: (a.data ?? []) as DonVi[], vb: (b.data ?? []) as VanBan[] }));
   }, [mo, dm.dv.length]);
 
   const dat = <K extends keyof GiaTriNv>(k: K, v: GiaTriNv[K]) => setG((x) => ({ ...x, [k]: v }));
@@ -55,7 +53,7 @@ export default function FormNhiemVu({ mo, dong, id, dau, xong, tieuDe }: {
       const dong_ = {
         nhom: g.nhom, linh_vuc: g.linh_vuc, ten: g.ten.trim(), mo_ta: g.mo_ta || null, chu_tri_don_vi_id: g.chu_tri_don_vi_id || null,
         lanh_dao_phu_trach: g.lanh_dao_phu_trach || null, han: g.han || null, san_pham: g.san_pham || null, tham_quyen: g.tham_quyen || null,
-        can_cu_van_ban_id: g.can_cu_van_ban_id || null, chi_tieu_id: g.chi_tieu_id || null, ket_luan_id: g.ket_luan_id,
+        can_cu_van_ban_id: g.can_cu_van_ban_id || null,
       };
       let nvId = id;
       if (id) {
@@ -110,13 +108,10 @@ export default function FormNhiemVu({ mo, dong, id, dau, xong, tieuDe }: {
             })}
           </div>
         </fieldset>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           <O nhan="Văn bản căn cứ"><select className={lopO} value={g.can_cu_van_ban_id} onChange={(e) => dat('can_cu_van_ban_id', e.target.value)}>
             <option value="">— Không —</option>
             {dm.vb.map((v) => <option key={v.id} value={v.id}>{v.so_ky_hieu ? `${v.so_ky_hieu} · ` : ''}{v.trich_yeu.slice(0, 70)}</option>)}</select></O>
-          <O nhan="Gắn chỉ tiêu Đề án 06"><select className={lopO} value={g.chi_tieu_id} onChange={(e) => dat('chi_tieu_id', e.target.value)}>
-            <option value="">— Không —</option>
-            {dm.ct.map((c) => <option key={c.id} value={c.id}>{c.ten}</option>)}</select></O>
         </div>
         {thieu.length > 0 && <div className="rounded-xl bg-cam-nhat px-3 py-2 text-[13px] text-cam-dam">Chưa đủ 6 rõ: thiếu {thieu.join(', ')}.</div>}
         {loi && <HopLoi loi={loi} />}

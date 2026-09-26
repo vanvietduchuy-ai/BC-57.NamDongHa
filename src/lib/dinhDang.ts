@@ -77,3 +77,7 @@ export function sangONhapGio(t: string | null | undefined): string {
   return `${p.year}-${p.month}-${p.day}T${p.hour === '24' ? '00' : p.hour}:${p.minute}`;
 }
 export const tuONhapGio = (s: string) => (s ? new Date(`${s}:00+07:00`).toISOString() : null);
+
+// Tên ngắn đơn vị giao báo cáo (nhãn thẻ): Phòng VH-XH, Tổ CSKV, Thường trực
+export const tenNgan = (s: string | null | undefined) =>
+  !s ? 'Thường trực' : s.replace('Phòng Văn hóa – Xã hội', 'Phòng VH-XH').split(' – ')[0].replace(/^Tổ Tổng hợp.*$/, 'Thường trực');

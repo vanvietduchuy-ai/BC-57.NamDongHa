@@ -1,11 +1,12 @@
 // Chọn PDF văn bản đã ký, đóng dấu → web tự đọc số, ký hiệu, ngày, trích yếu, người ký (sửa được) · Xem văn bản đã nộp
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ExternalLink, FileCheck2, FileUp, RefreshCw, ScanText, ShieldAlert } from 'lucide-react';
+import { FileCheck2, FileUp, RefreshCw, ScanText, ShieldAlert } from 'lucide-react';
 import { CHE_DO_THU, goiChucNang } from '../lib/supabase';
 import { docVanBanPdf, META_TRONG, soKyHieu, type MetaVb } from '../lib/docPdf';
 import { LOAI_VB, type LoaiVb } from '../lib/vanBan';
 import { ngay } from '../lib/dinhDang';
 import { HopLoi, lopO, O, cx } from './ui';
+import { NutTepDrive, useXemTruocDrive } from './TepDrive';
 
 export type VanBanDaNop = {
   id: string; so_van_ban: string | null; ky_hieu: string | null; so_ky_hieu: string | null; ngay_ban_hanh: string | null;
@@ -84,7 +85,7 @@ export default function OVanBanPdf({ meta, doiMeta, tep, chonTep, driveId, hienC
       <label className={cx('flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#9AA1AE] bg-white px-4 text-center', dangDoc && 'opacity-70')}>
         <FileUp className="h-8 w-8 text-do" />
         <span className="text-[15px] font-bold">{dangDoc ?? tieuDe}</span>
-        <span className="text-[13px] text-mo">Web tự đọc số, ký hiệu, ngày ban hành, trích yếu, người ký</span>
+        <span className="text-[13px] text-mo">PDF đã ký, đóng dấu</span>
         {chon}
       </label>
       {loi && <HopLoi loi={loi} />}
@@ -136,7 +137,8 @@ export default function OVanBanPdf({ meta, doiMeta, tep, chonTep, driveId, hienC
 
 // ---------- Xem thông tin văn bản đã nộp ----------
 export function ThongTinVanBan({ vb, xemTruoc = true, them }: { vb: VanBanDaNop; xemTruoc?: boolean; them?: ReactNode }) {
-  const link = vb.drive_url || linkXemDrive(vb.drive_file_id);
+  const coTep = !laThu(vb.drive_file_id);
+  const xt = useXemTruocDrive('van_ban', vb.id, xemTruoc && coTep);
   const dong: [string, ReactNode][] = [
     ['Số, ký hiệu', <b className="so">{vb.so_ky_hieu ?? '—'}</b>],
     ['Ngày ban hành', vb.ngay_ban_hanh ? ngay(vb.ngay_ban_hanh) : '—'],
@@ -150,12 +152,14 @@ export function ThongTinVanBan({ vb, xemTruoc = true, them }: { vb: VanBanDaNop;
       <dl className="m-0 grid grid-cols-[120px_minmax(0,1fr)] content-start gap-x-3 gap-y-2 text-sm">
         {dong.map(([k, v]) => <div key={k} className="contents"><dt className="text-mo">{k}</dt><dd className="m-0">{v}</dd></div>)}
         <dt className="text-mo">Tệp</dt>
-        <dd className="m-0">{link ? <a href={link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-[#A4161A]">{vb.ten_tep ?? 'Mở trên Google Drive'}<ExternalLink className="h-3.5 w-3.5" /></a> : <span className="text-mo">{vb.ten_tep ?? 'Bản thử'}</span>}</dd>
+        <dd className="m-0">{coTep ? <NutTepDrive loai="van_ban" id={vb.id} ten={vb.ten_tep ?? `${vb.so_ky_hieu ?? 'van-ban'}.pdf`} nhan={vb.ten_tep ?? 'Mở tệp'} duPhong={vb.drive_url} className="-ml-2" /> : <span className="text-mo">{vb.ten_tep ?? 'Bản thử'}</span>}</dd>
         {them}
       </dl>
-      {xemTruoc && (laThu(vb.drive_file_id)
+      {xemTruoc && (!coTep
         ? <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[13px] text-mo">Bản thử — không có tệp trên Google Drive</div>
-        : <iframe title="Xem văn bản" src={`https://drive.google.com/file/d/${vb.drive_file_id}/preview`} className="h-[480px] w-full rounded-xl border border-vien bg-nen" />)}
+        : xt.url ? <iframe title="Xem văn bản" src={xt.url} className="h-[480px] w-full rounded-xl border border-vien bg-nen" />
+        : xt.loi ? <iframe title="Xem văn bản" src={`https://drive.google.com/file/d/${vb.drive_file_id}/preview`} className="h-[480px] w-full rounded-xl border border-vien bg-nen" />
+        : <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[13px] text-mo">Đang tải văn bản từ Google Drive…</div>)}
     </div>
   );
 }

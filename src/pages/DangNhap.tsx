@@ -94,7 +94,7 @@ export default function DangNhap() {
             <span className="hidden self-start rounded-full border border-vang-nhat/40 sm:inline-block bg-black/25 px-3 py-1 text-[10.5px] font-semibold tracking-wider text-vang-nhat backdrop-blur-sm lg:text-[11.5px]">KHCN · ĐỔI MỚI SÁNG TẠO · CHUYỂN ĐỔI SỐ · ĐỀ ÁN 06</span>
             <span className="text-[13px] font-extrabold uppercase tracking-[0.14em] text-vang lg:text-[15px]">{TEN_PHAN_MEM}</span>
             <h2 className="m-0 text-[26px] font-extrabold leading-[1.15] tracking-tight lg:text-[42px]">Điều hành Ban Chỉ đạo<br />trên một màn hình.</h2>
-            <p className="m-0 max-w-md text-[13.5px] leading-relaxed text-white/85 lg:text-[15px]">Theo dõi báo cáo của các đơn vị, tiến độ nhiệm vụ và chỉ tiêu Đề án 06 — cập nhật tức thời cho Cơ quan Thường trực, lãnh đạo và đơn vị.</p>
+            <p className="m-0 max-w-md text-[13.5px] leading-relaxed text-white/85 lg:text-[15px]">Báo cáo định kỳ, đột xuất và nhiệm vụ của các đơn vị.</p>
           </div>
         </div>
       </aside>

@@ -5,6 +5,7 @@ import { kq, useDuLieu } from '../lib/useDuLieu';
 import { useAuth } from '../lib/auth';
 import { ngay } from '../lib/dinhDang';
 import { khongDau } from '../lib/nhiemVu';
+import { moTepDrive } from '../components/TepDrive';
 import { COT_VB, linkVb, LOAI_VB, THU_MUC, TT_VB, type LoaiVb, type ThuMuc, type VanBan } from '../lib/vanBan';
 import { Chip, DangTai, HopLoi, lopO, Nut, Rong, The, TieuDeTrang, cx } from '../components/ui';
 import FormVanBan from '../components/FormVanBan';
@@ -94,7 +95,7 @@ export default function KhoVanBan() {
                         {quanTri && data?.dem[v.id] ? <Chip nen="bg-xanh-nhat" chu="text-xanh">căn cứ {data.dem[v.id]} nhiệm vụ</Chip> : null}
                       </div>
                       {link
-                        ? <a href={link} target="_blank" rel="noreferrer" className="text-[14.5px] font-semibold leading-snug text-[#A4161A] hover:underline">{v.trich_yeu}<ExternalLink className="ml-1 inline h-3.5 w-3.5" /></a>
+                        ? <button type="button" onClick={() => void moTepDrive('van_ban', v.id, v.ten_tep ?? `${v.so_ky_hieu ?? 'van-ban'}.pdf`, 'xem', v.drive_url)} className="text-left text-[14.5px] font-semibold leading-snug text-[#A4161A] hover:underline">{v.trich_yeu}<ExternalLink className="ml-1 inline h-3.5 w-3.5" /></button>
                         : <span className="text-[14.5px] font-semibold leading-snug">{v.trich_yeu}</span>}
                       <span className="text-xs text-mo">{v.co_quan_ban_hanh}{v.nguoi_ky ? ` · ${v.nguoi_ky} ký` : ''}{v.ghi_chu ? ` · ${v.ghi_chu}` : ''}</span>
                     </div>

@@ -62,3 +62,61 @@
   :focus-visible { outline: 2px solid #A4161A; outline-offset: 2px; }
 }
 .so { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ---------- Chuyển động ---------- */
+@theme {
+  --ease-muot: cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+@keyframes vao-trang { from { opacity: 0; transform: translateY(8px); } }
+@keyframes hien-dan { from { opacity: 0; } }
+@keyframes noi-len { from { opacity: 0; transform: translateY(10px) scale(0.985); } }
+@keyframes bat-len { from { opacity: 0; transform: translateY(-4px) scale(0.96); } }
+@keyframes truot-len { from { opacity: 0.4; transform: translateY(100%); } }
+@keyframes phong-hop { from { opacity: 0; transform: translateY(12px) scale(0.97); } }
+@keyframes chay-thanh { from { transform: scaleX(0); } }
+@keyframes anh-sang { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+@keyframes lac-chuong { 0%, 70%, 100% { transform: rotate(0); } 76% { transform: rotate(14deg); } 84% { transform: rotate(-12deg); } 92% { transform: rotate(6deg); } }
+@keyframes nhip { 0% { box-shadow: 0 0 0 0 rgb(164 22 26 / 0.45); } 100% { box-shadow: 0 0 0 7px rgb(164 22 26 / 0); } }
+
+.hien-trang { animation: vao-trang 0.34s var(--ease-muot) backwards; }
+.mo-dan { animation: hien-dan 0.2s ease-out backwards; }
+.bat-len { animation: bat-len 0.18s var(--ease-muot) backwards; }
+.truot-len { animation: truot-len 0.32s var(--ease-muot) backwards; }
+.hien-hop { animation: truot-len 0.32s var(--ease-muot) backwards; }
+@media (min-width: 640px) { .hien-hop { animation-name: phong-hop; animation-duration: 0.24s; } }
+.thanh-chay { transform-origin: left center; animation: chay-thanh 0.9s var(--ease-muot) backwards; transition: width 0.6s var(--ease-muot); }
+.lac-chuong { animation: lac-chuong 2.6s ease-in-out 0.6s 2; transform-origin: 50% 10%; }
+.cham-nhip { animation: nhip 1.6s ease-out infinite; }
+
+/* Phần tử con hiện lần lượt */
+.xep-hang > * { animation: noi-len 0.42s var(--ease-muot) backwards; }
+.xep-hang > :nth-child(2) { animation-delay: 40ms; }
+.xep-hang > :nth-child(3) { animation-delay: 80ms; }
+.xep-hang > :nth-child(4) { animation-delay: 120ms; }
+.xep-hang > :nth-child(5) { animation-delay: 160ms; }
+.xep-hang > :nth-child(6) { animation-delay: 200ms; }
+.xep-hang > :nth-child(7) { animation-delay: 240ms; }
+.xep-hang > :nth-child(n + 8) { animation-delay: 280ms; }
+
+/* Thẻ bấm được: nổi nhẹ khi rê chuột */
+.the-noi { transition: transform 0.2s var(--ease-muot), box-shadow 0.2s var(--ease-muot), border-color 0.2s; }
+@media (hover: hover) {
+  .the-noi:hover { transform: translateY(-2px); box-shadow: 0 10px 28px -14px rgb(60 10 12 / 0.28); border-color: var(--color-vien-2); }
+}
+.the-noi:active { transform: translateY(0) scale(0.99); }
+
+/* Khung chờ tải */
+.khung-cho {
+  border-radius: 10px;
+  background: linear-gradient(90deg, #ECE8DF 0%, #F6F4EF 45%, #ECE8DF 90%) 0 0 / 200% 100%;
+  animation: anh-sang 1.3s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: 1ms !important; }
+}
+.noi-len-hero { animation: noi-len 0.5s var(--ease-muot) backwards; }
+
+/* Bảng: tiêu đề cột không xuống dòng; số canh thẳng */
+thead th { white-space: nowrap; }
+td.so, th.so { font-variant-numeric: tabular-nums; }

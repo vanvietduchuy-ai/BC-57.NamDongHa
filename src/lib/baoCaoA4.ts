@@ -1,8 +1,7 @@
 // Mô hình văn bản trình bày trên trang A4 (NĐ 30/2020; văn bản Đảng theo HD 36).
-// Dùng chung cho: báo cáo đơn vị, báo cáo tổng hợp lĩnh vực (đầu mối), báo cáo gửi PV01, 4 hồ sơ họp BCĐ.
+// Dùng chung cho: báo cáo đơn vị, báo cáo tổng hợp lĩnh vực (đầu mối), báo cáo gửi PV01, dự thảo tự sinh.
 // Màn hình soạn/xem: components/TrangA4 · Xuất Word: lib/baoCaoDonViDocx
 import { ngay } from './dinhDang';
-import type { BangDa06 } from './duLieuBaoCao';
 
 export type TruongMau = { ma: string; nhan: string; kieu: string; bat_buoc?: boolean; don_vi_tinh?: string; linh_vuc?: string };
 export type DonViA4 = {
@@ -63,17 +62,9 @@ export function trichYeuMacDinh(ky: KyA4, linhVucDauMoi: string[] = []) {
 
 export const dongKyTu = (tu: string | null, den: string | null) => (tu && den ? `(Từ ngày ${ngay(tu)} đến ngày ${ngay(den)})` : '');
 
-// Bảng Đề án 06 lưu kèm bài nộp (chốt tại thời điểm lưu)
-export const docBang = (s?: string | null): BangDa06 | null => { try { return s ? JSON.parse(s) as BangDa06 : null; } catch { return null; } };
-export const khoiBangDa06 = (b: BangDa06, ma = 'bang_da06'): KhoiA4 => ({
-  loai: 'bang', ma, tieuDe: `Kết quả các chỉ tiêu Đề án 06 (Công an tỉnh chốt ngày ${b.ngayChot})`,
-  cot: ['TT', 'Chỉ tiêu', 'Kết quả', 'Tỷ lệ', 'Mức giao', 'Đánh giá'], rong: [620, 2930, 1800, 950, 950, 1821], cotTrai: [1],
-  dong: b.dong.map((r, i) => [String(i + 1), r.ten, r.ketQua, r.tyLe, r.mucGiao, r.danhGia]),
-});
-
 // ---------- Báo cáo của đơn vị / đầu mối theo mẫu biểu ----------
 export function moHinhA4(ky: KyA4, dv: DonViA4, truong: TruongMau[], sl: Record<string, string> | null,
-  o: { bang?: BangDa06 | null; linhVucDauMoi?: string[] } = {}): MoHinhA4 {
+  o: { linhVucDauMoi?: string[] } = {}): MoHinhA4 {
   const g = sl ?? {};
   const lay = (k: KhoaMeta, md: string) => (g[k] !== undefined && g[k] !== null ? String(g[k]) : md);
   const dang = dv.the_thuc === 'dang';
@@ -81,7 +72,7 @@ export function moHinhA4(ky: KyA4, dv: DonViA4, truong: TruongMau[], sl: Record<
   let i = 0;
   for (const t of truong) {
     if (t.kieu === 'tep') continue;
-    if (t.kieu === 'bang_da06') { if (o.bang?.dong.length) khoi.push(khoiBangDa06(o.bang, t.ma)); continue; }
+    if (t.kieu === 'bang_da06') continue;
     khoi.push({ loai: 'tieu_de', text: `${LA_MA[i] ?? i + 1}. ${t.nhan.toUpperCase()}`, batBuoc: t.bat_buoc });
     i++;
     if (t.kieu === 'van_ban') khoi.push({ loai: 'van', ma: t.ma, nhan: t.nhan, noiDung: String(g[t.ma] ?? ''), goiY: GOI_Y[t.ma] });
@@ -105,14 +96,13 @@ export function moHinhA4(ky: KyA4, dv: DonViA4, truong: TruongMau[], sl: Record<
   };
 }
 
-// Chốt phần thể thức (và bảng ĐA06) vào so_lieu khi lưu, để bản đã gửi không đổi theo cấu hình sau này
-export const chotMeta = (m: MoHinhA4, gt: Record<string, string>, bang?: BangDa06 | null) => ({
+// Chốt phần thể thức vào so_lieu khi lưu, để bản đã gửi không đổi theo cấu hình sau này
+export const chotMeta = (m: MoHinhA4, gt: Record<string, string>) => ({
   ...gt, _cq: m.cq, _bh: m.bh, _so: m.so, _kh: m.kh, _ngay: m.ngay, _trich_yeu: m.trichYeu,
   _noi_nhan: m.noiNhan, _chuc_danh: m.chucDanh, _ho_ten: m.hoTen,
-  ...(bang ? { _bang_da06: JSON.stringify(bang) } : {}),
 });
 
-// Sửa một khoá của mô hình (văn bản soạn tự do: PV01, hồ sơ họp)
+// Sửa một khoá của mô hình (văn bản soạn tự do: báo cáo chung PV01)
 export function suaMoHinh(m: MoHinhA4, k: string, v: string): MoHinhA4 {
   const MAP: Record<string, keyof MoHinhA4> = {
     _cq: 'cq', _bh: 'bh', _so: 'so', _kh: 'kh', _ngay: 'ngay', _trich_yeu: 'trichYeu', _noi_nhan: 'noiNhan',

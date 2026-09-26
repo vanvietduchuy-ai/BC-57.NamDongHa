@@ -1,17 +1,22 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { CheckCircle2, HardDrive, MessageCircle, PhoneCall, Play, Plus, XCircle } from 'lucide-react';
 import { goiChucNang, loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { ngayGio } from '../lib/dinhDang';
 import { Chip, DangTai, HopLoi, HopThoai, lopO, Nut, O, The, TieuDeThe, TieuDeTrang, cx } from '../components/ui';
-import { BangPhanCong } from './PhanCong';
+import { NutTepDrive } from '../components/TepDrive';
+import LichDinhKy from '../components/LichDinhKy';
 import { useAuth } from '../lib/auth';
+import { HopLienHe, hienSdt, luuLienHe, type LienHe } from '../components/LienHe';
 
-type Tab = 'tai_khoan' | 'don_vi' | 'phan_cong' | 'lich' | 'nhat_ky' | 'sao_luu';
-const TABS: [Tab, string][] = [['tai_khoan', 'Tài khoản'], ['don_vi', 'Đơn vị'], ['phan_cong', 'Phân công chỉ tiêu'], ['lich', 'Cài đặt'], ['nhat_ky', 'Nhật ký'], ['sao_luu', 'Sao lưu']];
+type Tab = 'tai_khoan' | 'don_vi' | 'lich' | 'cai_dat' | 'luu_tru' | 'nhat_ky';
+const TABS: [Tab, string][] = [['tai_khoan', 'Tài khoản'], ['don_vi', 'Đơn vị'], ['lich', 'Lịch báo cáo định kỳ'], ['cai_dat', 'Cài đặt'], ['luu_tru', 'Lưu trữ & tự động'], ['nhat_ky', 'Nhật ký']];
 
 export default function QuanTri() {
-  const [tab, setTab] = useState<Tab>('tai_khoan');
+  const [sp, setSp] = useSearchParams();
+  const tab = (TABS.some(([k]) => k === sp.get('tab')) ? sp.get('tab') : 'tai_khoan') as Tab;
+  const setTab = (k: Tab) => setSp({ tab: k }, { replace: true });
   return (
     <>
       <TieuDeTrang ten="Quản trị" />
@@ -20,10 +25,10 @@ export default function QuanTri() {
       </div>
       {tab === 'tai_khoan' && <TaiKhoan />}
       {tab === 'don_vi' && <><DauMoi /><DonVi /></>}
-      {tab === 'phan_cong' && <BangPhanCong nhung />}
-      {tab === 'lich' && <CaiDat />}
+      {tab === 'lich' && <LichTheoDonVi />}
+      {tab === 'cai_dat' && <CaiDat />}
+      {tab === 'luu_tru' && <LuuTru />}
       {tab === 'nhat_ky' && <NhatKy />}
-      {tab === 'sao_luu' && <SaoLuu />}
     </>
   );
 }
@@ -34,13 +39,16 @@ const VT: Record<string, [string, string, string]> = { quan_tri: ['Quản trị'
 function TaiKhoan() {
   const { hoSo } = useAuth();
   const [mo, setMo] = useState(false);
+  const [sdtCua, setSdtCua] = useState<Nd | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const { data, loi: loiTai, dangTai, taiLai } = useDuLieu(async () => {
-    const [a, b] = await Promise.all([
+    const [a, b, c] = await Promise.all([
       supabase.from('nguoi_dung').select('id, ho_ten, email, chuc_vu, vai_tro, don_vi_id, hoat_dong, don_vi(ten)').order('vai_tro').order('ho_ten'),
       supabase.from('don_vi').select('id, ten').eq('hoat_dong', true).order('thu_tu'),
+      supabase.from('lien_he_nguoi_dung').select('nguoi_dung_id, so_dien_thoai, nhan_zalo, nhan_goi'),
     ]);
-    return { nd: (kq(a) ?? []) as unknown as Nd[], dv: (kq(b) ?? []) as { id: string; ten: string }[] };
+    const lh = new Map(((kq(c) ?? []) as LienHe[]).map((x) => [x.nguoi_dung_id, x]));
+    return { nd: (kq(a) ?? []) as unknown as Nd[], dv: (kq(b) ?? []) as { id: string; ten: string }[], lh };
   });
   const doi = async (id: string, sua: Partial<Nd>) => {
     if (id === hoSo?.id && (sua.vai_tro || sua.hoat_dong === false)) { setLoi('Không tự khoá hoặc đổi vai trò tài khoản đang dùng.'); return; }
@@ -60,16 +68,28 @@ function TaiKhoan() {
       {dangTai && !data && <DangTai />}
       {data && (
         <The className="overflow-hidden"><div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-[13px]">
-            <thead className="bg-nen-2 text-left text-[11px] text-mo"><tr><th className="px-4 py-3">NGƯỜI DÙNG</th><th className="px-2">ĐƠN VỊ</th><th className="px-2">VAI TRÒ</th><th className="px-2">TRẠNG THÁI</th><th className="px-4 text-right">THAO TÁC</th></tr></thead>
+          <table className="w-full min-w-[880px] text-[13px]">
+            <thead className="bg-nen-2 text-left text-[11px] text-mo"><tr><th className="px-4 py-3">NGƯỜI DÙNG</th><th className="px-2">ĐIỆN THOẠI</th><th className="px-2">ĐƠN VỊ</th><th className="px-2">VAI TRÒ</th><th className="px-2">TRẠNG THÁI</th><th className="px-4 text-right">THAO TÁC</th></tr></thead>
             <tbody>{data.nd.map((n) => (
               <tr key={n.id} className="border-t border-[#F1EEE7]">
-                <td className="px-4 py-2.5"><div className="font-semibold">{n.ho_ten}</div><div className="text-xs text-mo">{n.email}{n.chuc_vu && ` · ${n.chuc_vu}`}</div></td>
-                <td className="px-2"><select aria-label="Đơn vị" className={cx(lopO, 'min-h-9 text-[13px]')} value={n.don_vi_id ?? ''} onChange={(e) => doi(n.id, { don_vi_id: e.target.value || null })}><option value="">—</option>{data.dv.map((d) => <option key={d.id} value={d.id}>{d.ten}</option>)}</select></td>
+                <td className="min-w-[220px] px-4 py-2.5"><div className="font-semibold">{n.ho_ten}</div><div className="text-xs text-mo">{n.email}{n.chuc_vu && ` · ${n.chuc_vu}`}</div></td>
+                <td className="whitespace-nowrap px-2">{(() => {
+                  const l = data.lh.get(n.id);
+                  return (
+                    <button onClick={() => setSdtCua(n)} className="flex min-h-9 items-center gap-2 rounded-lg px-2 hover:bg-nen" aria-label={`Số điện thoại ${n.ho_ten}`}>
+                      {l?.so_dien_thoai ? <>
+                        <span className="so font-semibold">{hienSdt(l.so_dien_thoai)}</span>
+                        {l.nhan_zalo && <MessageCircle className="h-3.5 w-3.5 text-xanh" aria-label="Nhận Zalo" />}
+                        {l.nhan_goi && <PhoneCall className="h-3.5 w-3.5 text-xanh" aria-label="Nhận cuộc gọi" />}
+                      </> : <span className="font-semibold text-[#A4161A]">+ Thêm SĐT</span>}
+                    </button>
+                  );
+                })()}</td>
+                <td className="px-2"><select aria-label="Đơn vị" className={cx(lopO, 'min-h-9 w-[200px] text-[13px]')} value={n.don_vi_id ?? ''} onChange={(e) => doi(n.id, { don_vi_id: e.target.value || null })}><option value="">—</option>{data.dv.map((d) => <option key={d.id} value={d.id}>{d.ten}</option>)}</select></td>
                 <td className="px-2"><select aria-label="Vai trò" className={cx(lopO, 'min-h-9 text-[13px]')} value={n.vai_tro} onChange={(e) => doi(n.id, { vai_tro: e.target.value })}>{Object.entries(VT).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}</select></td>
                 <td className="px-2"><Chip nen={n.hoat_dong ? 'bg-xanh-nhat' : 'bg-cam-nhat'} chu={n.hoat_dong ? 'text-xanh' : 'text-cam-dam'}>{n.hoat_dong ? 'Đang hoạt động' : 'Đã khoá'}</Chip></td>
                 <td className="whitespace-nowrap px-4 text-right">
-                  <button className="mr-3 font-semibold text-[#A4161A]" onClick={() => datLaiMk(n)}>Đặt lại mật khẩu</button>
+                  <button className="mr-3 font-semibold text-[#A4161A]" onClick={() => datLaiMk(n)}>Đặt lại MK</button>
                   <button className={cx('font-semibold', n.hoat_dong ? 'text-nguy' : 'text-xanh')} onClick={() => doi(n.id, { hoat_dong: !n.hoat_dong })}>{n.hoat_dong ? 'Khoá' : 'Mở khoá'}</button>
                 </td>
               </tr>
@@ -77,13 +97,14 @@ function TaiKhoan() {
           </table>
         </div></The>
       )}
+      {sdtCua && <HopLienHe key={sdtCua.id} mo dong={() => setSdtCua(null)} nguoiDungId={sdtCua.id} ten={sdtCua.ho_ten} xong={() => void taiLai()} />}
       <TaoTaiKhoan mo={mo} dong={() => setMo(false)} donVi={data?.dv ?? []} xong={() => { setMo(false); void taiLai(); }} />
     </>
   );
 }
 
 function TaoTaiKhoan({ mo, dong, donVi, xong }: { mo: boolean; dong: () => void; donVi: { id: string; ten: string }[]; xong: () => void }) {
-  const [f, setF] = useState({ email: '', mat_khau: '', ho_ten: '', chuc_vu: '', vai_tro: 'don_vi', don_vi_id: '' });
+  const [f, setF] = useState({ email: '', mat_khau: '', ho_ten: '', chuc_vu: '', vai_tro: 'don_vi', don_vi_id: '', sdt: '' });
   const [dangChay, setDangChay] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const tao = async () => {
@@ -91,7 +112,12 @@ function TaoTaiKhoan({ mo, dong, donVi, xong }: { mo: boolean; dong: () => void;
     if (!f.email || f.mat_khau.length < 8 || !f.ho_ten) { setLoi('Nhập email, họ tên và mật khẩu tối thiểu 8 ký tự'); return; }
     if (f.vai_tro === 'don_vi' && !f.don_vi_id) { setLoi('Tài khoản đơn vị phải chọn đơn vị'); return; }
     setDangChay(true);
-    try { await goiChucNang('quan-tri-tai-khoan', { hanh_dong: 'tao', ...f, don_vi_id: f.don_vi_id || null }); xong(); setF({ email: '', mat_khau: '', ho_ten: '', chuc_vu: '', vai_tro: 'don_vi', don_vi_id: '' }); }
+    try {
+      const { sdt, ...tk } = f;
+      const r = await goiChucNang<{ id: string }>('quan-tri-tai-khoan', { hanh_dong: 'tao', ...tk, don_vi_id: f.don_vi_id || null });
+      if (sdt.trim()) await luuLienHe(r.id, sdt).catch((e) => window.alert(`Đã tạo tài khoản, chưa lưu được SĐT: ${loiDe(e)}`));
+      xong(); setF({ email: '', mat_khau: '', ho_ten: '', chuc_vu: '', vai_tro: 'don_vi', don_vi_id: '', sdt: '' });
+    }
     catch (e) { setLoi(loiDe(e)); } finally { setDangChay(false); }
   };
   return (
@@ -100,7 +126,10 @@ function TaoTaiKhoan({ mo, dong, donVi, xong }: { mo: boolean; dong: () => void;
         {loi && <HopLoi loi={loi} />}
         <O nhan="Họ và tên"><input className={lopO} value={f.ho_ten} onChange={(e) => setF({ ...f, ho_ten: e.target.value })} /></O>
         <O nhan="Chức vụ"><input className={lopO} value={f.chuc_vu} onChange={(e) => setF({ ...f, chuc_vu: e.target.value })} /></O>
-        <O nhan="Email đăng nhập"><input className={lopO} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></O>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <O nhan="Email đăng nhập"><input className={lopO} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></O>
+          <O nhan="Số điện thoại (Zalo)"><input className={lopO} type="tel" inputMode="tel" placeholder="0912 345 678" value={f.sdt} onChange={(e) => setF({ ...f, sdt: e.target.value })} /></O>
+        </div>
         <O nhan="Mật khẩu ban đầu (tối thiểu 8 ký tự)"><input className={lopO} type="text" value={f.mat_khau} onChange={(e) => setF({ ...f, mat_khau: e.target.value })} /></O>
         <div className="grid grid-cols-2 gap-3">
           <O nhan="Vai trò"><select className={lopO} value={f.vai_tro} onChange={(e) => setF({ ...f, vai_tro: e.target.value })}>{Object.entries(VT).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}</select></O>
@@ -129,11 +158,10 @@ function DauMoi() {
   return (
     <The className="flex flex-col gap-1 p-4">
       <TieuDeThe>Đầu mối lĩnh vực</TieuDeThe>
-      <p className="m-0 mb-1 text-[13px] text-mo">Đơn vị đầu mối theo dõi, nhắc, tiếp nhận báo cáo của các đơn vị và gửi báo cáo tổng hợp cho Thường trực BCĐ.</p>
       {loi && <HopLoi loi={loi} />}
       {LV_DAU_MOI.map(([lv, ten]) => (
         <Hang key={lv} nhan={ten}>
-          <select aria-label={`Đầu mối ${ten}`} className={cx(lopO, 'min-h-10 min-w-64')} value={data.dm.find((x) => x.linh_vuc === lv)?.don_vi_id ?? ''}
+          <select aria-label={`Đầu mối ${ten}`} className={cx(lopO, 'min-h-10 w-full sm:w-80')} value={data.dm.find((x) => x.linh_vuc === lv)?.don_vi_id ?? ''}
             onChange={(e) => chay(e.target.value
               ? supabase.from('dau_moi_linh_vuc').upsert({ linh_vuc: lv, don_vi_id: e.target.value })
               : supabase.from('dau_moi_linh_vuc').delete().eq('linh_vuc', lv))}>
@@ -186,21 +214,19 @@ function DonVi() {
   );
 }
 
-type LichKy = { id: string; ten: string; loai: string; quy_tac: Record<string, unknown> };
 type NguoiKy = { chuc_danh: string; ho_ten: string };
 type TheThuc = { co_quan_cap_tren: string; co_quan: string; ky_hieu: string; dia_danh: string; truong_ban: NguoiKy; cqtt_ky_to_trinh: NguoiKy };
-const THU = ['', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ nhật'];
 
-function Hang({ nhan, children }: { nhan: string; children: React.ReactNode }) {
-  return <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[#F1EEE7] py-3 text-sm"><span className="w-full font-semibold sm:w-56">{nhan}</span><div className="flex flex-wrap items-center gap-2">{children}</div></div>;
+function Hang({ nhan, children }: { nhan: React.ReactNode; children: React.ReactNode }) {
+  return <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[#F1EEE7] py-3 text-sm"><span className="w-full font-semibold sm:w-56">{nhan}</span><div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 max-sm:w-full">{children}</div></div>;
 }
 
 // Cài đặt bằng biểu mẫu (không sửa JSON): lịch tự mở kỳ, nhắc hạn, người ký, thể thức văn bản BCĐ
 function CaiDat() {
   const { data, dangTai, taiLai } = useDuLieu(async () => {
-    const [a, b] = await Promise.all([supabase.from('cau_hinh').select('khoa, gia_tri'), supabase.from('lich_ky').select('id, ten, loai, quy_tac')]);
+    const a = await supabase.from('cau_hinh').select('khoa, gia_tri');
     const ch = Object.fromEntries(((kq(a) ?? []) as { khoa: string; gia_tri: unknown }[]).map((x) => [x.khoa, x.gia_tri]));
-    return { ch, lich: (kq(b) ?? []) as LichKy[] };
+    return { ch };
   });
   const [g, setG] = useState<Record<string, unknown> | null>(null);
   const [dangLuu, setDangLuu] = useState(false);
@@ -208,16 +234,15 @@ function CaiDat() {
   if (dangTai && !data) return <DangTai />;
   if (!data) return null;
 
-  const thang = data.lich.find((l) => l.loai === 'thang');
-  const tuan = data.lich.find((l) => l.loai === 'da06_tuan');
   const nh = (data.ch.nhac_han ?? {}) as Record<string, unknown>;
   const kenh = (data.ch.kenh_nhac ?? ['web']) as string[];
+  const ndt = (data.ch.nhac_dien_thoai ?? {}) as { zalo?: string[]; goi?: string[]; goi_qua_han_1_lan?: boolean };
   const nk = (data.ch.nguoi_ky_bao_cao ?? { chuc_danh: '', ho_ten: '' }) as NguoiKy;
   const tt = (data.ch.the_thuc_bcd ?? {}) as TheThuc;
   const macDinh: Record<string, unknown> = {
-    t_mo: thang?.quy_tac.mo_ngay ?? 15, t_han: thang?.quy_tac.han_ngay ?? 8, t_gio: thang?.quy_tac.han_gio ?? '17:00', t_tinh: thang?.quy_tac.han_gui_tinh_ngay ?? 12,
-    w_thu: tuan?.quy_tac.mo_thu ?? 1, w_gio: tuan?.quy_tac.han_gio ?? '17:00',
-    n3: nh.truoc_3_ngay !== false, n1: nh.truoc_1_ngay !== false, nqh: nh.qua_han_hang_ngay !== false, nld: nh.bao_lanh_dao_sau_ngay ?? 2, email: kenh.includes('email'),
+    n3: nh.truoc_3_ngay !== false, n1: nh.truoc_1_ngay !== false, nqh: nh.qua_han_hang_ngay !== false, nld: nh.bao_lanh_dao_sau_ngay ?? 2, email: kenh.includes('email'), zalo: kenh.includes('zalo'), goi: kenh.includes('goi'),
+    z_t1: (ndt.zalo ?? ['T-1', 'dung_han', 'qua_han']).includes('T-1'), z_dh: (ndt.zalo ?? ['dung_han']).includes('dung_han'), z_qh: (ndt.zalo ?? ['qua_han']).includes('qua_han'),
+    g_t1: (ndt.goi ?? []).includes('T-1'), g_dh: (ndt.goi ?? ['dung_han']).includes('dung_han'), g_qh: (ndt.goi ?? []).includes('qua_han'),
     nk_cd: nk.chuc_danh, nk_ht: nk.ho_ten,
     tb_cd: tt.truong_ban?.chuc_danh ?? 'TRƯỞNG BAN', tb_ht: tt.truong_ban?.ho_ten ?? '', cqt: tt.co_quan_cap_tren ?? '', cq: tt.co_quan ?? '', kh: tt.ky_hieu ?? 'BCĐ',
   };
@@ -232,13 +257,15 @@ function CaiDat() {
     const viec: PromiseLike<{ error: unknown }>[] = [
       supabase.from('cau_hinh').upsert([
         { khoa: 'nhac_han', gia_tri: { ...nh, truoc_3_ngay: v.n3, truoc_1_ngay: v.n1, qua_han_hang_ngay: v.nqh, bao_lanh_dao_sau_ngay: Number(v.nld) }, mo_ta: 'Quy tắc nhắc hạn' },
-        { khoa: 'kenh_nhac', gia_tri: v.email ? ['web', 'email'] : ['web'], mo_ta: 'Kênh nhắc hạn' },
+        { khoa: 'kenh_nhac', gia_tri: ['web', v.email && 'email', v.zalo && 'zalo', v.goi && 'goi'].filter(Boolean), mo_ta: 'Kênh nhắc hạn' },
+        { khoa: 'nhac_dien_thoai', gia_tri: {
+          zalo: [v.z_t1 && 'T-1', v.z_dh && 'dung_han', v.z_qh && 'qua_han'].filter(Boolean),
+          goi: [v.g_t1 && 'T-1', v.g_dh && 'dung_han', v.g_qh && 'qua_han'].filter(Boolean), goi_qua_han_1_lan: true,
+        }, mo_ta: 'Nhắc qua Zalo, gọi điện' },
         { khoa: 'nguoi_ky_bao_cao', gia_tri: { chuc_danh: v.nk_cd, ho_ten: v.nk_ht }, mo_ta: 'Người ký báo cáo gửi Công an tỉnh' },
         { khoa: 'the_thuc_bcd', gia_tri: { ...tt, co_quan_cap_tren: v.cqt, co_quan: v.cq, ky_hieu: v.kh, truong_ban: { chuc_danh: v.tb_cd, ho_ten: v.tb_ht } }, mo_ta: 'Thể thức văn bản Ban Chỉ đạo' },
       ]),
     ];
-    if (thang) viec.push(supabase.from('lich_ky').update({ quy_tac: { ...thang.quy_tac, mo_ngay: Number(v.t_mo), han_ngay: Number(v.t_han), han_gio: v.t_gio, han_gui_tinh_ngay: Number(v.t_tinh) } }).eq('id', thang.id));
-    if (tuan) viec.push(supabase.from('lich_ky').update({ quy_tac: { ...tuan.quy_tac, mo_thu: Number(v.w_thu), han_gio: v.w_gio } }).eq('id', tuan.id));
     const kqs = await Promise.all(viec);
     setDangLuu(false);
     const e = kqs.find((r) => r.error)?.error;
@@ -249,12 +276,6 @@ function CaiDat() {
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <The className="flex flex-col px-5 py-3">
-          <TieuDeThe>Lịch báo cáo</TieuDeThe>
-          <Hang nhan="Báo cáo tháng">Mở ngày {so_('t_mo', 1, 28)} · hạn ngày {so_('t_han', 1, 28)} tháng sau, lúc <input type="time" className={lopO} value={String(v.t_gio)} onChange={(e) => dat('t_gio', e.target.value)} /></Hang>
-          <Hang nhan="Gửi Công an tỉnh">Trước ngày {so_('t_tinh', 1, 28)}</Hang>
-          <Hang nhan="Số Đề án 06 hằng tuần">Mở <select className={lopO} value={String(v.w_thu)} onChange={(e) => dat('w_thu', Number(e.target.value))}>{THU.slice(1).map((t, i) => <option key={t} value={i + 1}>{t}</option>)}</select> · hạn cùng ngày tuần sau, lúc <input type="time" className={lopO} value={String(v.w_gio)} onChange={(e) => dat('w_gio', e.target.value)} /></Hang>
-        </The>
-        <The className="flex flex-col px-5 py-3">
           <TieuDeThe>Nhắc hạn</TieuDeThe>
           <Hang nhan="Nhắc đơn vị">
             {([['n3', 'Trước 3 ngày'], ['n1', 'Trước 1 ngày'], ['nqh', 'Quá hạn: hằng ngày']] as const).map(([k, t]) => (
@@ -263,6 +284,18 @@ function CaiDat() {
           </Hang>
           <Hang nhan="Báo lãnh đạo khi quá hạn">sau {so_('nld', 1, 30)} ngày</Hang>
           <Hang nhan="Gửi thêm qua email"><label className="flex min-h-10 items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-[#A4161A]" checked={!!v.email} onChange={(e) => dat('email', e.target.checked)} />Có</label></Hang>
+        </The>
+        <The className="flex flex-col px-5 py-3">
+          <TieuDeThe>Nhắc qua Zalo, gọi điện tự động</TieuDeThe>
+          {([['zalo', 'Nhắn Zalo', 'z'], ['goi', 'Gọi điện', 'g']] as const).map(([k, t, p]) => (
+            <Hang key={k} nhan={<label className="flex items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-[#A4161A]" checked={!!v[k]} onChange={(e) => dat(k, e.target.checked)} />{t}</label>}>
+              {([[`${p}_t1`, 'Trước 1 ngày'], [`${p}_dh`, 'Ngày hạn'], [`${p}_qh`, k === 'goi' ? 'Quá hạn (1 lần)' : 'Quá hạn']] as const).map(([kk, tt]) => (
+                <label key={kk} className={cx('flex min-h-10 items-center gap-2 rounded-lg bg-nen px-3', !v[k] && 'opacity-50')}>
+                  <input type="checkbox" disabled={!v[k]} className="h-5 w-5 accent-[#A4161A]" checked={!!v[kk]} onChange={(e) => dat(kk, e.target.checked)} />{tt}
+                </label>
+              ))}
+            </Hang>
+          ))}
         </The>
         <The className="flex flex-col px-5 py-3">
           <TieuDeThe>Người ký báo cáo gửi Công an tỉnh</TieuDeThe>
@@ -278,7 +311,7 @@ function CaiDat() {
         </The>
       </div>
       {tb?.loi && <HopLoi loi={tb.loi} />}
-      <div className="sticky bottom-20 flex items-center justify-end gap-3 lg:bottom-4">
+      <div className="sticky bottom-20 z-10 flex items-center justify-end gap-3 rounded-2xl border border-vien bg-white/95 px-3 py-2 shadow-sm backdrop-blur lg:bottom-4">
         {tb?.ok && <span className="text-sm font-semibold text-[#166534]">{tb.ok}</span>}
         {g && <Nut onClick={() => setG(null)}>Huỷ thay đổi</Nut>}
         <Nut kieu="chinh" disabled={!g} dangChay={dangLuu} onClick={luu}>Lưu cài đặt</Nut>
@@ -288,7 +321,7 @@ function CaiDat() {
 }
 
 type Nk = { id: number; bang: string; hanh_dong: string; boi: string | null; luc: string; du_lieu_moi: Record<string, unknown> | null; du_lieu_cu: Record<string, unknown> | null };
-const BANG: Record<string, string> = { nop_bao_cao: 'Nộp báo cáo', ky_bao_cao: 'Kỳ báo cáo', da06_so_lieu_don_vi: 'Số ĐA06 đơn vị', da06_phan_cong: 'Phân công', nguoi_dung: 'Tài khoản', don_vi: 'Đơn vị', da06_ky_danh_gia: 'Nhập file tỉnh', cau_hinh: 'Cấu hình', nhiem_vu: 'Nhiệm vụ', van_ban: 'Văn bản', tep: 'Tệp', da06_diem_tinh: 'Điểm tỉnh', phien_hop: 'Phiên họp', ket_luan: 'Kết luận' };
+const BANG: Record<string, string> = { nop_bao_cao: 'Nộp báo cáo', ky_bao_cao: 'Kỳ báo cáo', nguoi_dung: 'Tài khoản', don_vi: 'Đơn vị', cau_hinh: 'Cấu hình', nhiem_vu: 'Nhiệm vụ', van_ban: 'Văn bản', tep: 'Tệp' };
 // Tên cột, giá trị dễ đọc cho nhật ký (cột không có trong danh sách thì không hiện)
 const COT: Record<string, string> = {
   trang_thai: 'Trạng thái', trang_thai_giao: 'Giao', phan_tram: 'Tiến độ %', han: 'Hạn', han_nop: 'Hạn nộp', ten: 'Tên', y_kien_duyet: 'Ý kiến',
@@ -330,25 +363,135 @@ function NhatKy() {
   );
 }
 
-function SaoLuu() {
-  const [dangChay, setDangChay] = useState(false);
-  const [tb, setTb] = useState<string | null>(null);
-  const { data, taiLai } = useDuLieu(async () => (kq(await supabase.from('sao_luu').select('*').order('luc', { ascending: false }).limit(20)) ?? []) as { id: number; luc: string; drive_file_id: string | null; kich_thuoc: number | null; ket_qua: string }[]);
-  const chay = async () => {
-    setDangChay(true); setTb(null);
-    try { await goiChucNang('sao-luu', {}); setTb('Đã sao lưu lên Google Drive.'); void taiLai(); } catch (e) { setTb(loiDe(e)); } finally { setDangChay(false); }
-  };
+// ---------------------------------------------------------------- Lịch báo cáo định kỳ theo đơn vị giao
+function LichTheoDonVi() {
+  const { data } = useDuLieu(async () => {
+    const r = await supabase.from('dau_moi_linh_vuc').select('don_vi_id, don_vi(ten)');
+    const m = new Map<string, string>();
+    for (const x of (kq(r) ?? []) as unknown as { don_vi_id: string; don_vi: { ten: string } }[]) m.set(x.don_vi_id, x.don_vi.ten);
+    return [...m.entries()];
+  });
+  const [chon, setChon] = useState<string>('');
   return (
-    <The className="flex flex-col gap-3 p-5">
-      <TieuDeThe phai={<Nut kieu="chinh" dangChay={dangChay} onClick={chay}>Sao lưu ngay</Nut>}>Sao lưu lên Google Drive (tự động Chủ nhật)</TieuDeThe>
-      {tb && <div className="rounded-xl bg-xanh-nhat p-3 text-sm text-xanh">{tb}</div>}
-      {data?.map((s) => (
-        <div key={s.id} className="flex items-center gap-3 border-t border-[#F1EEE7] pt-2 text-[13px]">
-          <span className="so text-xs">{ngayGio(s.luc)}</span><span className="flex-1">{s.ket_qua}</span>
-          {s.drive_file_id && <a className="text-[#A4161A]" href={`https://drive.google.com/file/d/${s.drive_file_id}/view`} target="_blank" rel="noreferrer">Mở</a>}
-        </div>
-      ))}
-      {data?.length === 0 && <span className="text-sm text-mo">Chưa có bản sao lưu nào.</span>}
-    </The>
+    <div className="flex flex-col gap-4">
+      <div role="tablist" className="flex flex-wrap gap-2">
+        {[['', 'Thường trực giao đầu mối'] as [string, string], ...(data ?? []).map(([id, ten]) => [id, `${ten} giao đơn vị`] as [string, string])].map(([id, ten]) => (
+          <button key={id || 'tt'} role="tab" aria-selected={chon === id} onClick={() => setChon(id)}
+            className={cx('min-h-10 rounded-xl border px-3 text-sm', chon === id ? 'border-ink bg-ink font-semibold text-white' : 'border-vien bg-white text-den')}>{ten}</button>
+        ))}
+      </div>
+      <LichDinhKy key={chon || 'tt'} chuTri={chon || null} hanMacDinh={chon ? 5 : 8} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Lưu trữ Google Drive & lịch chạy tự động
+type Drive = { ok: boolean; loi?: string; tai_khoan?: string; ten?: string; da_dung?: number; gioi_han?: number | null; thu_muc_goc?: { id: string; ten: string; url: string }; cach_xac_thuc?: string };
+type LichChay = { ten: string; lich: string; lan_cuoi: string | null; trang_thai: string | null; thong_diep: string | null };
+const TEN_VIEC: Record<string, string> = {
+  'sinh-ky-bao-cao': 'Tạo kỳ báo cáo tiếp theo (mỗi giờ, phút 05)', 'khoa-ky-het-han': 'Khoá kỳ hết hạn bổ sung (00:10)', 'nhac-han': 'Nhắc hạn (08:00)',
+  'sao-luu': 'Sao lưu lên Google Drive (23:30)',
+};
+const gb = (n?: number | null) => (n == null ? '—' : `${(n / 1024 ** 3).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} GB`);
+
+function LuuTru() {
+  const [drive, setDrive] = useState<Drive | null>(null);
+  const [dang, setDang] = useState<string | null>(null);
+  const [tb, setTb] = useState<{ loi?: string; ok?: string } | null>(null);
+  const { data, taiLai } = useDuLieu(async () => {
+    const [a, b, c, d, e, f, g] = await Promise.all([
+      supabase.from('sao_luu').select('id, luc, drive_file_id, kich_thuoc, ket_qua, tu_dong').order('luc', { ascending: false }).limit(15),
+      supabase.rpc('tinh_trang_lich'),
+      supabase.rpc('da_dat_bi_mat_lich'),
+      supabase.rpc('thong_ke_push'),
+      goiChucNang('gui-thong-bao-day', { loai: 'khoa' }).then(() => true, () => false),
+      goiChucNang<{ zalo: boolean; goi: boolean }>('nhac-dien-thoai', { loai: 'tinh_trang' }).catch(() => ({ zalo: false, goi: false })),
+      supabase.rpc('tinh_trang_lien_he'),
+    ]);
+    return {
+      saoLuu: (kq(a) ?? []) as { id: number; luc: string; drive_file_id: string | null; kich_thuoc: number | null; ket_qua: string; tu_dong: boolean }[],
+      lich: b.error ? null : (b.data ?? []) as LichChay[], loiLich: b.error ? loiDe(b.error) : null,
+      biMat: c.error ? null : !!c.data,
+      day: { ...((d.data as { so_nguoi: number; so_may: number }[] | null)?.[0] ?? { so_nguoi: 0, so_may: 0 }), mayChu: e },
+      dt: { ...f, ...((g.data as { co_sdt: number; chua_sdt: number }[] | null)?.[0] ?? { co_sdt: 0, chua_sdt: 0 }) },
+    };
+  });
+  const kiemTra = async () => {
+    setDang('drive'); setTb(null);
+    try { setDrive(await goiChucNang<Drive>('drive-kiem-tra', {})); } catch (e) { setDrive({ ok: false, loi: loiDe(e) }); } finally { setDang(null); }
+  };
+  const chay = async (ten: string, body: object, ok: (r: Record<string, unknown>) => string) => {
+    setDang(ten); setTb(null);
+    try { const r = await goiChucNang<Record<string, unknown>>(ten, body); setTb({ ok: ok(r) }); void taiLai(); }
+    catch (e) { setTb({ loi: `${ten}: ${loiDe(e)}` }); } finally { setDang(null); }
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      {tb?.loi && <HopLoi loi={tb.loi} />}
+      {tb?.ok && <div role="status" className="rounded-xl bg-xanh-nhat px-4 py-3 text-sm text-xanh">{tb.ok}</div>}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <The className="flex flex-col gap-3 p-5">
+          <TieuDeThe phai={<Nut icon={<HardDrive className="h-4 w-4" />} dangChay={dang === 'drive'} onClick={kiemTra}>Kiểm tra kết nối</Nut>}>Google Drive</TieuDeThe>
+          {drive && (drive.ok ? (
+            <div className="flex flex-col gap-1.5 rounded-xl bg-[#F0FDF4] p-3 text-sm">
+              <span className="flex items-center gap-2 font-semibold text-[#166534]"><CheckCircle2 className="h-4 w-4" />Đã kết nối · {drive.cach_xac_thuc}</span>
+              <span>Tài khoản: <b>{drive.tai_khoan}</b>{drive.ten ? ` (${drive.ten})` : ''}</span>
+              <span>Dung lượng: {gb(drive.da_dung)} / {drive.gioi_han ? gb(drive.gioi_han) : 'không giới hạn'}</span>
+              {drive.thu_muc_goc && <span>Thư mục gốc: <a className="font-semibold text-[#A4161A]" href={drive.thu_muc_goc.url} target="_blank" rel="noreferrer">{drive.thu_muc_goc.ten}</a></span>}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1 rounded-xl bg-nguy-nhat p-3 text-sm text-nguy">
+              <span className="flex items-center gap-2 font-semibold"><XCircle className="h-4 w-4" />Chưa kết nối được</span>
+              <span>{drive.loi}</span>
+              <span className="text-mo-2">Xem HUONG-DAN-TRIEN-KHAI.md, bước 4 (Google Drive) và bước 5 (deploy Edge Functions).</span>
+            </div>
+          ))}
+        </The>
+
+        <The className="flex flex-col gap-3 p-5">
+          <TieuDeThe>Lịch chạy tự động</TieuDeThe>
+          {data?.biMat === false && <div className="rounded-xl bg-cam-nhat p-3 text-[13px] text-cam-dam">Chưa đặt bí mật cho lịch chạy. Chạy trong SQL Editor của Supabase: <code>select dat_bi_mat_lich('https://&lt;mã-dự-án&gt;.supabase.co', '&lt;CRON_SECRET&gt;');</code></div>}
+          {data?.loiLich && <span className="text-[13px] text-mo">Chưa đọc được lịch chạy ({data.loiLich}). Kiểm tra đã chạy migration 13 và bật pg_cron.</span>}
+          {data?.lich?.map((l) => (
+            <div key={l.ten} className="flex flex-wrap items-center gap-2 border-t border-[#F1EEE7] pt-2 text-[13px] first:border-0 first:pt-0">
+              <span className="flex-1 font-semibold">{TEN_VIEC[l.ten] ?? l.ten}</span>
+              {l.lan_cuoi ? <Chip nen={l.trang_thai === 'succeeded' ? 'bg-[#DCFCE7]' : 'bg-nguy-nhat'} chu={l.trang_thai === 'succeeded' ? 'text-[#166534]' : 'text-nguy'}>{l.trang_thai === 'succeeded' ? 'OK' : l.trang_thai} · {ngayGio(l.lan_cuoi)}</Chip> : <Chip>Chưa chạy</Chip>}
+            </div>
+          ))}
+          <div className="flex flex-wrap gap-2 border-t border-[#F1EEE7] pt-3">
+            <Nut icon={<Play className="h-4 w-4" />} dangChay={dang === 'nhac-han'} onClick={() => chay('nhac-han', {}, (r) => `Đã nhắc: ${r.ky_bao_cao ?? 0} kỳ báo cáo, ${r.nhiem_vu ?? 0} nhiệm vụ.`)}>Nhắc hạn</Nut>
+          </div>
+        </The>
+
+        <The className="flex flex-col gap-3 p-5">
+          <TieuDeThe>Kênh nhắc việc</TieuDeThe>
+          {data && ([
+            ['Thông báo đẩy', data.day.mayChu, `${data.day.so_may} máy · ${data.day.so_nguoi} người đã bật`, 'Chưa đặt khoá VAPID'],
+            ['Zalo (ZNS)', data.dt.zalo, `${data.dt.co_sdt} tài khoản có SĐT · ${data.dt.chua_sdt} chưa có`, 'Chưa đặt khoá Zalo OA'],
+            ['Gọi điện tự động', data.dt.goi, 'Máy đọc lời nhắc', 'Chưa đặt khoá Stringee'],
+          ] as const).map(([ten, ok, phu, thieu]) => (
+            <div key={ten} className="flex items-center gap-3 border-t border-[#F1EEE7] pt-2.5 text-[13px] first:border-0 first:pt-0">
+              {ok ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#166534]" /> : <XCircle className="h-4 w-4 shrink-0 text-mo" />}
+              <span className="w-36 shrink-0 font-semibold">{ten}</span>
+              <span className={cx('min-w-0 flex-1', ok ? 'text-mo-2' : 'text-mo')}>{ok ? phu : thieu}</span>
+            </div>
+          ))}
+        </The>
+      </div>
+
+      <The className="flex flex-col gap-3 p-5">
+        <TieuDeThe phai={<Nut kieu="chinh" dangChay={dang === 'sao-luu'} onClick={() => chay('sao-luu', {}, (r) => `Đã sao lưu ${r.so_dong ?? ''} dòng lên Google Drive.`)}>Sao lưu ngay</Nut>}>
+          Sao lưu dữ liệu (tự động 23:30 hằng ngày, giữ 30 ngày + bản ngày 01 hằng tháng)
+        </TieuDeThe>
+        {data?.saoLuu.map((s) => (
+          <div key={s.id} className="flex flex-wrap items-center gap-3 border-t border-[#F1EEE7] pt-2 text-[13px]">
+            <span className="so text-xs">{ngayGio(s.luc)}</span><Chip>{s.tu_dong ? 'Tự động' : 'Bấm tay'}</Chip><span className="flex-1">{s.ket_qua}</span>
+            {s.drive_file_id && <NutTepDrive loai="sao_luu" id={String(s.id)} ten={`bcd57-sao-luu-${s.luc.slice(0, 10)}.json`} cheDo="tai" />}
+          </div>
+        ))}
+        {data?.saoLuu.length === 0 && <span className="text-sm text-mo">Chưa có bản sao lưu nào.</span>}
+      </The>
+    </div>
   );
 }

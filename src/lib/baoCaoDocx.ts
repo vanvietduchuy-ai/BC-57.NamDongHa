@@ -1,4 +1,4 @@
-// Xuất báo cáo tổng hợp gửi Công an tỉnh (PV01) — thể thức NĐ 30/2020 theo bộ thông số của Công an phường:
+// Hàm dựng .docx dùng chung — thể thức NĐ 30/2020 theo bộ thông số của Công an phường:
 // A4, lề 2-2-3-2 cm, Times New Roman 14, căn đều, lùi đầu dòng 1 cm, giãn dòng 1,2, cách đoạn 6/6 pt.
 import {
   AlignmentType, BorderStyle, Document, Packer, Paragraph, Table, TableCell, TableLayoutType, TableRow, TextRun, VerticalAlign, WidthType,
@@ -45,96 +45,6 @@ export function bangVien(headers: string[], rows: string[][], doRong: number[], 
   });
 }
 
-export type DauVaoBaoCao = {
-  tenLoai?: string;                 // 'BÁO CÁO'
-  trichYeu: string;                 // 'Kết quả thực hiện Nghị quyết 57-NQ/TW và Đề án 06 tháng 10/2026'
-  kyTu?: string | null; kyDen?: string | null;   // 'dd/mm/yyyy'
-  nam: number;
-  donVi: { ten: string; ket_qua?: string; kho_khan?: string; nhiem_vu_toi?: string; de_xuat?: string }[];
-  da06?: { ngayChot: string; dong: { ten: string; ketQua: string; tyLe: string; mucGiao: string; danhGia: string }[] } | null;
-  nguoiKy?: { chucDanh: string; hoTen: string };
-  noiNhan?: string[];
-};
-
-export const tachDoan = (s?: string) => (s ?? '').split(/\n+/).map((x) => x.trim()).filter(Boolean);
-
-export function taoVanBanBaoCao(d: DauVaoBaoCao): Document {
-  const trai = [
-    center([run('CÔNG AN TỈNH QUẢNG TRỊ', { size: SZ.coQuan })]),
-    center([run('CÔNG AN PHƯỜNG NAM ĐÔNG HÀ', { size: SZ.coQuan, bold: true })]),
-    center([run('_______', { bold: true })]),
-    center([run('Số:        /BC-CAP-TH', { size: SZ.soKh })], { before: 120 }),
-  ];
-  const phai = [
-    center([run('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', { size: SZ.coQuan, bold: true })]),
-    center([run('Độc lập - Tự do - Hạnh phúc', { size: SZ.tieuNgu, bold: true })]),
-    center([run('________________________', { bold: true })]),
-    center([run(`Nam Đông Hà, ngày      tháng      năm ${d.nam}`, { size: SZ.ngayThang, italics: true })], { before: 120 }),
-  ];
-
-  const noi: (Paragraph | Table)[] = [];
-  noi.push(H('I. CÔNG TÁC CHỈ ĐẠO, TRIỂN KHAI'));
-  noi.push(body('…'));
-
-  noi.push(H('II. KẾT QUẢ THỰC HIỆN'));
-  let muc = 1;
-  const coKetQua = d.donVi.filter((x) => tachDoan(x.ket_qua).length);
-  if (coKetQua.length) {
-    noi.push(H(`${muc++}. Kết quả thực hiện của các đơn vị`));
-    for (const dv of coKetQua) {
-      noi.push(Hsub(dv.ten));
-      tachDoan(dv.ket_qua).forEach((p) => noi.push(body(p)));
-    }
-  }
-  if (d.da06 && d.da06.dong.length) {
-    noi.push(H(`${muc++}. Kết quả các chỉ tiêu Đề án 06 (theo số liệu Công an tỉnh chốt ngày ${d.da06.ngayChot})`));
-    noi.push(bangVien(['TT', 'Chỉ tiêu', 'Kết quả', 'Tỷ lệ', 'Mức giao', 'Đánh giá'],
-      d.da06.dong.map((r, i) => [String(i + 1), r.ten, r.ketQua, r.tyLe, r.mucGiao, r.danhGia]),
-      [620, 2930, 1800, 950, 950, 1821]));
-  }
-  noi.push(H(`${muc}. An ninh mạng, an toàn thông tin`));
-  noi.push(body('…'));
-
-  const muc3 = d.donVi.filter((x) => tachDoan(x.kho_khan).length);
-  noi.push(H('III. TỒN TẠI, VƯỚNG MẮC'));
-  if (muc3.length) muc3.forEach((dv) => tachDoan(dv.kho_khan).forEach((p) => noi.push(dash(`${dv.ten}: ${p}`)))); else noi.push(body('…'));
-
-  const muc4 = d.donVi.filter((x) => tachDoan(x.nhiem_vu_toi).length);
-  noi.push(H('IV. NHIỆM VỤ TRỌNG TÂM THÁNG TỚI'));
-  if (muc4.length) muc4.forEach((dv) => tachDoan(dv.nhiem_vu_toi).forEach((p) => noi.push(dash(p)))); else noi.push(body('…'));
-
-  const muc5 = d.donVi.filter((x) => tachDoan(x.de_xuat).length);
-  noi.push(H('V. ĐỀ XUẤT, KIẾN NGHỊ'));
-  if (muc5.length) muc5.forEach((dv) => tachDoan(dv.de_xuat).forEach((p) => noi.push(dash(`${dv.ten}: ${p}`)))); else noi.push(body('…'));
-
-  const noiNhan = d.noiNhan ?? ['- Công an tỉnh (qua PV01);', '- Ban Chỉ huy CAP;', '- Lưu: VT, TH.'];
-  const kyTrai = [
-    new Paragraph({ spacing: { before: 240 }, children: [run('Nơi nhận:', { size: SZ.noiNhanLabel, bold: true, italics: true })] }),
-    ...noiNhan.map((t) => new Paragraph({ children: [run(t, { size: SZ.noiNhan })] })),
-  ];
-  const kyPhai = [
-    center([run(d.nguoiKy?.chucDanh ?? 'TRƯỞNG CÔNG AN PHƯỜNG', { size: SZ.chucDanh, bold: true })], { before: 240 }),
-    ...Array.from({ length: 5 }, () => center([run('')])),
-    center([run(d.nguoiKy?.hoTen ?? '', { size: SZ.hoTen, bold: true })]),
-  ];
-
-  const tieuDe = [
-    center([run(d.tenLoai ?? 'BÁO CÁO', { bold: true })], { before: 240 }),
-    center([run(d.trichYeu, { bold: true })]),
-    ...(d.kyTu && d.kyDen ? [center([run(`(Kỳ báo cáo từ ngày ${d.kyTu} đến ngày ${d.kyDen})`, { italics: true })])] : []),
-    center([run('_______', { bold: true })]),
-  ];
-
-  return new Document({
-    creator: 'Web BCĐ 57 phường Nam Đông Hà',
-    styles: { default: { document: { run: { font: FONT, size: SZ.body } } } },
-    sections: [{
-      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, bottom: 1134, left: 1701, right: 1134 } } },
-      children: [bang2Cot(trai, phai), ...tieuDe, ...noi, bang2Cot(kyTrai, kyPhai)],
-    }],
-  });
-}
-
 export async function taiXuongDocx(doc: Document, tenFile: string) {
   const blob = await Packer.toBlob(doc);
   const a = document.createElement('a');
@@ -144,6 +54,5 @@ export async function taiXuongDocx(doc: Document, tenFile: string) {
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 
-export const taiXuongBaoCao = (d: DauVaoBaoCao, tenFile: string) => taiXuongDocx(taoVanBanBaoCao(d), tenFile);
 
 export const TRANG_A4 = { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, bottom: 1134, left: 1701, right: 1134 } } };

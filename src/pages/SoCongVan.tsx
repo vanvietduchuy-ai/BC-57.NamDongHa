@@ -8,6 +8,7 @@ import { ngay } from '../lib/dinhDang';
 import { khongDau } from '../lib/nhiemVu';
 import { LOAI_VB, type LoaiVb } from '../lib/vanBan';
 import { linkXemDrive, ThongTinVanBan, type VanBanDaNop } from '../components/VanBanPdf';
+import { moTepDrive } from '../components/TepDrive';
 import FormVanBan from '../components/FormVanBan';
 import { DangTai, HopLoi, HopThoai, lopO, Nut, O, Rong, The, TieuDeTrang, cx } from '../components/ui';
 
@@ -110,13 +111,13 @@ export default function SoCongVan() {
                   const link = d.drive_url || linkXemDrive(d.drive_file_id);
                   return (
                     <tr key={d.id} onClick={() => setChon(d)} className="cursor-pointer border-t border-[#F1EEE7] align-top hover:bg-nen-2">
-                      <td className="so px-4 py-3 text-base font-bold">{d.so_thu_tu}</td>
+                      <td className="so px-4 py-3 text-base font-bold leading-5">{d.so_thu_tu}</td>
                       <td className="so px-2 py-3">{ngay(d.ngay)}</td>
-                      <td className="px-2 py-3"><div className="so font-semibold">{d.so_ky_hieu ?? '—'}</div><div className="text-xs text-mo">{d.ngay_ban_hanh ? ngay(d.ngay_ban_hanh) : ''} · {LOAI_VB[d.loai]}</div></td>
+                      <td className="px-2 py-3"><div className="so font-semibold">{d.so_ky_hieu ?? '—'}</div><div className="whitespace-nowrap text-xs text-mo">{d.ngay_ban_hanh ? ngay(d.ngay_ban_hanh) : ''} · {LOAI_VB[d.loai]}</div></td>
                       <td className="max-w-md px-2 py-3">{d.trich_yeu}</td>
                       <td className="px-2 py-3">{(so === 'den' ? d.noi_gui : d.noi_nhan) ?? '—'}</td>
                       <td className="px-2 py-3">{d.nguoi_ky ?? '—'}</td>
-                      <td className="px-4 py-3">{link ? <a onClick={(e) => e.stopPropagation()} href={link} target="_blank" rel="noreferrer" aria-label="Mở tệp" className="inline-flex text-[#A4161A]"><ExternalLink className="h-4 w-4" /></a> : <span className="text-mo">—</span>}</td>
+                      <td className="px-4 py-3">{link && !String(d.drive_file_id ?? '').startsWith('thu-') ? <button type="button" onClick={(e) => { e.stopPropagation(); void moTepDrive('van_ban', d.van_ban_id, d.ten_tep ?? `${d.so_ky_hieu ?? 'van-ban'}.pdf`, 'xem', d.drive_url); }} aria-label="Mở tệp" className="inline-flex min-h-9 items-center text-[#A4161A]"><ExternalLink className="h-4 w-4" /></button> : <span className="text-mo">—</span>}</td>
                     </tr>
                   );
                 })}

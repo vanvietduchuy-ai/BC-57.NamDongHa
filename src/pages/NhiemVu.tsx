@@ -196,7 +196,7 @@ export default function NhiemVuTrang() {
                         {n.trang_thai_giao === 'de_xuat' && <Chip nen="bg-cam-nhat" chu="text-cam-dam">Đề xuất</Chip>}
                       </div>
                       <span className="text-[14.5px] font-semibold leading-snug text-den">{n.ten}</span>
-                      <span className="truncate text-xs text-mo">{n.chu_tri_ten ?? 'Chưa rõ đơn vị chủ trì'}{n.san_pham ? ` · ${n.san_pham}` : ''}</span>
+                      <span className="line-clamp-2 text-xs leading-snug text-mo">{n.chu_tri_ten ?? 'Chưa rõ đơn vị chủ trì'}{n.san_pham ? ` · ${n.san_pham}` : ''}</span>
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <Chip nen={tt.nen} chu={tt.chu} className="self-start">{tt.nhan}</Chip>

@@ -33,24 +33,24 @@ export default function ViecCanNop() {
       {loi && <HopLoi loi={loi} taiLai={taiLai} />}
       {dangTai && !data && <DangTai />}
       {data && tab === 'mo' && (data.mo.length === 0 ? <Rong>Không còn việc nào cần nộp.</Rong> : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="xep-hang grid grid-cols-1 gap-3 md:grid-cols-2">
           {data.mo.map((v) => (
-            <Link key={v.nop_id} to={`/viec-can-nop/${v.nop_id}`} className="flex flex-col gap-2.5 rounded-2xl border border-vien bg-white p-4 text-den hover:border-ink">
-              <div className="flex items-center gap-2"><span className={cx('text-[10.5px] font-bold tracking-wider', nhanViec(v)[1])}>{nhanViec(v)[0]}</span><span className="flex-1" /><ChipHan han={v.han_nop} /></div>
+            <Link key={v.nop_id} to={`/viec-can-nop/${v.nop_id}`} className="the-noi flex flex-col gap-2.5 rounded-2xl border border-vien bg-white p-4 text-den">
+              <div className="flex items-center gap-2"><span className={cx('min-w-0 flex-1 truncate text-[11px] font-bold tracking-wider', nhanViec(v)[1])}>{nhanViec(v)[0]}</span><ChipHan han={v.han_nop} /></div>
               <span className="text-[15px] font-bold">{v.ten}</span>
               <div className="flex items-center gap-2 text-xs text-mo">
                 <span className="flex-1">Hạn {ngayGio(v.han_nop)}</span>
                 <Chip nen={TT_NOP[v.trang_thai].nen} chu={TT_NOP[v.trang_thai].chu}>{TT_NOP[v.trang_thai].nhan}</Chip>
-                <span className="font-bold text-xanh">{v.loai === 'da06_tuan' ? 'Nhập số' : 'Nộp'} →</span>
+                <span className="font-bold text-xanh">Nộp →</span>
               </div>
             </Link>
           ))}
         </div>
       ))}
       {data && tab === 'xong' && (data.xong.length === 0 ? <Rong>Chưa có báo cáo nào đã nộp.</Rong> : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="xep-hang grid grid-cols-1 gap-3 md:grid-cols-2">
           {data.xong.map((n) => (
-            <Link key={n.id} to={`/viec-can-nop/${n.id}`} className="flex flex-col gap-1.5 rounded-2xl border border-vien bg-white p-4 text-den">
+            <Link key={n.id} to={`/viec-can-nop/${n.id}`} className="the-noi flex flex-col gap-1.5 rounded-2xl border border-vien bg-white p-4 text-den">
               <div className="flex items-center gap-2"><span className="flex-1 text-sm font-bold">{n.ky_bao_cao.ten}</span><Chip nen={TT_NOP[n.trang_thai].nen} chu={TT_NOP[n.trang_thai].chu}>{TT_NOP[n.trang_thai].nhan}</Chip></div>
               <span className="text-xs text-mo">Nộp lúc {ngayGio(n.nop_luc)}{n.nop_luc && new Date(n.nop_luc) > new Date(n.han_rieng ?? n.ky_bao_cao.han_nop) && ' · trễ hạn'}</span>
               {n.y_kien_duyet && <span className="text-xs text-mo-2">Ý kiến: {n.y_kien_duyet}</span>}

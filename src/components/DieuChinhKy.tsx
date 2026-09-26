@@ -35,7 +35,7 @@ export function SuaKy({ ky, mo, dong, xong }: { ky: KySua; mo: boolean; dong: ()
         <O nhan="Tên"><input className={lopO} value={g.ten} onChange={(e) => setG({ ...g, ten: e.target.value })} /></O>
         <div className="grid gap-3 sm:grid-cols-2">
           <O nhan="Hạn đơn vị nộp" goiY="Đổi hạn: đơn vị chưa nộp được báo"><input type="datetime-local" className={lopO} value={g.han} onChange={(e) => setG({ ...g, han: e.target.value })} /></O>
-          {ky.loai !== 'da06_tuan' && <O nhan="Gửi Công an tỉnh trước"><input type="date" className={lopO} value={g.tinh} onChange={(e) => setG({ ...g, tinh: e.target.value })} /></O>}
+          {<O nhan="Gửi Công an tỉnh trước"><input type="date" className={lopO} value={g.tinh} onChange={(e) => setG({ ...g, tinh: e.target.value })} /></O>}
         </div>
         <O nhan="Nội dung yêu cầu"><textarea className={cx(lopO, 'min-h-20 py-2')} value={g.yeu_cau} onChange={(e) => setG({ ...g, yeu_cau: e.target.value })} /></O>
         {loi && <HopLoi loi={loi} />}

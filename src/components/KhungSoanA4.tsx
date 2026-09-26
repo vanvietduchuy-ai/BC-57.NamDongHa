@@ -1,4 +1,4 @@
-// Khung soạn văn bản tự do trên trang A4 (báo cáo chung gửi PV01, hồ sơ họp BCĐ): lưu nháp, tạo lại, tải .docx
+// Khung soạn văn bản tự do trên trang A4 (báo cáo chung gửi PV01): lưu nháp, tạo lại, tải .docx
 import { useCallback, useState } from 'react';
 import { Download, RotateCcw } from 'lucide-react';
 import { loiDe } from '../lib/supabase';
@@ -24,7 +24,7 @@ export default function KhungSoanA4({ m, setM, suaDuoc, luu, taoLai, tenFile, gh
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="flex-1 text-[13px] text-mo">{ghiChu ?? (suaDuoc ? 'Sửa thẳng trên trang. Dòng bắt đầu bằng "I.", "1." tự in đậm.' : 'Chỉ xem')}{soTrang > 1 && ` · khoảng ${soTrang} trang`}</span>
+        <span className="flex-1 text-[13px] text-mo">{ghiChu ?? (suaDuoc ? 'Sửa thẳng trên trang' : 'Chỉ xem')}{soTrang > 1 && ` · khoảng ${soTrang} trang`}</span>
         {suaDuoc && taoLai && <Nut icon={<RotateCcw className="h-4 w-4" />} dangChay={dangChay === 'tao'}
           onClick={() => { if (window.confirm('Tạo lại từ dữ liệu mới nhất? Nội dung đang sửa sẽ bị thay.')) void chay('tao', async () => { await taoLai(); setDoiChua(true); }); }}>Tạo lại từ dữ liệu</Nut>}
         <Nut icon={<Download className="h-4 w-4" />} dangChay={dangChay === 'docx'}

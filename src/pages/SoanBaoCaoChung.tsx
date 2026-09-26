@@ -1,5 +1,6 @@
 // Thường trực BCĐ soạn báo cáo chung (gửi Công an tỉnh qua PV01) trên trang A4:
-// căn cứ báo cáo văn bản (PDF đã ký) của 2 đầu mối (VH-XH: NQ 57, CĐS; CSKV: ĐA06); đầu mối chưa gửi thì liệt kê báo cáo đơn vị.
+// căn cứ báo cáo văn bản (PDF đã ký) của các đầu mối lĩnh vực; đầu mối chưa gửi thì liệt kê báo cáo đơn vị.
+// Bản nháp lập từ dữ liệu mới nhất (lib/tongHop): tình hình gửi báo cáo, nội dung đọc từ PDF.
 // Ký xong: gắn bản PDF đã ký, đóng dấu -> vào sổ công văn đi, lưu Google Drive.
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -7,9 +8,8 @@ import { FileUp } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { useAuth } from '../lib/auth';
-import { ngay } from '../lib/dinhDang';
-import { dongKyTu, khoiBangDa06, LV_CDS, thangCuaKy, type KhoiA4, type MoHinhA4 } from '../lib/baoCaoA4';
-import { layBangDa06 } from '../lib/duLieuBaoCao';
+import { LV_CDS, type MoHinhA4 } from '../lib/baoCaoA4';
+import { lapBaoCaoChung, type DuLieuTH } from '../lib/tongHop';
 import { META_TRONG, soKyHieu, type MetaVb } from '../lib/docPdf';
 import { Chip, DangTai, HopLoi, HopThoai, Nut, The, TieuDeThe, TieuDeTrang } from '../components/ui';
 import KhungSoanA4 from '../components/KhungSoanA4';
@@ -42,74 +42,13 @@ async function taiNguon(kyId: string) {
     banGui: (g.data ?? null) as VanBanDaNop | null,
   };
 }
-type Nguon = Awaited<ReturnType<typeof taiNguon>>;
 const daGui = (b?: Bai) => !!b && ['da_nop', 'da_duyet'].includes(b.trang_thai);
-const trichDan = (b: Bai) => `Báo cáo số ${b.van_ban?.so_ky_hieu ?? '…'}${b.van_ban?.ngay_ban_hanh ? ` ngày ${ngay(b.van_ban.ngay_ban_hanh)}` : ''} của ${b.don_vi.ten}`;
 
-// Phần thân văn bản đọc từ PDF: bỏ phần đầu, phần ký; ghép lại thành đoạn; bỏ đề mục in hoa của văn bản gốc
-export function thanVanBan(chu?: string | null): string[] {
-  if (!chu) return [];
-  const d = chu.split('\n').map((x) => x.trim()).filter(Boolean);
-  const dau = 0;                                                                           // chữ đã là phần nội dung (web đọc sẵn khi nộp)
-  let cuoi = d.findIndex((x, i) => i > dau && /^Nơi nhận/i.test(x));
-  if (cuoi < 0) cuoi = d.length;
-  const doan: string[] = [];
-  for (const x of d.slice(dau, cuoi)) {
-    if (/^\((Từ|Kỳ)/.test(x)) continue;
-    if (/\p{L}/u.test(x) && x === x.toUpperCase() && x.length < 90) continue;            // đề mục gốc (I. KẾT QUẢ…)
-    if (/^Kính gửi/.test(x)) continue;
-    const moi = /^([IVX]+\.|\d+(\.\d+)*\.|[a-zđ]\)|[-+•])\s/.test(x) || !doan.length || /[.:;!?]$/.test(doan[doan.length - 1]);
-    if (moi) doan.push(x); else doan[doan.length - 1] += ` ${x}`;
-  }
-  return doan;
-}
-
-async function taoMoi(n: Nguon): Promise<MoHinhA4> {
-  const dmDv = (lv: (x: string) => boolean) => n.dm.find((x) => lv(x.linh_vuc))?.don_vi_id;
-  const baiCds = n.linhVuc.find((b) => b.don_vi_id === dmDv((x) => LV_CDS.includes(x)));
-  const baiDa06 = n.linhVuc.find((b) => b.don_vi_id === dmDv((x) => x === 'de_an_06'));
-  const donViNop = n.donVi.filter((b) => daGui(b) && b.van_ban);
-  const phan = (bai: Bai | undefined) => {
-    if (daGui(bai) && bai!.van_ban) { const t = thanVanBan(bai!.van_ban.noi_dung); return t.length ? t : [`(Theo ${trichDan(bai!)}: …)`]; }
-    // Đầu mối chưa gửi: lấy đoạn đầu báo cáo của từng đơn vị
-    return donViNop.length ? donViNop.map((b) => {
-      const t = thanVanBan(b.van_ban?.noi_dung).join(' ');
-      return `- ${b.don_vi.ten} (Báo cáo số ${b.van_ban?.so_ky_hieu ?? '…'}): ${t ? (t.length > 400 ? `${t.slice(0, 400)}…` : t) : '…'}`;
-    }) : ['…'];
-  };
-  const canCu = [baiCds, baiDa06].filter((b) => daGui(b) && b!.van_ban).map((b) => trichDan(b!));
-  const bang = await layBangDa06();
-  const thang = thangCuaKy({ ...n.ky, cap: 'don_vi' });
-
-  const khoi: KhoiA4[] = [{
-    loai: 'van', ma: 'phan1', nhan: 'Phần I, II', tuDo: true, noiDung: [
-      ...(canCu.length ? [`Trên cơ sở ${canCu.join('; ')}, Công an phường (Cơ quan Thường trực BCĐ 57) báo cáo như sau:`] : []),
-      'I. CÔNG TÁC LÃNH ĐẠO, CHỈ ĐẠO, TRIỂN KHAI',
-      '…',
-      'II. KẾT QUẢ THỰC HIỆN',
-      '1. Thực hiện Nghị quyết số 57-NQ/TW, khoa học công nghệ, đổi mới sáng tạo và chuyển đổi số',
-      ...phan(baiCds),
-      '2. Thực hiện Đề án 06',
-      ...phan(baiDa06),
-    ].join('\n'),
-  }];
-  if (bang?.dong.length) khoi.push(khoiBangDa06(bang));
-  khoi.push({
-    loai: 'van', ma: 'phan2', nhan: 'Phần III–V', tuDo: true, noiDung: [
-      '3. An ninh mạng, an toàn thông tin', '…',
-      'III. TỒN TẠI, HẠN CHẾ', '…',
-      'IV. NHIỆM VỤ TRỌNG TÂM THÁNG TỚI', '…',
-      'V. ĐỀ XUẤT, KIẾN NGHỊ', '…',
-    ].join('\n'),
-  });
-  return {
-    dang: false, cq: 'CÔNG AN TỈNH QUẢNG TRỊ', bh: 'CÔNG AN PHƯỜNG NAM ĐÔNG HÀ', so: '', kh: 'BC-CAP-TH', ngay: '',
-    nam: Number((n.ky.den_ngay ?? n.ky.han_nop).slice(0, 4)),
-    tenLoai: 'BÁO CÁO', trichYeu: thang ? `Kết quả thực hiện Nghị quyết số 57-NQ/TW và Đề án 06 tháng ${thang}` : n.ky.ten,
-    dongPhu: dongKyTu(n.ky.tu_ngay, n.ky.den_ngay), khoi,
-    noiNhan: '- Công an tỉnh (qua PV01);\n- Thường trực BCĐ 57 phường;\n- Ban Chỉ huy CAP;\n- Lưu: VT, TH.',
-    chucDanh: n.nguoiKy?.chuc_danh ?? 'TRƯỞNG CÔNG AN PHƯỜNG', hoTen: n.nguoiKy?.ho_ten ?? '',
-  };
+// Lập dự thảo từ dữ liệu mới nhất (cùng cách với bản hệ thống tự sinh khi quá hạn)
+async function taoMoi(kyId: string): Promise<MoHinhA4> {
+  const { data, error } = await supabase.rpc('du_lieu_tong_hop', { p_ky: kyId });
+  if (error) throw error;
+  return lapBaoCaoChung(data as DuLieuTH).m as MoHinhA4;
 }
 
 export default function SoanBaoCaoChung() {
@@ -123,7 +62,7 @@ export default function SoanBaoCaoChung() {
   useEffect(() => {
     if (!data) return;
     if (data.ky.ban_tong_hop) setM(data.ky.ban_tong_hop);
-    else void taoMoi(data).then(setM);
+    else void taoMoi(data.ky.id).then(setM);
   }, [data]);
 
   if (loi) return <HopLoi loi={loi} taiLai={taiLai} />;
@@ -131,8 +70,8 @@ export default function SoanBaoCaoChung() {
 
   const tenDv = (lv: (x: string) => boolean) => data.dm.find((x) => lv(x.linh_vuc))?.don_vi_id;
   const nguon = [
-    { ten: 'NQ 57, CĐS', b: data.linhVuc.find((b) => b.don_vi_id === tenDv((x) => LV_CDS.includes(x))) },
-    { ten: 'Đề án 06', b: data.linhVuc.find((b) => b.don_vi_id === tenDv((x) => x === 'de_an_06')) },
+    ...(data.dm.some((x) => LV_CDS.includes(x.linh_vuc)) ? [{ ten: 'NQ 57, CĐS', b: [...data.linhVuc, ...data.donVi].find((b) => b.don_vi_id === tenDv((x) => LV_CDS.includes(x))) }] : []),
+    ...(data.dm.some((x) => x.linh_vuc === 'de_an_06') ? [{ ten: 'Đề án 06', b: [...data.linhVuc, ...data.donVi].find((b) => b.don_vi_id === tenDv((x) => x === 'de_an_06')) }] : []),
   ];
 
   return (
@@ -158,7 +97,7 @@ export default function SoanBaoCaoChung() {
       </div>
       <KhungSoanA4 m={m} setM={(f) => setM((x) => (x ? f(x) : x))} suaDuoc={quanTri && !data.banGui} moi={!data.ky.ban_tong_hop}
         tenFile={`Bao cao PV01 - ${data.ky.ten}`}
-        taoLai={async () => setM(await taoMoi(await taiNguon(id!)))}
+        taoLai={async () => setM(await taoMoi(id!))}
         luu={async (x) => { const { error } = await supabase.from('ky_bao_cao').update({ ban_tong_hop: x }).eq('id', data.ky.id); if (error) throw error; }} />
       {quanTri && <GanBanKy mo={moGan} dong={() => setMoGan(false)} kyId={data.ky.id} m={m} xong={() => { setMoGan(false); void taiLai(); }} />}
     </>

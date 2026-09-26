@@ -1,14 +1,25 @@
 {
+  "id": "/",
   "name": "Hệ thống điều hành BCĐ 57 – phường Nam Đông Hà",
   "short_name": "BCĐ 57",
-  "description": "Theo dõi báo cáo, nhiệm vụ, chỉ tiêu Đề án 06",
+  "description": "Theo dõi báo cáo định kỳ, đột xuất và nhiệm vụ của Ban Chỉ đạo 57 phường Nam Đông Hà",
   "lang": "vi",
-  "start_url": "/",
+  "dir": "ltr",
+  "start_url": "/?nguon=ung-dung",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#F4F2ED",
-  "theme_color": "#A4161A",
+  "theme_color": "#5C0A0E",
+  "categories": ["productivity", "business"],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Việc cần nộp", "url": "/viec-can-nop", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Sổ công văn", "url": "/so-cong-van", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
   ]
 }

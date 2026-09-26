@@ -11,7 +11,7 @@ type Dong = {
   nop_id: string; ky_id: string; don_vi_id: string; don_vi: string; thu_tu: number; ky: string; loai: string; han: string; gia_han: boolean;
   trang_thai: string; nop_luc: string | null; nop_ngoai: boolean; dung_han: boolean | null; tre_ngay: number;
 };
-const LOAI: [string, string][] = [['thang', 'Báo cáo tháng'], ['dot_xuat', 'Đột xuất'], ['da06_tuan', 'Số ĐA06 tuần'], ['', 'Tất cả']];
+const LOAI: [string, string][] = [['thang', 'Báo cáo tháng'], ['quy', 'Quý'], ['sau_thang', '6 tháng'], ['nam', 'Năm'], ['dot_xuat', 'Đột xuất'], ['', 'Tất cả']];
 
 function trangThaiO(d: Dong, bayGio: number): { mau: string; nhan: string } {
   const quaHan = new Date(d.han).getTime() < bayGio;
@@ -20,15 +20,16 @@ function trangThaiO(d: Dong, bayGio: number): { mau: string; nhan: string } {
   return { mau: 'border-[1.5px] border-dashed border-[#9AA1AE] bg-white', nhan: 'Chưa đến hạn' };
 }
 
-export default function TheoDoiDonVi() {
+export default function TheoDoiDonVi({ chuTri }: { chuTri?: string | null }) {
   const [loai, setLoai] = useState('thang');
   const [thang, setThang] = useState(6);
   const tu = useMemo(() => { const d = new Date(); d.setMonth(d.getMonth() - thang); return d.toISOString(); }, [thang]);
   const { data, loi, dangTai, taiLai } = useDuLieu(async () => {
     let q = supabase.from('v_theo_doi_nop').select('*').gte('han', tu).order('han');
     if (loai) q = q.eq('loai', loai);
+    if (chuTri) q = q.eq('chu_tri_don_vi_id', chuTri);
     return (kq(await q) ?? []) as Dong[];
-  }, [loai, tu]);
+  }, [loai, tu, chuTri]);
 
   const bayGio = Date.now();
   const bang = useMemo(() => {

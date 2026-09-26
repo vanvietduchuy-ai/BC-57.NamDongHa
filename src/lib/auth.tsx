@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { CHE_DO_THU, datTokenThu, supabase, taiKhoanThu, tokenThu } from './supabase';
+import { goDayKhiDangXuat } from './ungDung';
 
 export type VaiTro = 'quan_tri' | 'lanh_dao' | 'don_vi';
 export type HoSo = {
@@ -103,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   const dangNhapThu = async (token: string) => { datTokenThu(token); setDangTai(true); await nap(uidTuJwt(token)); };
   const dangXuat = async () => {
+    await goDayKhiDangXuat();
     if (CHE_DO_THU) datTokenThu(null); else await supabase.auth.signOut();
     setHoSo(null); setLoi(null);
   };

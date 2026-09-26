@@ -8,6 +8,7 @@ import { ngay, ngayGio, ngayGioDu } from '../lib/dinhDang';
 import { COT_NV, LINH_VUC, NHOM_NV, thieu6Ro, TT_NV, type NhiemVu, type TrangThaiNv } from '../lib/nhiemVu';
 import { Chip, DangTai, HopLoi, lopO, Nut, O, Rong, The, TieuDeThe, TieuDeTrang, cx } from '../components/ui';
 import FormNhiemVu, { tuNhiemVu } from '../components/FormNhiemVu';
+import { NutTepDrive } from '../components/TepDrive';
 import TepDinhKem, { type Tep } from '../components/TepDinhKem';
 import { HanNv, ThanhNv } from './NhiemVu';
 
@@ -23,19 +24,15 @@ export default function NhiemVuChiTiet() {
   const { data, loi, dangTai, taiLai } = useDuLieu(async () => {
     const n = kq(await supabase.from('v_nhiem_vu').select(COT_NV).eq('id', id!).maybeSingle()) as unknown as NhiemVu | null;
     if (!n) return null;
-    const [cn, tep, dv, vb, ct, kl] = await Promise.all([
+    const [cn, tep, dv, vb] = await Promise.all([
       supabase.from('v_nhiem_vu_cap_nhat').select('id, noi_dung, phan_tram, trang_thai_moi, luc, boi_ten').eq('nhiem_vu_id', id!).order('luc', { ascending: false }),
       supabase.from('tep').select('id, drive_file_id, ten').eq('nhiem_vu_id', id!).order('tai_len_luc'),
       supabase.from('don_vi').select('id, ten'),
       n.can_cu_van_ban_id ? supabase.from('van_ban').select('id, so_ky_hieu, trich_yeu, drive_file_id').eq('id', n.can_cu_van_ban_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
-      n.chi_tieu_id ? supabase.from('da06_chi_tieu').select('ma, ten').eq('id', n.chi_tieu_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
-      n.ket_luan_id && !(hoSo?.vai_tro === 'don_vi') ? supabase.from('ket_luan').select('stt, noi_dung, phien_hop(id, ten)').eq('id', n.ket_luan_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
     ]);
     return {
       n, cn: (kq(cn) ?? []) as CapNhat[], tep: (kq(tep) ?? []) as Tep[], dv: (kq(dv) ?? []) as { id: string; ten: string }[],
       vb: vb.data as { id: string; so_ky_hieu: string | null; trich_yeu: string; drive_file_id: string | null } | null,
-      ct: ct.data as { ma: string; ten: string } | null,
-      kl: kl.data as unknown as { stt: number; noi_dung: string; phien_hop: { id: string; ten: string } } | null,
     };
   }, [id]);
 
@@ -129,8 +126,8 @@ export default function NhiemVuChiTiet() {
             <TieuDeThe>6 rõ</TieuDeThe>
             <dl className="mt-2 flex flex-col">
               {RO.map(([so_, nhan, gt]) => (
-                <div key={so_} className="grid grid-cols-[110px_1fr] gap-3 border-b border-[#F1EEE7] py-2.5 text-sm last:border-0">
-                  <dt className="text-mo"><span className="so mr-1 font-bold text-den">{so_}</span>{nhan}</dt>
+                <div key={so_} className="grid grid-cols-[136px_1fr] gap-3 border-b border-[#F1EEE7] py-2.5 text-sm last:border-0">
+                  <dt className="whitespace-nowrap text-mo"><span className="so mr-1 font-bold text-den">{so_}</span>{nhan}</dt>
                   <dd className="m-0 font-semibold">{gt}</dd>
                 </div>
               ))}
@@ -138,14 +135,11 @@ export default function NhiemVuChiTiet() {
             {n.mo_ta && <p className="mt-2 whitespace-pre-line rounded-xl bg-nen p-3 text-sm">{n.mo_ta}</p>}
           </The>
 
-          {(data.vb || data.ct || data.kl) && (
+          {data.vb && (
             <The className="flex flex-col gap-2.5 p-4 text-sm">
               <TieuDeThe>Liên kết</TieuDeThe>
-              {data.vb && <div><span className="text-mo">Căn cứ: </span>{data.vb.drive_file_id
-                ? <a className="font-semibold text-[#A4161A]" target="_blank" rel="noreferrer" href={`https://drive.google.com/file/d/${data.vb.drive_file_id}/view`}>{data.vb.so_ky_hieu ?? ''} {data.vb.trich_yeu}</a>
-                : <span className="font-semibold">{data.vb.so_ky_hieu ?? ''} {data.vb.trich_yeu}</span>}</div>}
-              {data.ct && <div><span className="text-mo">Chỉ tiêu Đề án 06: </span><Link className="font-semibold text-[#A4161A]" to={`/de-an-06/${data.ct.ma}`}>{data.ct.ten}</Link></div>}
-              {data.kl && <div><span className="text-mo">Kết luận số {data.kl.stt} — </span><Link className="font-semibold text-[#A4161A]" to={`/hop/${data.kl.phien_hop.id}`}>{data.kl.phien_hop.ten}</Link></div>}
+              <div className="flex flex-wrap items-center gap-1"><span className="text-mo">Căn cứ: </span><span className="font-semibold">{data.vb.so_ky_hieu ?? ''} {data.vb.trich_yeu}</span>
+                {data.vb.drive_file_id && <NutTepDrive loai="van_ban" id={data.vb.id} ten={`${data.vb.so_ky_hieu ?? 'van-ban'}.pdf`} nhan="Xem" />}</div>
             </The>
           )}
 
@@ -201,11 +195,11 @@ function CapNhatTienDo({ n, laChuTri, quanTri, xong, tieuDe }: { n: NhiemVu; laC
         <textarea className={cx(lopO, 'min-h-24 py-2')} value={noiDung} onChange={(e) => setNoiDung(e.target.value)} />
       </O>
       {laChuTri && (
-        <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,250px)]">
           <O nhan={`Tỷ lệ hoàn thành: ${pt}%`}>
             <input type="range" min={0} max={100} step={5} value={pt} onChange={(e) => { const v = Number(e.target.value); setPt(v); if (v === 100) setTt('hoan_thanh'); else if (tt === 'hoan_thanh') setTt('dang_thuc_hien'); }} className="h-11 accent-[#A4161A]" />
           </O>
-          <O nhan="Trạng thái"><select className={lopO} value={tt} onChange={(e) => { const v = e.target.value as TrangThaiNv; setTt(v); if (v === 'hoan_thanh') setPt(100); }}>
+          <O nhan="Trạng thái"><select className={cx(lopO, "w-full")} value={tt} onChange={(e) => { const v = e.target.value as TrangThaiNv; setTt(v); if (v === 'hoan_thanh') setPt(100); }}>
             {cacTT.map((k) => <option key={k} value={k}>{TT_NV[k].nhan}</option>)}</select></O>
         </div>
       )}
