@@ -8,7 +8,7 @@ import { kq, useDuLieu } from '../lib/useDuLieu';
 import { loiDe, supabase } from '../lib/supabase';
 import { ngayGio } from '../lib/dinhDang';
 import {
-  datMucTieu, dinhDangGt, dinhDangMucTieu, dauNam, giaTriDong, gopSoLieu, gtTheoKy, hanKy, KIEU_CT, kyLui, kyMacDinh, kyNay, LV_CT, tenKyCt, tenKyNgan, tienDo, vachMucTieu,
+  datMucTieu, dinhDangGt, dinhDangMucTieu, dauNam, giaTriDong, gopSoLieu, gtTheoKy, hanKy, ketQuaKy, KIEU_CT, TONG_HOP, type TongHop, kyLui, kyMacDinh, kyNay, LV_CT, tenKyCt, tenKyNgan, tienDo, vachMucTieu,
   type ChiTieu as Ct, type KieuChiTieu, type LvChiTieu, type SoLieu,
 } from '../lib/chiTieu';
 import { Chip, ChipHan, cx, DangTai, HopLoi, HopThoai, lopO, Nut, Rong, The, ThanhTyLe, TieuDeTrang } from '../components/ui';
@@ -46,7 +46,8 @@ export default function ChiTieu() {
       // Luỹ kế tháng 1: không so với tháng 12 năm trước
       const truoc = { gt: ct.luy_ke && ky.endsWith('-01') ? null : gtTheoKy(ct, data.sl, kyLui(ky)) };
       const lichSu = kys.map((k) => (ct.luy_ke && k < dauNam(ky) ? null : gtTheoKy(ct, data.sl, k)));
-      return { ct, nay, truoc, lichSu, dat: datMucTieu(ct, nay.gt) };
+      const kqk = ketQuaKy(ct, data.sl, ky);
+      return { ct, nay, truoc, lichSu, dat: kqk.dat, dvDat: kqk.dvDat, dvCo: kqk.dvCo };
     });
     const dvGiao = [...new Set(data.ct.flatMap((c) => c.don_vi_ids))];
     const dvXong = dvGiao.filter((d) => data.ct.filter((c) => c.don_vi_ids.includes(d)).every((c) => data.sl.some((s) => s.chi_tieu_id === c.id && s.don_vi_id === d && s.ky === ky && s.da_gui)));
@@ -147,6 +148,8 @@ export default function ChiTieu() {
                         <div className="flex items-center gap-2 text-[11.5px] text-mo">
                           <span>Mục tiêu {dinhDangMucTieu(d.ct)}</span><span>·</span>
                           <span className={cx(d.nay.soDv < d.ct.don_vi_ids.length && 'font-semibold text-cam-dam')}>{d.nay.soDv}/{d.ct.don_vi_ids.length} đơn vị</span>
+                          {d.ct.tong_hop === 'tung_don_vi' && d.dvCo > 0 && <span className={cx('font-semibold', d.dvDat < d.dvCo ? 'text-nguy' : 'text-[#166534]')}>· {d.dvDat}/{d.dvCo} đạt</span>}
+                          {d.ct.tong_hop === 'trung_binh' && <span>· trung bình</span>}
                           <span className="flex-1" />
                           <BieuDoNho gt={d.lichSu} />
                         </div>
@@ -195,7 +198,7 @@ function ChiTietCt({ ct, ky, kys, sl, dv, dong, sua }: { ct: Ct; ky: string; kys
         <div className="flex flex-col gap-1">
           <b className="text-[1rem] leading-snug">{ct.ten}</b>
           <div className="flex flex-wrap gap-1.5">
-            <Chip>{KIEU_CT[ct.kieu].ten}</Chip>{ct.luy_ke && <Chip nen="bg-vang-nhat" chu="text-cam-dam">Luỹ kế từ tháng 1</Chip>}<Chip>Mục tiêu {dinhDangMucTieu(ct)}</Chip><Chip>Hạn: ngày {ct.han_ngay} tháng sau</Chip>
+            <Chip>{KIEU_CT[ct.kieu].ten}</Chip>{ct.luy_ke && <Chip nen="bg-vang-nhat" chu="text-cam-dam">Luỹ kế từ tháng 1</Chip>}{ct.don_vi_ids.length > 1 && <Chip nen="bg-xanh-nhat" chu="text-xanh">{TONG_HOP[ct.tong_hop ?? 'tong'].ten}</Chip>}<Chip>Mục tiêu {dinhDangMucTieu(ct)}</Chip><Chip>Hạn: ngày {ct.han_ngay} tháng sau</Chip>
           </div>
           {ct.ghi_chu && <p className="m-0 text-[0.8125rem] text-mo">{ct.ghi_chu}</p>}
         </div>
@@ -247,11 +250,11 @@ function FormChiTieu({ lv, ct, dv, nhomCo, dong, xong }: { lv: LvChiTieu; ct: Ct
     ma: ct?.ma ?? '', ten: ct?.ten ?? '', nhom: ct?.nhom ?? nhomCo[0] ?? '', kieu: (ct?.kieu ?? 'ty_le') as KieuChiTieu,
     don_vi_tinh: ct?.don_vi_tinh ?? '', nhan_tu: ct?.nhan_tu ?? '', nhan_mau: ct?.nhan_mau ?? '',
     muc_tieu: ct?.muc_tieu != null ? String(ct.muc_tieu) : '', chieu: ct?.chieu ?? 'cao_hon_tot', han_ngay: String(ct?.han_ngay ?? 5),
-    ghi_chu: ct?.ghi_chu ?? '', don_vi_ids: ct?.don_vi_ids ?? [] as string[], luy_ke: ct?.luy_ke ?? false,
+    ghi_chu: ct?.ghi_chu ?? '', don_vi_ids: ct?.don_vi_ids ?? [] as string[], luy_ke: ct?.luy_ke ?? false, tong_hop: (ct?.tong_hop ?? 'tong') as TongHop,
   });
   const [dang, setDang] = useState(false); const [loi, setLoi] = useState<string | null>(null);
-  const dsDv = dv.filter((d) => !['co_quan_thuong_truc', 'lanh_dao_bcd'].includes(d.loai));
-  const nhomDv: [string, Dv[]][] = [['Công an phường', dsDv.filter((d) => d.loai === 'cong_an')], ['Trường học', dsDv.filter((d) => d.loai === 'truong_hoc')], ['Phòng, ban, đoàn thể', dsDv.filter((d) => !['cong_an', 'truong_hoc'].includes(d.loai))]];
+  const dsDv = dv.filter((d) => d.loai !== 'lanh_dao_bcd');
+  const nhomDv: [string, Dv[]][] = [['Công an phường', dsDv.filter((d) => ['cong_an', 'co_quan_thuong_truc'].includes(d.loai))], ['Trường học', dsDv.filter((d) => d.loai === 'truong_hoc')], ['Phòng, ban, đoàn thể', dsDv.filter((d) => !['cong_an', 'co_quan_thuong_truc', 'truong_hoc'].includes(d.loai))]];
   const bat = (id: string) => setF({ ...f, don_vi_ids: f.don_vi_ids.includes(id) ? f.don_vi_ids.filter((x) => x !== id) : [...f.don_vi_ids, id] });
   const luu = async () => {
     setLoi(null);
@@ -260,7 +263,7 @@ function FormChiTieu({ lv, ct, dv, nhomCo, dong, xong }: { lv: LvChiTieu; ct: Ct
     setDang(true);
     const ban = { linh_vuc: lv, ma: f.ma.trim().toUpperCase(), ten: f.ten.trim(), nhom: f.nhom.trim(), kieu: f.kieu, don_vi_tinh: f.don_vi_tinh || null,
       nhan_tu: f.nhan_tu || null, nhan_mau: f.nhan_mau || null, muc_tieu: f.muc_tieu === '' ? null : Number(f.muc_tieu.replace(',', '.')), chieu: f.chieu,
-      han_ngay: Number(f.han_ngay) || 5, ghi_chu: f.ghi_chu || null, don_vi_ids: f.don_vi_ids, luy_ke: f.kieu !== 'co_khong' && f.luy_ke };
+      han_ngay: Number(f.han_ngay) || 5, ghi_chu: f.ghi_chu || null, don_vi_ids: f.don_vi_ids, luy_ke: f.kieu !== 'co_khong' && f.luy_ke, tong_hop: f.tong_hop };
     const { error } = ct ? await supabase.from('chi_tieu').update(ban).eq('id', ct.id) : await supabase.from('chi_tieu').insert(ban);
     setDang(false);
     if (error) setLoi(loiDe(error)); else xong();
@@ -314,7 +317,15 @@ function FormChiTieu({ lv, ct, dv, nhomCo, dong, xong }: { lv: LvChiTieu; ct: Ct
           )}
         </Muc>
 
-        <Muc so={3} ten="Mục tiêu và hạn cập nhật">
+        <Muc so={3} ten="Kết quả chung của các đơn vị">
+          <div className="grid grid-cols-3 gap-1 rounded-xl bg-nen-3 p-1">
+            {(Object.keys(TONG_HOP) as TongHop[]).map((k) => <button key={k} type="button" aria-pressed={f.tong_hop === k} onClick={() => setF({ ...f, tong_hop: k })}
+              className={cx('min-h-10 rounded-lg px-1 text-[0.75rem] font-semibold leading-tight transition', f.tong_hop === k ? 'bg-white text-den shadow-sm' : 'text-mo')}>{TONG_HOP[k].ten}</button>)}
+          </div>
+          <span className="text-[11.5px] leading-snug text-mo">{f.kieu === 'co_khong' && f.tong_hop !== 'tung_don_vi' ? 'Tỷ lệ % đơn vị đã có.' : TONG_HOP[f.tong_hop].mo}</span>
+        </Muc>
+
+        <Muc so={4} ten="Mục tiêu và hạn cập nhật">
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-2.5">
             <NhanO nhan="Mục tiêu">
               <div className="relative">
@@ -341,7 +352,7 @@ function FormChiTieu({ lv, ct, dv, nhomCo, dong, xong }: { lv: LvChiTieu; ct: Ct
           )}
         </Muc>
 
-        <Muc so={4} ten="Đơn vị cập nhật số liệu" phai={<span className={cx('so rounded-full px-2 py-0.5 text-[11.5px] font-bold', f.don_vi_ids.length ? 'bg-do text-white' : 'bg-nen-3 text-mo')}>{f.don_vi_ids.length} đơn vị</span>}>
+        <Muc so={5} ten="Đơn vị cập nhật số liệu" phai={<span className={cx('so rounded-full px-2 py-0.5 text-[11.5px] font-bold', f.don_vi_ids.length ? 'bg-do text-white' : 'bg-nen-3 text-mo')}>{f.don_vi_ids.length} đơn vị</span>}>
           {nhomDv.filter(([, ds]) => ds.length).map(([ten, ds]) => {
             const n = ds.filter((d) => f.don_vi_ids.includes(d.id)).length;
             return (
@@ -361,7 +372,7 @@ function FormChiTieu({ lv, ct, dv, nhomCo, dong, xong }: { lv: LvChiTieu; ct: Ct
           })}
         </Muc>
 
-        <Muc so={5} ten="Hướng dẫn cách tính" phai={<span className="text-[11.5px] text-mo">không bắt buộc</span>}>
+        <Muc so={6} ten="Hướng dẫn cách tính" phai={<span className="text-[11.5px] text-mo">không bắt buộc</span>}>
           <textarea rows={2} className={cx(lopO, 'w-full py-2 leading-snug')} placeholder="Đơn vị xem khi nhập số, VD: lấy số liệu trên hệ thống ngày cuối tháng" value={f.ghi_chu} onChange={(e) => setF({ ...f, ghi_chu: e.target.value })} />
         </Muc>
 

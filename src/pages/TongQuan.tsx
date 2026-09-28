@@ -7,7 +7,7 @@ import { ArrowRight, Bell, Inbox, Plus, Search, Send, SendHorizontal, Target } f
 import { supabase } from '../lib/supabase';
 import { kq, useBayGio, useDuLieu } from '../lib/useDuLieu';
 import { useAuth, laQuanTri, quyenCt, type HoSo } from '../lib/auth';
-import { datMucTieu, dauNam, dinhDangGt, dinhDangMucTieu, gtTheoKy, hanKy, kyMacDinh, LV_CT, tenKyCt, type ChiTieu, type LvChiTieu, type SoLieu } from '../lib/chiTieu';
+import { dauNam, dinhDangGt, dinhDangMucTieu, ketQuaKy, hanKy, kyMacDinh, LV_CT, tenKyCt, type ChiTieu, type LvChiTieu, type SoLieu } from '../lib/chiTieu';
 import { conLaiNgan, hai, mucGap, ngay, ngayGio, ngayGioDu, tenNgan, thuNgay } from '../lib/dinhDang';
 import { type NhiemVu } from '../lib/nhiemVu';
 import { HopNhac, type DonViNhac } from '../components/HopNhac';
@@ -374,7 +374,7 @@ type DuLieuCt = NonNullable<Awaited<ReturnType<typeof taiChiTieu>>>;
 function TheChiTieu({ d }: { d: DuLieuCt }) {
   const lv = d.dsLv.map((l) => {
     const ds = d.ct.filter((c) => c.linh_vuc === l);
-    const kq_ = ds.map((c) => { const gt = gtTheoKy(c, d.sl, d.ky); return { c, gt, dat: datMucTieu(c, gt) }; });
+    const kq_ = ds.map((c) => { const k = ketQuaKy(c, d.sl, d.ky); return { c, gt: k.gt, dat: k.dat }; });
     const dvGiao = [...new Set(ds.flatMap((c) => c.don_vi_ids))];
     const dvXong = dvGiao.filter((u) => ds.filter((c) => c.don_vi_ids.includes(u)).every((c) => d.sl.some((s) => s.chi_tieu_id === c.id && s.don_vi_id === u && s.ky === d.ky && s.da_gui)));
     const han = ds.length ? hanKy(d.ky, Math.min(...ds.map((c) => c.han_ngay))) : null;
