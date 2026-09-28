@@ -17,6 +17,7 @@ const NhiemVuChiTiet = lazy(() => import('./pages/NhiemVuChiTiet'));
 const KhoVanBan = lazy(() => import('./pages/KhoVanBan'));
 const SoanBaoCaoChung = lazy(() => import('./pages/SoanBaoCaoChung'));
 const SoCongVan = lazy(() => import('./pages/SoCongVan'));
+const VanBanDenDi = lazy(() => import('./pages/VanBanDenDi'));
 const CaiDatTrang = lazy(() => import('./pages/QuanTri').then((m) => ({ default: m.CaiDatTrang })));
 
 function Chan({ cho, hoac = false, children }: { cho: VaiTro[]; hoac?: boolean; children: ReactNode }) {
@@ -45,6 +46,7 @@ function CacTrang() {
           <Route path="nhiem-vu/:id" element={<NhiemVuChiTiet />} />
           <Route path="kho-van-ban" element={<KhoVanBan />} />
           <Route path="so-cong-van" element={<SoCongVan />} />
+          <Route path="van-ban" element={<Chan cho={['admin', 'quan_tri', 'don_vi']}><VanBanDenDi /></Chan>} />
           <Route path="quan-tri" element={<Chan cho={['admin']}><QuanTri /></Chan>} />
           <Route path="cai-dat" element={<Chan cho={['admin', 'quan_tri']}><CaiDatTrang /></Chan>} />
           <Route path="*" element={<Navigate to="/" replace />} />
