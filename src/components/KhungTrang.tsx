@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Archive, Bell, BookOpen, ChevronDown, ChevronUp, Radar, CheckSquare, FileText, Send, Home, LayoutGrid, LogOut, Menu, ShieldCheck, SlidersHorizontal,
+  Archive, Bell, BookOpen, ChevronDown, ChevronUp, Radar, CheckSquare, FileText, Send, Home, LayoutGrid, LogOut, Menu, ShieldCheck, SlidersHorizontal, Mail,
 } from 'lucide-react';
 import { laDauMoi, TEN_VAI_TRO, useAuth, type HoSo, type VaiTro } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -21,6 +21,7 @@ function menu(h: HoSo): Muc[] {
     ...(laDauMoi(h) ? [{ den: '/theo-doi', ten: 'Theo dõi đơn vị', icon: i(Radar) }, { den: '/ky-bao-cao', ten: 'Giao báo cáo', icon: i(Send) }] : []),
     { den: '/viec-can-nop', ten: 'Việc cần nộp', icon: i(FileText) },
     { den: '/nhiem-vu', ten: 'Nhiệm vụ', icon: i(CheckSquare) },
+    { den: '/van-ban', ten: 'Văn bản đến – đi', ngan: 'Văn bản', icon: i(Mail) },
     { den: '/kho-van-ban', ten: 'Văn bản', icon: i(Archive) },
   ];
   const chung: Muc[] = [
@@ -35,12 +36,14 @@ function menu(h: HoSo): Muc[] {
   if (vt === 'quan_tri') return [
     ...chung,
     { den: '/viec-can-nop', ten: 'Việc cần nộp', icon: i(Send), nhom: 'ĐIỀU HÀNH' },
+    { den: '/van-ban', ten: 'Văn bản đến – đi', icon: i(Mail), nhom: 'ĐIỀU HÀNH' },
     { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ' },
     { den: '/so-cong-van', ten: 'Sổ công văn', icon: i(BookOpen), nhom: 'LƯU TRỮ' },
     { den: '/cai-dat', ten: 'Cài đặt', icon: i(SlidersHorizontal), nhom: 'LƯU TRỮ' },
   ];
   return [
     ...chung,
+    { den: '/van-ban', ten: 'Văn bản đến – đi', icon: i(Mail), nhom: 'ĐIỀU HÀNH' },
     { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ & HỆ THỐNG' },
     { den: '/so-cong-van', ten: 'Sổ công văn', icon: i(BookOpen), nhom: 'LƯU TRỮ & HỆ THỐNG' },
     { den: '/quan-tri', ten: 'Quản trị hệ thống', icon: i(ShieldCheck), nhom: 'LƯU TRỮ & HỆ THỐNG' },
