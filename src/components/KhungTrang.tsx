@@ -39,6 +39,7 @@ function menu(h: HoSo): Muc[] {
   if (vt === 'quan_tri') return [
     ...chung,
     { den: '/viec-can-nop', ten: 'Việc cần nộp', icon: i(Send), nhom: 'ĐIỀU HÀNH' },
+    { den: '/so-lieu', ten: 'Cập nhật số liệu', icon: i(BarChart3), nhom: 'ĐIỀU HÀNH' },
     { den: '/van-ban', ten: 'Văn bản đến – đi', icon: i(Mail), nhom: 'ĐIỀU HÀNH' },
     { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ' },
     { den: '/so-cong-van', ten: 'Sổ công văn', icon: i(BookOpen), nhom: 'LƯU TRỮ' },
