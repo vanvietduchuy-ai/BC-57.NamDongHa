@@ -50,7 +50,7 @@ function CacTrang() {
           <Route path="so-cong-van" element={<SoCongVan />} />
           <Route path="van-ban" element={<Chan cho={['admin', 'quan_tri', 'don_vi']}><VanBanDenDi /></Chan>} />
           <Route path="chi-tieu" element={<Chan cho={cqtt} hoac={coQuanLyCt(hoSo)}><ChiTieu /></Chan>} />
-          <Route path="so-lieu" element={<Chan cho={['don_vi']}><SoLieu /></Chan>} />
+          <Route path="so-lieu" element={<Chan cho={['don_vi', 'quan_tri', 'admin']}><SoLieu /></Chan>} />
           <Route path="quan-tri" element={<Chan cho={['admin']}><QuanTri /></Chan>} />
           <Route path="cai-dat" element={<Chan cho={['admin', 'quan_tri']}><CaiDatTrang /></Chan>} />
           <Route path="*" element={<Navigate to="/" replace />} />
