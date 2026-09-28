@@ -18,6 +18,8 @@ const KhoVanBan = lazy(() => import('./pages/KhoVanBan'));
 const SoanBaoCaoChung = lazy(() => import('./pages/SoanBaoCaoChung'));
 const SoCongVan = lazy(() => import('./pages/SoCongVan'));
 const VanBanDenDi = lazy(() => import('./pages/VanBanDenDi'));
+const ChiTieu = lazy(() => import('./pages/ChiTieu'));
+const SoLieu = lazy(() => import('./pages/SoLieu'));
 const CaiDatTrang = lazy(() => import('./pages/QuanTri').then((m) => ({ default: m.CaiDatTrang })));
 
 function Chan({ cho, hoac = false, children }: { cho: VaiTro[]; hoac?: boolean; children: ReactNode }) {
@@ -29,7 +31,7 @@ function Chan({ cho, hoac = false, children }: { cho: VaiTro[]; hoac?: boolean; 
 function CacTrang() {
   const { hoSo, dangTai, khoiPhuc } = useAuth();
   if (dangTai) return <DangTai chu="Đang kiểm tra đăng nhập…" />;
-  if (!hoSo || khoiPhuc) return <DangNhap />;
+  if (!hoSo || khoiPhuc || hoSo.doi_mat_khau) return <DangNhap />;
   const cqtt: VaiTro[] = ['admin', 'quan_tri', 'lanh_dao'];
   return (
     <Suspense fallback={<DangTai />}>
@@ -47,6 +49,8 @@ function CacTrang() {
           <Route path="kho-van-ban" element={<KhoVanBan />} />
           <Route path="so-cong-van" element={<SoCongVan />} />
           <Route path="van-ban" element={<Chan cho={['admin', 'quan_tri', 'don_vi']}><VanBanDenDi /></Chan>} />
+          <Route path="chi-tieu" element={<Chan cho={cqtt} hoac={laDauMoi(hoSo)}><ChiTieu /></Chan>} />
+          <Route path="so-lieu" element={<Chan cho={['don_vi']}><SoLieu /></Chan>} />
           <Route path="quan-tri" element={<Chan cho={['admin']}><QuanTri /></Chan>} />
           <Route path="cai-dat" element={<Chan cho={['admin', 'quan_tri']}><CaiDatTrang /></Chan>} />
           <Route path="*" element={<Navigate to="/" replace />} />
