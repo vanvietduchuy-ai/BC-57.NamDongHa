@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Archive, Bell, BookOpen, ChevronDown, ChevronUp, Radar, CheckSquare, FileText, Send, Home, LayoutGrid, LogOut, Menu, ShieldCheck, SlidersHorizontal,
@@ -115,6 +115,9 @@ export function Chuong({ moSangPhai = false, toi = false }: { moSangPhai?: boole
 export default function KhungTrang() {
   const { hoSo, dangXuat } = useAuth();
   const location = useLocation();
+  const vungCuon = useRef<HTMLDivElement>(null);
+  // Sang trang khác: về đầu trang (điện thoại cuộn trong khung riêng)
+  useEffect(() => { vungCuon.current?.scrollTo(0, 0); }, [location.pathname]);
   const [moThem, setMoThem] = useState(false);
   const [moLienHe, setMoLienHe] = useState(false);
   const nav = useNavigate();
@@ -159,7 +162,8 @@ export default function KhungTrang() {
   const them = ds.length > 4 ? ds.slice(3) : [];
 
   return (
-    <div className="flex min-h-screen">
+    // Điện thoại: khung cố định cao đúng màn hình (thanh trên – vùng cuộn – thanh dưới), thanh dưới không trôi khi cuộn trên iPhone
+    <div className="flex min-h-screen max-lg:h-[100dvh] max-lg:min-h-0 max-lg:overflow-hidden">
       <nav aria-label="Điều hướng chính" className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-7 overflow-y-auto bg-gradient-to-b from-[#7C1419] via-ink to-ink-3 px-4 py-6 text-[#FFF4DA] lg:flex">
         <div className="flex items-center justify-between gap-2 px-2"><Logo />{location.pathname !== '/' && <Chuong moSangPhai toi />}</div>
         {nhom.map((n) => (
@@ -179,8 +183,8 @@ export default function KhungTrang() {
         </button>
       </nav>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-0 z-30 flex items-center gap-2.5 border-b border-vien bg-nen/95 px-3.5 pb-2 pt-[max(8px,env(safe-area-inset-top))] backdrop-blur lg:hidden">
+      <div className="flex min-w-0 flex-1 flex-col max-lg:min-h-0">
+        <div className="sticky top-0 z-30 shrink-0 flex items-center gap-2.5 border-b border-vien bg-nen/95 px-3.5 pb-2 pt-[max(8px,env(safe-area-inset-top))] backdrop-blur lg:hidden">
           <LogoBcd className="h-9 w-9" />
           <button onClick={() => setMoLienHe(true)} aria-label="Tài khoản" className="flex min-w-0 flex-1 items-center gap-1 text-left">
             <span className="flex min-w-0 flex-col">
@@ -191,12 +195,13 @@ export default function KhungTrang() {
           </button>
           <Chuong />
         </div>
-        <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-4 px-3.5 pb-[calc(84px+env(safe-area-inset-bottom))] pt-3.5 sm:gap-5 sm:px-4 sm:pt-5 lg:px-8 lg:pb-10 lg:pt-6">
+        <div ref={vungCuon} className="flex flex-1 flex-col max-lg:min-h-0 max-lg:overflow-y-auto max-lg:overscroll-y-contain">
+        <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-4 px-3.5 pb-6 pt-3.5 sm:gap-5 sm:px-4 sm:pt-5 lg:px-8 lg:pb-10 lg:pt-6">
           <div key={location.pathname} className="hien-trang flex flex-col gap-3.5 sm:gap-5"><Outlet /></div>
         </main>
-      </div>
+        </div>
 
-      <nav aria-label="Thanh điều hướng" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-vien bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur [transform:translateZ(0)] lg:hidden">
+      <nav aria-label="Thanh điều hướng" className="relative z-30 grid shrink-0 grid-cols-4 border-t border-vien bg-white px-1 pb-[env(safe-area-inset-bottom)] lg:hidden">
         {chinh.map((m) => <Link key={m.den} m={m} gon />)}
         {them.length > 0 && (
           <button onClick={() => setMoThem(true)} className={cx('flex h-14 flex-col items-center justify-center gap-0.5 text-[10.5px]', them.some((m) => m.den !== '/' && location.pathname.startsWith(m.den)) ? 'font-semibold text-do' : 'text-mo')}>
@@ -204,6 +209,7 @@ export default function KhungTrang() {
           </button>
         )}
       </nav>
+      </div>
       {location.pathname === '/' && <GoiYUngDung moLienHe={() => setMoLienHe(true)} />}
       <HopLienHe mo={moLienHe} dong={() => setMoLienHe(false)} nguoiDungId={hoSo.id} ten={hoSo.ho_ten} xong={() => window.dispatchEvent(new Event('bcd57-lien-he'))}
         dau={
@@ -219,7 +225,7 @@ export default function KhungTrang() {
         cuoi={<Nut kieu="nguy" className="w-full" icon={<LogOut className="h-4 w-4" />} onClick={() => { setMoLienHe(false); void dangXuat(); }}>Đăng xuất</Nut>} />
       {moThem && (
         <div className="mo-dan fixed inset-0 z-40 bg-ink/40 lg:hidden" onClick={() => setMoThem(false)}>
-          <div role="dialog" aria-label="Mục khác" className="truot-len absolute inset-x-0 bottom-0 flex flex-col gap-1 rounded-t-3xl bg-white p-4 pb-[calc(76px+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
+          <div role="dialog" aria-label="Mục khác" className="truot-len absolute inset-x-0 bottom-0 flex flex-col gap-1 rounded-t-3xl bg-white p-4 pb-[calc(16px+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
             {them.map((m) => (
               <NavLink key={m.den} to={m.den} onClick={() => setMoThem(false)}
                 className={({ isActive }) => cx('flex min-h-12 items-center gap-3 rounded-xl px-3 text-[0.9375rem]', isActive ? 'bg-nen font-bold' : '')}>
