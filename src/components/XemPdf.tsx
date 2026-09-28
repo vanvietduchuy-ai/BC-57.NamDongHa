@@ -1,6 +1,7 @@
 // Xem trước PDF đủ mọi trang (vẽ bằng pdf.js) — iPhone/iPad trong khung iframe chỉ hiện trang đầu
 import { useEffect, useRef, useState } from 'react';
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Loader2, Maximize2, X } from 'lucide-react';
 import { cx } from './ui';
 
 type Pdf = { numPages: number; getPage: (n: number) => Promise<PdfTrang>; destroy: () => Promise<void> };
@@ -22,7 +23,16 @@ export default function XemPdf({ url, cao = 'h-[480px] lg:h-[560px]', className 
   const [pdf, setPdf] = useState<Pdf | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [trang, setTrang] = useState(1);
+  const [toan, setToan] = useState(false);                        // xem toàn màn hình ngay trong trang (không mở tab mới → không mất tệp đang chọn)
   const khung = useRef<HTMLDivElement>(null);
+  const khungToan = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!toan) return;
+    const f = (e: KeyboardEvent) => { if (e.key === 'Escape') setToan(false); };
+    window.addEventListener('keydown', f);
+    const cu = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', f); document.body.style.overflow = cu; };
+  }, [toan]);
 
   useEffect(() => {
     let huy = false; let p: Pdf | null = null;
@@ -34,7 +44,7 @@ export default function XemPdf({ url, cao = 'h-[480px] lg:h-[560px]', className 
 
   // Trang đang xem (theo vị trí cuộn)
   const theoCuon = () => {
-    const k = khung.current; if (!k) return;
+    const k = toan ? khungToan.current : khung.current; if (!k) return;
     const ds = [...k.querySelectorAll<HTMLElement>('[data-trang]')];
     const giua = k.scrollTop + k.clientHeight / 3;
     const hien = ds.filter((d) => d.offsetTop <= giua).pop();
@@ -46,15 +56,26 @@ export default function XemPdf({ url, cao = 'h-[480px] lg:h-[560px]', className 
       <div ref={khung} onScroll={theoCuon} className={cx('flex flex-col items-center gap-3 overflow-y-auto overscroll-contain p-2 sm:p-3', cao)}>
         {loi ? <div className="m-auto p-4 text-center text-[0.8125rem] text-mo">Không hiển thị được văn bản ({loi}).</div>
           : !pdf ? <div className="m-auto flex items-center gap-2 text-[0.8125rem] text-mo"><Loader2 className="h-4 w-4 animate-spin" />Đang mở văn bản…</div>
+          : toan ? <div className="m-auto text-[0.8125rem] text-mo">Đang xem toàn màn hình…</div>
           : Array.from({ length: pdf.numPages }, (_, i) => <TrangPdf key={i} pdf={pdf} so={i + 1} khung={khung} />)}
       </div>
       {pdf && (
         <div className="flex items-center gap-2 border-t border-vien bg-white px-3 py-1.5 text-[0.75rem] text-mo">
           <span className="mono font-semibold text-den">Trang {trang}/{pdf.numPages}</span>
           <span className="flex-1">{pdf.numPages > 1 ? '· cuộn để xem các trang' : ''}</span>
-          <a href={url} target="_blank" rel="noreferrer" className="inline-flex min-h-8 items-center gap-1 font-semibold text-[#8E1B22]"><ExternalLink className="h-3.5 w-3.5" />Mở toàn màn hình</a>
+          <button type="button" onClick={() => setToan(true)} className="inline-flex min-h-8 items-center gap-1 font-semibold text-[#8E1B22]"><Maximize2 className="h-3.5 w-3.5" />Toàn màn hình</button>
         </div>
       )}
+      {toan && pdf && createPortal(
+        <div role="dialog" aria-modal="true" aria-label="Xem văn bản toàn màn hình" className="fixed inset-0 z-[80] flex flex-col bg-[#2B2626]">
+          <div className="flex shrink-0 items-center gap-3 px-3 pb-2 pt-[calc(8px+env(safe-area-inset-top))] text-white">
+            <span className="mono flex-1 text-[0.875rem] font-semibold">Trang {trang}/{pdf.numPages}</span>
+            <button type="button" onClick={() => setToan(false)} aria-label="Đóng" className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-white/15 px-3 text-[0.875rem] font-semibold"><X className="h-4 w-4" />Đóng</button>
+          </div>
+          <div ref={khungToan} onScroll={theoCuon} className="flex min-h-0 flex-1 flex-col items-center gap-3 overflow-y-auto overscroll-contain px-2 pb-[calc(16px+env(safe-area-inset-bottom))]">
+            {Array.from({ length: pdf.numPages }, (_, i) => <TrangPdf key={i} pdf={pdf} so={i + 1} khung={khungToan} />)}
+          </div>
+        </div>, document.body)}
     </div>
   );
 }

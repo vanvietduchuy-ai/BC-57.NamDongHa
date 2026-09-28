@@ -1,6 +1,7 @@
 // Minh chứng nhiệm vụ bằng văn bản PDF: web tự đọc số, ký hiệu, ngày ban hành, trích yếu, người ký
 // -> lưu vào kho văn bản, gắn với nhiệm vụ, tự vào sổ văn bản (đi / đến)
 import { useState } from 'react';
+import { xoaTepNhap } from '../lib/nhapTam';
 import { BookCheck, FileText, FileUp, Trash2 } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -46,6 +47,7 @@ export default function MinhChungVanBan({ nhiemVuId, ds, suaDuoc, xoaDuoc, xong 
       if (error) throw error;
       const kq = data as KetQua;
       setTb(`Đã lưu minh chứng${kq.so.length ? ` · vào ${kq.so.map((s) => `${s.loai_so === 'di' ? 'sổ đi' : 'sổ đến'} số ${s.so_thu_tu}${s.don_vi !== hoSo?.don_vi?.ten ? ` (${s.don_vi})` : ''}`).join(', ')}` : ''}.`);
+      void xoaTepNhap(`mc:${nhiemVuId}`);
       setMo(false); xong();
     } catch (e) { setLoi(loiDe(e)); } finally { setDangChay(false); }
   };
@@ -84,7 +86,7 @@ export default function MinhChungVanBan({ nhiemVuId, ds, suaDuoc, xoaDuoc, xong 
       )}
       <HopThoai mo={mo} dong={() => setMo(false)} tieuDe="Minh chứng: văn bản PDF" rong="max-w-4xl">
         <div className="flex flex-col gap-4">
-          <OVanBanPdf meta={meta} doiMeta={setMeta} tep={tep} chonTep={(f, m) => { setTep(f); setMeta({ ...m, loai: m.loai || 'khac' }); }} hienCoQuan tieuDe="Chọn văn bản PDF đã ký, đóng dấu" />
+          <OVanBanPdf meta={meta} doiMeta={setMeta} tep={tep} chonTep={(f, m) => { setTep(f); setMeta({ ...m, loai: m.loai || 'khac' }); }} hienCoQuan tieuDe="Chọn văn bản PDF đã ký, đóng dấu" khoaNhap={`mc:${nhiemVuId}`} />
           {tep && <p className="m-0 rounded-xl bg-nen-3 px-3 py-2 text-[0.8125rem] text-mo-2">
             Văn bản của đơn vị mình → vào <b>sổ đi</b>{hoSo?.vai_tro === 'don_vi' ? <> và <b>sổ đến</b> của Cơ quan Thường trực</> : ''}; văn bản của cơ quan khác → vào <b>sổ đến</b>. Không lưu văn bản mật.
           </p>}

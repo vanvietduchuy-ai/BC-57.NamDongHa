@@ -7,6 +7,7 @@ import { LOAI_VB, type LoaiVb } from '../lib/vanBan';
 import { ngay } from '../lib/dinhDang';
 import { HopLoi, lopO, O, cx } from './ui';
 import { NutTepDrive, useXemTruocDrive } from './TepDrive';
+import { docTepNhap, luuMetaNhap, luuTepNhap, xoaTepNhap } from '../lib/nhapTam';
 import XemPdf from './XemPdf';
 
 export type VanBanDaNop = {
@@ -44,20 +45,34 @@ export function kiemTraMeta(m: MetaVb, batBuoc = true): string | null {
 }
 
 // ---------- Ô chọn PDF + thông tin văn bản ----------
-export default function OVanBanPdf({ meta, doiMeta, tep, chonTep, driveId, hienCoQuan = false, tieuDe = 'Văn bản đã ký, đóng dấu (PDF)' }: {
+// khoaNhap: giữ tạm tệp + thông tin trên máy (IndexedDB) để khôi phục khi trang bị tải lại; xoá khi tep về null sau khi lưu
+export default function OVanBanPdf({ meta, doiMeta: doiMeta_, tep, chonTep: chonTep_, driveId, hienCoQuan = false, tieuDe = 'Văn bản đã ký, đóng dấu (PDF)', khoaNhap }: {
   meta: MetaVb; doiMeta: (m: MetaVb) => void;
   tep: File | null; chonTep: (f: File, m: MetaVb) => void;
-  driveId?: string | null; hienCoQuan?: boolean; tieuDe?: string;
+  driveId?: string | null; hienCoQuan?: boolean; tieuDe?: string; khoaNhap?: string;
 }) {
   const [dangDoc, setDangDoc] = useState<string | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [blob, setBlob] = useState<string | null>(null);
+  const [khoiPhuc, setKhoiPhuc] = useState(false);
   const oTep = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!tep) { setBlob(null); return; }
     const u = URL.createObjectURL(tep); setBlob(u);
     return () => URL.revokeObjectURL(u);
   }, [tep]);
+  // Khôi phục tệp đang nhập dở (trang bị tải lại)
+  useEffect(() => {
+    if (!khoaNhap || tep) return;
+    let huy = false;
+    void docTepNhap(khoaNhap).then((b) => { if (b && !huy) { chonTep_(b.tep, b.meta); setKhoiPhuc(true); } });
+    return () => { huy = true; };
+  }, [khoaNhap]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Lưu / gửi xong (tep về null) thì xoá bản tạm
+  const tepTruoc = useRef<File | null>(null);
+  useEffect(() => { if (khoaNhap && tepTruoc.current && !tep) void xoaTepNhap(khoaNhap); tepTruoc.current = tep; }, [tep, khoaNhap]);
+  const chonTep = (f: File, m: MetaVb) => { chonTep_(f, m); setKhoiPhuc(false); if (khoaNhap) void luuTepNhap(khoaNhap, f, m); };
+  const doiMeta = (m: MetaVb) => { doiMeta_(m); if (khoaNhap && tep) void luuMetaNhap(khoaNhap, m); };
 
   const doc = async (f: File) => {
     setLoi(null);
@@ -110,6 +125,7 @@ export default function OVanBanPdf({ meta, doiMeta, tep, chonTep, driveId, hienC
       </div>
       <div className="flex min-w-0 flex-col gap-3">
         {dangDoc && <div className="rounded-xl bg-xanh-nhat px-3 py-2 text-[0.8125rem] text-xanh">{dangDoc}</div>}
+        {khoiPhuc && <div className="rounded-xl bg-[#FEF9E7] px-3 py-2 text-[0.8125rem] font-semibold text-cam-dam">Đã khôi phục tệp và thông tin đang nhập dở. Kiểm tra rồi lưu / gửi.</div>}
         {meta.mat && <div className="flex items-center gap-2 rounded-xl bg-nguy-nhat px-3 py-2 text-[0.8125rem] font-semibold text-nguy"><ShieldAlert className="h-4 w-4" />Văn bản có độ mật — không nộp lên hệ thống.</div>}
         {tep && !dangDoc && (
           <div className="flex items-center gap-2 rounded-xl bg-nen-3 px-3 py-2 text-[0.7812rem] text-mo-2">
