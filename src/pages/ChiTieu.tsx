@@ -81,7 +81,7 @@ export default function ChiTieu() {
   if (!dsLv.length) return <Rong>Tài khoản không theo dõi chỉ tiêu.</Rong>;
   return (
     <div className="flex flex-col gap-4">
-      <TieuDeTrang tren={chuTri ? 'Quản lý chỉ tiêu · cài đặt, theo dõi, đôn đốc' : theoDoi ? 'Quản lý chỉ tiêu · theo dõi, đôn đốc' : 'Số liệu các đơn vị cập nhật'} ten="Chỉ tiêu số liệu"
+      <TieuDeTrang tren={chuTri ? 'Quản lý chỉ tiêu · cài đặt, theo dõi, đôn đốc' : theoDoi ? 'Quản lý chỉ tiêu · theo dõi, đôn đốc' : 'Số liệu các đơn vị cập nhật'} ten="Theo dõi chỉ tiêu"
         phai={<>
           <Nut icon={<Download className="h-4 w-4" />} onClick={xuatExcel} ngan="">Xuất Excel</Nut>
           {chuTri && <Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setSua('moi')} ngan="Thêm">Thêm chỉ tiêu</Nut>}

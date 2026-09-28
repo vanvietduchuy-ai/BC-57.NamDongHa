@@ -384,7 +384,7 @@ function TheChiTieu({ d }: { d: DuLieuCt }) {
     <The className="flex min-w-0 flex-col gap-3 p-4 sm:p-6">
       <div className="flex items-center gap-2">
         <Target className="h-[18px] w-[18px] text-[#8E1B22]" />
-        <h2 className="m-0 flex-1 text-[1rem] font-bold">Chỉ tiêu số liệu <span className="font-semibold text-mo">· {tenKyCt(d.ky)}</span></h2>
+        <h2 className="m-0 flex-1 text-[1rem] font-bold">Theo dõi chỉ tiêu <span className="font-semibold text-mo">· {tenKyCt(d.ky)}</span></h2>
         <Link to="/chi-tieu" className="text-[0.8125rem] font-semibold text-[#8E1B22]">Chi tiết →</Link>
       </div>
       <div className={cx('grid grid-cols-1 gap-3', lv.length > 1 && 'md:grid-cols-2')}>

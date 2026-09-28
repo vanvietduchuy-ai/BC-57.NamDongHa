@@ -64,7 +64,7 @@ export default function TrangChuDonVi() {
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="flex flex-col gap-4">
-          {gan ? <TheChinh v={gan} /> : <The className="p-5"><Rong>Đã nộp đủ, không còn việc cần nộp.</Rong></The>}
+          {gan ? <TheChinh v={gan} /> : <The className="p-5"><Rong>Đã nộp đủ, không còn văn bản cần nộp.</Rong></The>}
           {khac.map((v) => <TheKhac key={v.nop_id} v={v} />)}
         </div>
 

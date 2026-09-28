@@ -24,7 +24,7 @@ export default function ViecCanNop() {
 
   return (
     <>
-      <TieuDeTrang tren={hoSo?.don_vi?.ten} ten="Việc cần nộp" />
+      <TieuDeTrang tren={hoSo?.don_vi?.ten} ten="Văn bản cần nộp" />
       <div role="tablist" className="grid max-w-md grid-cols-2 rounded-2xl bg-[#E7E3D9] p-1">
         {([['mo', `Đang mở · ${data?.mo.length ?? 0}`], ['xong', 'Đã nộp']] as const).map(([k, t]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cx('h-11 rounded-xl text-[0.875rem]', tab === k ? 'bg-white font-bold shadow-sm' : 'font-medium text-mo-2')}>{t}</button>

@@ -45,7 +45,7 @@ export default function NopBaoCao() {
   return (
     <>
       <header className="flex items-center gap-3">
-        <Link to="/viec-can-nop" aria-label="Quay lại Việc cần nộp" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-vien bg-white text-den hover:bg-nen-2"><ChevronLeft className="h-5 w-5" /></Link>
+        <Link to="/viec-can-nop" aria-label="Quay lại Văn bản cần nộp" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-vien bg-white text-den hover:bg-nen-2"><ChevronLeft className="h-5 w-5" /></Link>
         <div className="flex min-w-0 flex-1 flex-col">
           <h1 className="m-0 text-[1.25rem] font-extrabold leading-snug tracking-tight md:text-[1.5rem]">{ky.ten}</h1>
           <span className="truncate text-[0.8125rem] text-mo">{data.don_vi.ten}{ky.tu_ngay ? ` · Kỳ ${ngay(ky.tu_ngay).replace(/\/\d{4}$/, '')} – ${ngay(ky.den_ngay).replace(/\/\d{4}$/, '')}` : ''}</span>

@@ -100,7 +100,7 @@ export default function KyBaoCaoChiTiet({ kyId, nhung, sauXoa, khe, themNut }: {
     </>
   );
   const dauTrang = (
-    <TieuDeTrang tren={<><Link to={dauMoi && !quanLy ? '/viec-can-nop' : '/ky-bao-cao'} className="text-mo">{dauMoi && !quanLy ? 'Việc cần nộp' : 'Theo dõi kỳ báo cáo'}</Link> / {loaiNhan}</>}
+    <TieuDeTrang tren={<><Link to={dauMoi && !quanLy ? '/viec-can-nop' : '/ky-bao-cao'} className="text-mo">{dauMoi && !quanLy ? 'Văn bản cần nộp' : 'Theo dõi kỳ báo cáo'}</Link> / {loaiNhan}</>}
       ten={ky.ten} phai={nutKy} />
   );
   const LOC: [string, string, string[]][] = [['', 'Tất cả trạng thái', []], ['da_duyet', 'Đã duyệt', ['da_duyet']], ['da_nop', 'Chờ duyệt', ['da_nop']], ['can_bo_sung', 'Yêu cầu bổ sung', ['can_bo_sung']], ['chua_nop', 'Chưa nộp', ['chua_nop', 'nhap']]];
