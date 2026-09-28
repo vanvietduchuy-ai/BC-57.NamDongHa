@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Archive, Bell, BookOpen, ChevronDown, ChevronUp, Radar, CheckSquare, FileText, Send, Home, LayoutGrid, LogOut, Menu, ShieldCheck, SlidersHorizontal, Mail, BarChart3, Target,
 } from 'lucide-react';
-import { laDauMoi, TEN_VAI_TRO, useAuth, type HoSo, type VaiTro } from '../lib/auth';
+import { coQuanLyCt, laDauMoi, TEN_VAI_TRO, useAuth, type HoSo, type VaiTro } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { ngayGio } from '../lib/dinhDang';
 import { cx, LogoBcd, Nut } from './ui';
@@ -18,7 +18,8 @@ function menu(h: HoSo): Muc[] {
   const i = (C: typeof Home) => <C className="h-5 w-5" strokeWidth={1.8} />;
   if (vt === 'don_vi') return [
     { den: '/', ten: 'Trang chủ', icon: i(Home) },
-    ...(laDauMoi(h) ? [{ den: '/theo-doi', ten: 'Theo dõi đơn vị', icon: i(Radar) }, { den: '/ky-bao-cao', ten: 'Giao báo cáo', icon: i(Send) }, { den: '/chi-tieu', ten: 'Theo dõi chỉ tiêu', ngan: 'Chỉ tiêu', icon: i(Target) }] : []),
+    ...(laDauMoi(h) ? [{ den: '/theo-doi', ten: 'Theo dõi đơn vị', icon: i(Radar) }, { den: '/ky-bao-cao', ten: 'Giao báo cáo', icon: i(Send) }] : []),
+    ...(coQuanLyCt(h) ? [{ den: '/chi-tieu', ten: 'Quản lý chỉ tiêu', ngan: 'Chỉ tiêu', icon: i(Target) }] : []),
     { den: '/viec-can-nop', ten: 'Việc cần nộp', icon: i(FileText) },
     { den: '/so-lieu', ten: 'Cập nhật số liệu', ngan: 'Số liệu', icon: i(BarChart3) },
     { den: '/nhiem-vu', ten: 'Nhiệm vụ', icon: i(CheckSquare) },
