@@ -3,6 +3,7 @@ import { Paperclip, Trash2, Upload } from 'lucide-react';
 import { goiChucNang, loiDe, supabase } from '../lib/supabase';
 import { HopLoi, cx } from './ui';
 import { NutTepDrive } from './TepDrive';
+import { NHAN_TEP_KEM } from './TepKem';
 
 export type Tep = { id: string; drive_file_id: string; ten: string };
 
@@ -42,7 +43,7 @@ export default function TepDinhKem({ loai, dichId, thuMuc, suaDuoc, tep, xong, x
         <label className={cx('flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-dashed border-[#9AA1AE] bg-nen-2 px-3 text-center text-[0.8125rem] text-mo-2', dangChay && 'opacity-60')}>
           <Upload className="h-5 w-5 text-xanh" />
           <span>{dangChay ? 'Đang tải lên Google Drive…' : <><b className="text-xanh">Chọn tệp</b> hoặc chụp ảnh</>}</span>
-          <input type="file" className="sr-only" disabled={dangChay} accept=".doc,.docx,.pdf,.xls,.xlsx,.jpg,.jpeg,.png,.heic,.zip"
+          <input type="file" className="sr-only" disabled={dangChay} accept={NHAN_TEP_KEM}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void tai(f); e.target.value = ''; }} />
         </label>
       )}
