@@ -1,8 +1,9 @@
 // Văn bản đến – đi: đơn vị gửi văn bản PDF cho Cơ quan Thường trực; Thường trực gửi cho một, nhiều hoặc tất cả đơn vị.
 // Bên nhận xem PDF, bấm "Đã nhận"; bên gửi theo dõi ai đã xem, đã nhận, nhắc đơn vị chưa nhận. Tự vào sổ đến / sổ đi của Thường trực.
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { xoaTepNhap } from '../lib/nhapTam';
-import { Bell, CalendarClock, CheckCheck, CheckCircle2, Eye, Inbox, Search, Send, Users } from 'lucide-react';
+import { ArrowRight, Bell, CalendarClock, CheckCheck, CheckCircle2, ClipboardList, Eye, Inbox, Paperclip, Search, Send, Users } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { laQuanTri, useAuth } from '../lib/auth';
@@ -11,6 +12,7 @@ import { khongDau } from '../lib/nhiemVu';
 import { LOAI_VB, type LoaiVb } from '../lib/vanBan';
 import { META_TRONG, type MetaVb } from '../lib/docPdf';
 import OVanBanPdf, { kiemTraMeta, taiPdfLenDrive, ThongTinVanBan, type VanBanDaNop } from '../components/VanBanPdf';
+import { ChonTepKem, DemTepKem, DsTepKem, kiemTraTepKem, NHAN_TEP_KEM, taiTepKemCongVan, type TepKem } from '../components/TepKem';
 import { Chip, ChipHan, DangTai, HopLoi, HopThoai, lopO, Nut, O, Rong, The, TieuDeTrang, cx } from '../components/ui';
 
 type VbCot = {
@@ -19,10 +21,14 @@ type VbCot = {
 };
 // Một lượt nhận (văn bản gửi đến đơn vị mình)
 type Nhan = VbCot & { id: string; cong_van_id: string; don_vi_id: string; tu_don_vi_id: string; tu_don_vi: string; gui_luc: string;
-  ghi_chu: string | null; han_phan_hoi: string | null; xem_luc: string | null; nhan_luc: string | null };
+  ghi_chu: string | null; han_phan_hoi: string | null; xem_luc: string | null; nhan_luc: string | null; tep: TepKem[] | null };
 // Một văn bản đã gửi
 type NoiNhan = { don_vi_id: string; ten: string; xem_luc: string | null; nhan_luc: string | null };
-type Gui = VbCot & { id: string; tu_don_vi_id: string; gui_luc: string; ghi_chu: string | null; han_phan_hoi: string | null; noi_nhan: NoiNhan[] };
+type Gui = VbCot & { id: string; tu_don_vi_id: string; gui_luc: string; ghi_chu: string | null; han_phan_hoi: string | null; noi_nhan: NoiNhan[]; tep: TepKem[] | null };
+// Báo cáo đơn vị nộp theo kỳ, đã vào sổ đến của mình (nơi nhận bài)
+type BaoCaoDen = VbCot & { id: string; so_thu_tu: number; nam: number; ngay: string; noi_gui: string | null; ghi_chu: string | null;
+  nop_bao_cao_id: string; ky_id: string | null; ky_ten: string | null; tao_luc: string; tep: TepKem[] | null };
+type MucDen = { kieu: 'cv'; x: Nhan; luc: string } | { kieu: 'bc'; x: BaoCaoDen; luc: string };
 
 const vbTu = (x: VbCot): VanBanDaNop => ({ id: x.van_ban_id, so_van_ban: null, ky_hieu: null, so_ky_hieu: x.so_ky_hieu, ngay_ban_hanh: x.ngay_ban_hanh,
   trich_yeu: x.trich_yeu, loai: x.loai, nguoi_ky: x.nguoi_ky, chuc_vu_nguoi_ky: x.chuc_vu_nguoi_ky, co_quan_ban_hanh: x.co_quan_ban_hanh,
@@ -36,26 +42,32 @@ export default function VanBanDenDi() {
   const [tim, setTim] = useState('');
   const [xemNhan, setXemNhan] = useState<Nhan | null>(null);
   const [xemGui, setXemGui] = useState<Gui | null>(null);
+  const [xemBc, setXemBc] = useState<BaoCaoDen | null>(null);
   const [moGui, setMoGui] = useState(false);
   const [tb, setTb] = useState<string | null>(null);
 
   const { data, loi, dangTai, taiLai } = useDuLieu(async () => {
     const tt = (await supabase.rpc('don_vi_thuong_truc')).data as string | null;
     const cua = quanTri ? tt : hoSo?.don_vi_id ?? null;               // đơn vị của mình trong luồng gửi nhận
-    const [a, b, c] = await Promise.all([
+    const [a, b, c, d] = await Promise.all([
       supabase.from('v_cong_van_nhan').select('*').eq('don_vi_id', cua ?? '').order('gui_luc', { ascending: false }).limit(200),
       supabase.from('v_cong_van').select('*').eq('tu_don_vi_id', cua ?? '').order('gui_luc', { ascending: false }).limit(200),
       quanTri ? supabase.from('don_vi').select('id, ten, loai').eq('hoat_dong', true).order('thu_tu') : Promise.resolve({ data: [], error: null }),
+      supabase.from('v_so_van_ban').select('*').eq('don_vi_id', cua ?? '').eq('loai_so', 'den').not('nop_bao_cao_id', 'is', null)
+        .order('tao_luc', { ascending: false }).limit(200),
     ]);
     return {
-      tt, cua, nhan: (kq(a) ?? []) as Nhan[], gui: (kq(b) ?? []) as Gui[],
+      tt, cua, nhan: (kq(a) ?? []) as Nhan[], gui: (kq(b) ?? []) as Gui[], bc: (kq(d) ?? []) as BaoCaoDen[],
       dv: ((kq(c) ?? []) as { id: string; ten: string; loai: string }[]).filter((d) => d.id !== tt && d.loai !== 'lanh_dao_bcd'),
     };
   });
 
   const t = khongDau(tim.trim());
   const hop = (x: VbCot & { ghi_chu: string | null }, them = '') => !t || khongDau(`${x.so_ky_hieu ?? ''} ${x.trich_yeu} ${x.co_quan_ban_hanh} ${x.ghi_chu ?? ''} ${them}`).includes(t);
-  const dsNhan = useMemo(() => (data?.nhan ?? []).filter((x) => hop(x, x.tu_don_vi)), [data, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  const dsNhan = useMemo((): MucDen[] => [
+    ...(data?.nhan ?? []).filter((x) => hop(x, `${x.tu_don_vi} ${(x.tep ?? []).map((f) => f.ten).join(' ')}`)).map((x) => ({ kieu: 'cv' as const, x, luc: x.gui_luc })),
+    ...(data?.bc ?? []).filter((x) => hop(x, `${x.noi_gui ?? ''} ${x.ky_ten ?? ''} bao cao ${(x.tep ?? []).map((f) => f.ten).join(' ')}`)).map((x) => ({ kieu: 'bc' as const, x, luc: x.tao_luc })),
+  ].sort((p, q) => q.luc.localeCompare(p.luc)), [data, t]); // eslint-disable-line react-hooks/exhaustive-deps
   const dsGui = useMemo(() => (data?.gui ?? []).filter((x) => hop(x, x.noi_nhan.map((n) => n.ten).join(' '))), [data, t]); // eslint-disable-line react-hooks/exhaustive-deps
   const chuaNhan = (data?.nhan ?? []).filter((x) => !x.nhan_luc).length;
 
@@ -91,10 +103,31 @@ export default function VanBanDenDi() {
       {tab === 'nhan' && (dsNhan.length === 0 ? <Rong>Chưa có văn bản gửi đến.</Rong> : (
         <The className="overflow-hidden">
           <ul className="m-0 flex list-none flex-col p-0">
-            {dsNhan.map((x) => {
+            {dsNhan.map((m) => {
+              if (m.kieu === 'bc') { const x = m.x; return (
+                <li key={`bc-${x.id}`} className="border-b border-[#F1EEE7] last:border-0">
+                  <button type="button" onClick={() => setXemBc(x)} className="flex w-full items-start gap-3 px-4 py-3.5 text-left active:bg-nen-2 hover:bg-nen-2">
+                    <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-transparent" aria-hidden />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="flex items-center gap-2 text-xs text-mo">
+                        <b className="min-w-0 truncate text-mo-2">{x.noi_gui ?? '—'}</b>
+                        <span className="ml-auto shrink-0 mono">{ngayGio(x.tao_luc)}</span>
+                      </span>
+                      <span className="line-clamp-2 text-[0.9062rem] font-semibold leading-snug">{x.trich_yeu}</span>
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-mo">
+                        <span className="mono font-semibold text-mo-2">{x.so_ky_hieu ?? '—'}</span>
+                        <Chip nen="bg-xanh-nhat" chu="text-xanh"><ClipboardList className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />Báo cáo kỳ{x.ky_ten ? `: ${x.ky_ten}` : ''}</Chip>
+                        <span className="mono">Số đến {x.so_thu_tu}</span>
+                        <DemTepKem n={x.tep?.length ?? 0} />
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ); }
+              const x = m.x;
               const moi = !x.xem_luc;
               return (
-                <li key={x.id} className="border-b border-[#F1EEE7] last:border-0">
+                <li key={`cv-${x.id}`} className="border-b border-[#F1EEE7] last:border-0">
                   <button type="button" onClick={() => void moNhan(x)} className={cx('flex w-full items-start gap-3 px-4 py-3.5 text-left active:bg-nen-2 hover:bg-nen-2', moi && 'bg-[#FFFBF3]')}>
                     <span className={cx('mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full', moi ? 'bg-nguy' : x.nhan_luc ? 'bg-transparent' : 'bg-[#F59E0B]')} aria-hidden />
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -106,6 +139,7 @@ export default function VanBanDenDi() {
                       <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-mo">
                         <span className="mono font-semibold text-mo-2">{x.so_ky_hieu ?? '—'}</span>
                         <span>· {LOAI_VB[x.loai]}</span>
+                        <DemTepKem n={x.tep?.length ?? 0} />
                         {x.han_phan_hoi && !x.nhan_luc && <ChipHan han={hanPh(x.han_phan_hoi)} />}
                         {x.nhan_luc ? <span className="flex items-center gap-1 font-semibold text-[#166534]"><CheckCheck className="h-3.5 w-3.5" />Đã nhận</span>
                           : moi ? <Chip nen="bg-nguy-nhat" chu="text-nguy">Mới</Chip> : <Chip nen="bg-cam-nhat" chu="text-cam-dam">Chưa bấm nhận</Chip>}
@@ -133,7 +167,7 @@ export default function VanBanDenDi() {
                       <span className="ml-auto shrink-0 mono">{ngayGio(x.gui_luc)}</span>
                     </span>
                     <span className="line-clamp-2 text-[0.9062rem] font-semibold leading-snug">{x.trich_yeu}</span>
-                    <span className="flex items-center gap-2 text-xs text-mo"><span className="mono font-semibold text-mo-2">{x.so_ky_hieu ?? '—'}</span><span>· {LOAI_VB[x.loai]}</span>
+                    <span className="flex items-center gap-2 text-xs text-mo"><span className="mono font-semibold text-mo-2">{x.so_ky_hieu ?? '—'}</span><span>· {LOAI_VB[x.loai]}</span><DemTepKem n={x.tep?.length ?? 0} />
                       {x.han_phan_hoi && <span className="ml-auto flex items-center gap-1"><CalendarClock className="h-3.5 w-3.5" />phản hồi {ngay(x.han_phan_hoi)}</span>}</span>
                     <span className="flex items-center gap-2">
                       <span className="flex h-1.5 flex-1 overflow-hidden rounded-full bg-[#EEEBE3]">
@@ -151,6 +185,7 @@ export default function VanBanDenDi() {
       ))}
 
       <XemNhan x={xemNhan} dong={() => { setXemNhan(null); void taiLai(); }} xong={() => { setXemNhan(null); setTb('Đã xác nhận nhận văn bản.'); void taiLai(); }} />
+      <XemBaoCao x={xemBc} dong={() => setXemBc(null)} />
       <XemGui x={xemGui} dong={() => setXemGui(null)} baoTin={(m) => { setXemGui(null); setTb(m); void taiLai(); }} />
       {data && <GuiVanBan mo={moGui} dong={() => setMoGui(false)} quanTri={quanTri} dsDv={data.dv} coQuan={hoSo?.don_vi?.ten ?? ''}
         xong={(m) => { setMoGui(false); setTab('gui'); setTb(m); void taiLai(); }} />}
@@ -178,6 +213,7 @@ function XemNhan({ x, dong, xong }: { x: Nhan | null; dong: () => void; xong: ()
         </div>
         {x.ghi_chu && <div className="whitespace-pre-line rounded-xl bg-nen-3 px-4 py-3 text-sm"><b>Nội dung kèm theo:</b> {x.ghi_chu}</div>}
         <ThongTinVanBan vb={vbTu(x)} />
+        <DsTepKem tep={x.tep} />
         {loi && <HopLoi loi={loi} />}
         <div className="flex flex-wrap items-center justify-end gap-2">
           {x.nhan_luc && <span className="mr-auto flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#166534]"><CheckCircle2 className="h-4 w-4" />Đã nhận lúc {ngayGio(x.nhan_luc)}</span>}
@@ -189,12 +225,43 @@ function XemNhan({ x, dong, xong }: { x: Nhan | null; dong: () => void; xong: ()
   );
 }
 
+// Báo cáo đơn vị nộp theo kỳ (đã vào sổ đến): văn bản + tài liệu kèm theo
+function XemBaoCao({ x, dong }: { x: BaoCaoDen | null; dong: () => void }) {
+  if (!x) return null;
+  return (
+    <HopThoai mo dong={dong} tieuDe={`Báo cáo của ${x.noi_gui ?? 'đơn vị'}`} rong="max-w-[900px]">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-2 text-[0.8125rem] text-mo">
+          <Chip nen="bg-xanh-nhat" chu="text-xanh">Báo cáo kỳ{x.ky_ten ? `: ${x.ky_ten}` : ''}</Chip>
+          <span>Số đến <b className="mono text-den">{x.so_thu_tu}/{x.nam}</b> · ngày {ngay(x.ngay)}</span>
+        </div>
+        {x.ghi_chu && <div className="whitespace-pre-line rounded-xl bg-nen-3 px-4 py-3 text-sm"><b>Ghi chú sổ:</b> {x.ghi_chu}</div>}
+        <ThongTinVanBan vb={vbTu(x)} />
+        <DsTepKem tep={x.tep} />
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Nut onClick={dong}>Đóng</Nut>
+          {x.ky_id && <Link to={`/ky-bao-cao/${x.ky_id}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-ink px-4 text-[0.875rem] font-semibold text-white">Mở kỳ báo cáo<ArrowRight className="h-4 w-4" /></Link>}
+        </div>
+      </div>
+    </HopThoai>
+  );
+}
+
 // Bên gửi: xem tình hình nhận của từng đơn vị, nhắc đơn vị chưa nhận
 function XemGui({ x, dong, baoTin }: { x: Gui | null; dong: () => void; baoTin: (m: string) => void }) {
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  const [dangTep, setDangTep] = useState(false);
   if (!x) return null;
   const chua = x.noi_nhan.filter((n) => !n.nhan_luc);
+  const themTep = async (fs: FileList | null) => {
+    const ds = Array.from(fs ?? []); if (!ds.length) return;
+    const sai = ds.map(kiemTraTepKem).find(Boolean); if (sai) { setLoi(sai); return; }
+    setDangTep(true); setLoi(null);
+    const hong = await taiTepKemCongVan(x.id, ds);
+    setDangTep(false);
+    if (hong.length) setLoi(`Chưa tải được: ${hong.join(', ')}`); else baoTin(`Đã đính kèm ${ds.length} tệp; nơi nhận xem được ngay.`);
+  };
   const nhac = async () => {
     setDang(true); setLoi(null);
     const { error } = await supabase.rpc('cong_van_nhac', { p_cong_van: x.id });
@@ -223,6 +290,11 @@ function XemGui({ x, dong, baoTin }: { x: Gui | null; dong: () => void; baoTin: 
           </ul>
         </section>
         <ThongTinVanBan vb={vbTu(x)} />
+        <DsTepKem tep={x.tep} />
+        <label className={cx('flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-[#9AA1AE] bg-nen-2 px-3 text-[0.8125rem] text-mo-2', dangTep && 'pointer-events-none opacity-60')}>
+          <Paperclip className="h-4 w-4 text-xanh" /><b className="text-xanh">{dangTep ? 'Đang tải lên…' : 'Đính kèm thêm tệp'}</b><span className="max-sm:hidden">· Word, Excel, ảnh, ZIP…</span>
+          <input type="file" multiple className="sr-only" accept={NHAN_TEP_KEM} disabled={dangTep} onChange={(e) => { void themTep(e.target.files); e.target.value = ''; }} />
+        </label>
         {loi && <HopLoi loi={loi} />}
         <div className="flex flex-wrap justify-end gap-2">
           <Nut onClick={dong}>Đóng</Nut>
@@ -238,13 +310,14 @@ function GuiVanBan({ mo, dong, quanTri, dsDv, coQuan, xong }: { mo: boolean; don
   const macDinh = (): MetaVb => ({ ...META_TRONG, loai: 'cong_van', co_quan_ban_hanh: coQuan });
   const [meta, setMeta] = useState<MetaVb>(macDinh);
   const [tep, setTep] = useState<File | null>(null);
+  const [kem, setKem] = useState<File[]>([]);
   const [chon, setChon] = useState<string[]>([]);
   const [ghiChu, setGhiChu] = useState('');
   const [han, setHan] = useState('');
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const [moCu, setMoCu] = useState(false);
-  if (mo !== moCu) { setMoCu(mo); if (mo) { setMeta(macDinh()); setTep(null); setChon([]); setGhiChu(''); setHan(''); setLoi(null); } }
+  if (mo !== moCu) { setMoCu(mo); if (mo) { setMeta(macDinh()); setTep(null); setKem([]); setChon([]); setGhiChu(''); setHan(''); setLoi(null); } }
   if (!mo) return null;
   const tatCa = chon.length === dsDv.length && dsDv.length > 0;
   const gui = async () => {
@@ -255,19 +328,23 @@ function GuiVanBan({ mo, dong, quanTri, dsDv, coQuan, xong }: { mo: boolean; don
     setDang(true);
     try {
       const len = await taiPdfLenDrive(tep, 'cong_van');
-      const { error } = await supabase.rpc('gui_cong_van', {
+      const { data: cvId, error } = await supabase.rpc('gui_cong_van', {
         p: { ...meta, drive_file_id: len.drive_file_id, drive_url: len.url ?? '', ten_tep: tep.name, ghi_chu: ghiChu.trim(), han_phan_hoi: han || null },
         p_noi_nhan: quanTri ? chon : null,
       });
       if (error) throw error;
       void xoaTepNhap('cong_van:gui');
-      xong(quanTri ? `Đã gửi văn bản cho ${chon.length} đơn vị, vào sổ đi.` : 'Đã gửi văn bản cho Cơ quan Thường trực BCĐ.');
+      const hong = kem.length && cvId ? await taiTepKemCongVan(cvId as string, kem) : [];
+      const coKem = kem.length ? ` kèm ${kem.length - hong.length} tệp` : '';
+      xong((quanTri ? `Đã gửi văn bản${coKem} cho ${chon.length} đơn vị, vào sổ đi.` : `Đã gửi văn bản${coKem} cho Cơ quan Thường trực BCĐ.`)
+        + (hong.length ? ` Chưa tải được: ${hong.join(', ')} — mở văn bản đã gửi để thử lại.` : ''));
     } catch (e) { setLoi(loiDe(e)); } finally { setDang(false); }
   };
   return (
     <HopThoai mo dong={dong} tieuDe="Gửi văn bản" rong="max-w-4xl">
       <div className="flex flex-col gap-4">
         <OVanBanPdf meta={meta} doiMeta={setMeta} tep={tep} chonTep={(f, m) => { setTep(f); setMeta({ ...m, loai: m.loai || 'cong_van', co_quan_ban_hanh: m.co_quan_ban_hanh || coQuan }); }} hienCoQuan tieuDe="Chọn văn bản PDF đã ký, đóng dấu" khoaNhap="cong_van:gui" />
+        <ChonTepKem ds={kem} doi={setKem} baoLoi={setLoi} />
         {quanTri ? (
           <fieldset className="m-0 flex flex-col gap-2 rounded-2xl border border-vien p-3">
             <legend className="px-1 text-[0.8125rem] font-semibold text-mo-2">Nơi nhận ({chon.length}/{dsDv.length})</legend>

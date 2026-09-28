@@ -10,6 +10,7 @@ import { COT_VB, LOAI_VB, type LoaiVb, type VanBan } from '../lib/vanBan';
 import { linkXemDrive, ThongTinVanBan, type VanBanDaNop } from '../components/VanBanPdf';
 import { moTepDrive } from '../components/TepDrive';
 import FormVanBan from '../components/FormVanBan';
+import { DemTepKem, DsTepKem, type TepKem } from '../components/TepKem';
 import { DangTai, HopLoi, HopThoai, lopO, Nut, O, Rong, The, TieuDeTrang, cx } from '../components/ui';
 
 type Dong = {
@@ -17,6 +18,7 @@ type Dong = {
   noi_gui: string | null; noi_nhan: string | null; ghi_chu: string | null; van_ban_id: string; so_ky_hieu: string | null;
   ngay_ban_hanh: string | null; trich_yeu: string; loai: LoaiVb; co_quan_ban_hanh: string; nguoi_ky: string | null;
   chuc_vu_nguoi_ky: string | null; drive_file_id: string | null; drive_url: string | null; ten_tep: string | null;
+  ky_ten?: string | null; tep?: TepKem[] | null;
 };
 
 export default function SoCongVan() {
@@ -41,7 +43,7 @@ export default function SoCongVan() {
   const ds = useMemo(() => {
     const t = khongDau(tim.trim());
     return (data?.dong ?? []).filter((d) => d.loai_so === so
-      && (!t || khongDau(`${d.so_ky_hieu ?? ''} ${d.trich_yeu} ${d.noi_gui ?? ''} ${d.noi_nhan ?? ''} ${d.nguoi_ky ?? ''}`).includes(t)));
+      && (!t || khongDau(`${d.so_ky_hieu ?? ''} ${d.trich_yeu} ${d.noi_gui ?? ''} ${d.noi_nhan ?? ''} ${d.nguoi_ky ?? ''} ${d.ky_ten ?? ''} ${(d.tep ?? []).map((f) => f.ten).join(' ')}`).includes(t)));
   }, [data, so, tim]);
   const dem = (l: 'den' | 'di') => (data?.dong ?? []).filter((d) => d.loai_so === l).length;
 
@@ -53,9 +55,10 @@ export default function SoCongVan() {
       [so === 'den' ? 'Nơi gửi' : 'Nơi nhận']: (so === 'den' ? d.noi_gui : d.noi_nhan) ?? '', 'Trích yếu': d.trich_yeu,
       'Người ký': [d.chuc_vu_nguoi_ky, d.nguoi_ky].filter(Boolean).join(' '), 'Ghi chú': d.ghi_chu ?? '',
       'Tệp (Google Drive)': d.drive_url || linkXemDrive(d.drive_file_id) || '',
+      'Tài liệu kèm theo': (d.tep ?? []).map((f) => f.ten).join('; '),
     }));
     const ws = XLSX.utils.json_to_sheet(dong);
-    ws['!cols'] = [8, 12, 18, 12, 12, 30, 60, 30, 20, 45].map((w) => ({ wch: w }));
+    ws['!cols'] = [8, 12, 18, 12, 12, 30, 60, 30, 20, 45, 40].map((w) => ({ wch: w }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, so === 'den' ? 'Sổ đến' : 'Sổ đi');
     XLSX.writeFile(wb, `so-cong-van-${so === 'den' ? 'den' : 'di'}-${nam}.xlsx`);
@@ -108,10 +111,10 @@ export default function SoCongVan() {
                       <td className="so px-4 py-3 text-base font-bold leading-5">{d.so_thu_tu}</td>
                       <td className="so px-2 py-3">{ngay(d.ngay)}</td>
                       <td className="px-2 py-3"><div className="so font-semibold">{d.so_ky_hieu ?? '—'}</div><div className="whitespace-nowrap text-xs text-mo">{d.ngay_ban_hanh ? ngay(d.ngay_ban_hanh) : ''} · {LOAI_VB[d.loai]}</div></td>
-                      <td className="max-w-md px-2 py-3">{d.trich_yeu}</td>
+                      <td className="max-w-md px-2 py-3">{d.trich_yeu}{d.ky_ten && <div className="mt-0.5 text-xs text-xanh">Báo cáo kỳ: {d.ky_ten}</div>}</td>
                       <td className="px-2 py-3">{(so === 'den' ? d.noi_gui : d.noi_nhan) ?? '—'}</td>
                       <td className="px-2 py-3">{d.nguoi_ky ?? '—'}</td>
-                      <td className="px-4 py-3">{link && !String(d.drive_file_id ?? '').startsWith('thu-') ? <button type="button" onClick={(e) => { e.stopPropagation(); void moTepDrive('van_ban', d.van_ban_id, d.ten_tep ?? `${d.so_ky_hieu ?? 'van-ban'}.pdf`, 'xem', d.drive_url); }} aria-label="Mở tệp" className="inline-flex min-h-9 items-center text-[#8E1B22]"><ExternalLink className="h-4 w-4" /></button> : <span className="text-mo">—</span>}</td>
+                      <td className="px-4 py-3">{link && !String(d.drive_file_id ?? '').startsWith('thu-') ? <button type="button" onClick={(e) => { e.stopPropagation(); void moTepDrive('van_ban', d.van_ban_id, d.ten_tep ?? `${d.so_ky_hieu ?? 'van-ban'}.pdf`, 'xem', d.drive_url); }} aria-label="Mở tệp" className="inline-flex min-h-9 items-center text-[#8E1B22]"><ExternalLink className="h-4 w-4" /></button> : <span className="text-mo">—</span>}{(d.tep?.length ?? 0) > 0 && <span className="ml-2 text-xs" title="Tài liệu kèm theo"><DemTepKem n={d.tep!.length} /></span>}</td>
                     </tr>
                   );
                 })}
@@ -129,6 +132,7 @@ export default function SoCongVan() {
                     <span className="flex items-center gap-2 text-xs text-mo"><b className="mono truncate text-den">{d.so_ky_hieu ?? '—'}</b><span className="shrink-0">· {ngay(d.ngay)}</span></span>
                     <span className="line-clamp-3 text-[0.875rem] font-semibold leading-snug">{d.trich_yeu}</span>
                     <span className="truncate text-xs text-mo">{so === 'den' ? `Từ: ${d.noi_gui ?? '—'}` : `Gửi: ${d.noi_nhan ?? '—'}`}{d.ghi_chu ? ` · ${d.ghi_chu}` : ''}</span>
+                    {(d.ky_ten || (d.tep?.length ?? 0) > 0) && <span className="flex items-center gap-2 text-xs text-mo">{d.ky_ten && <span className="truncate text-xanh">Báo cáo kỳ: {d.ky_ten}</span>}<DemTepKem n={d.tep?.length ?? 0} /></span>}
                   </span>
                 </button>
               </li>
@@ -208,8 +212,10 @@ function ChiTietSo({ d, dong, xong }: { d: Dong | null; dong: () => void; xong: 
             <ThongTinVanBan vb={vb} them={<>
               <dt className="text-mo">{den ? 'Nơi gửi' : 'Nơi nhận'}</dt><dd className="m-0">{(den ? d.noi_gui : d.noi_nhan) ?? '—'}</dd>
               <dt className="text-mo">{den ? 'Ngày đến' : 'Ngày gửi'}</dt><dd className="so m-0">{ngay(d.ngay)}</dd>
+              {d.ky_ten && <><dt className="text-mo">Kỳ báo cáo</dt><dd className="m-0">{d.ky_ten}</dd></>}
             </>} />
           )}
+          {!sua && <DsTepKem tep={d.tep} />}
           {!sua && <O nhan="Ghi chú (xử lý, chuyển…)"><input className={lopO} value={g.ghi_chu} onChange={(e) => setG({ ...g, ghi_chu: e.target.value })} /></O>}
           {loi && <HopLoi loi={loi} />}
           <div className="flex flex-wrap items-center justify-end gap-2">
