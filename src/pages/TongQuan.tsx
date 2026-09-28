@@ -3,14 +3,15 @@
 //   (4) tình hình nộp của từng đơn vị theo tháng (ô màu); (5) nhiệm vụ cần chú ý.
 import { useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Bell, Plus, Search, Send } from 'lucide-react';
+import { ArrowRight, Bell, Inbox, Plus, Search, Send, SendHorizontal, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { kq, useBayGio, useDuLieu } from '../lib/useDuLieu';
-import { useAuth, laQuanTri } from '../lib/auth';
-import { conLaiNgan, hai, mucGap, ngay, ngayGioDu, tenNgan, thuNgay } from '../lib/dinhDang';
+import { useAuth, laQuanTri, quyenCt, type HoSo } from '../lib/auth';
+import { datMucTieu, dauNam, dinhDangGt, dinhDangMucTieu, gtTheoKy, hanKy, kyMacDinh, LV_CT, tenKyCt, type ChiTieu, type LvChiTieu, type SoLieu } from '../lib/chiTieu';
+import { conLaiNgan, hai, mucGap, ngay, ngayGio, ngayGioDu, tenNgan, thuNgay } from '../lib/dinhDang';
 import { type NhiemVu } from '../lib/nhiemVu';
 import { HopNhac, type DonViNhac } from '../components/HopNhac';
-import { ChipHan, DangTai, DemSo, DongHo, HopLoi, Rong, The, cx } from '../components/ui';
+import { Chip, ChipHan, DangTai, DemSo, DongHo, HopLoi, Rong, The, cx } from '../components/ui';
 import { Chuong } from '../components/KhungTrang';
 
 type KyMo = { ky_id: string; chu_tri_don_vi_id: string | null; don_vi_giao: string | null; ten: string; loai: string; han_nop: string; han_gui_tinh: string | null; so_don_vi: number; da_nop: number; da_duyet: number; can_bo_sung: number; chua_nop: number };
@@ -19,7 +20,31 @@ type NvChuY = Pick<NhiemVu, 'id' | 'ma' | 'ten' | 'han' | 'qua_han' | 'con_ngay'
 
 const LOAI_KY: Record<string, string> = { thang: 'THÁNG', quy: 'QUÝ', sau_thang: '6 THÁNG', nam: 'NĂM', dot_xuat: 'ĐỘT XUẤT' };
 
-async function tai(chuTri: string | null, donViMinh: string | null) {
+type VbNhan = { id: string; tu_don_vi: string; gui_luc: string; trich_yeu: string; so_ky_hieu: string | null; han_phan_hoi: string | null };
+type VbGui = { id: string; gui_luc: string; trich_yeu: string; so_ky_hieu: string | null; noi_nhan: { nhan_luc: string | null }[] };
+
+// Chỉ tiêu số liệu: lĩnh vực được xem, kỳ mặc định (luỹ kế cần từ tháng 1)
+async function taiChiTieu(dsLv: LvChiTieu[]) {
+  if (!dsLv.length) return null;
+  const ky = kyMacDinh();
+  const [a, b] = await Promise.all([
+    supabase.from('chi_tieu').select('*').in('linh_vuc', dsLv).eq('hoat_dong', true).order('thu_tu'),
+    supabase.from('chi_tieu_so_lieu').select('chi_tieu_id, don_vi_id, ky, tu, mau, gia_tri, ghi_chu, da_gui, cap_nhat_luc').in('linh_vuc', dsLv).gte('ky', dauNam(ky)).lte('ky', ky),
+  ]);
+  if (a.error) return null;                                         // CSDL chưa có module chỉ tiêu
+  return { ky, dsLv, ct: (a.data ?? []) as ChiTieu[], sl: (b.data ?? []) as SoLieu[] };
+}
+async function taiVanBan() {
+  const [a, b] = await Promise.all([
+    supabase.from('v_cong_van_nhan').select('id, tu_don_vi, gui_luc, trich_yeu, so_ky_hieu, han_phan_hoi').is('nhan_luc', null).order('gui_luc', { ascending: false }).limit(20),
+    supabase.from('v_cong_van').select('id, gui_luc, trich_yeu, so_ky_hieu, noi_nhan').order('gui_luc', { ascending: false }).limit(30),
+  ]);
+  if (a.error) return null;
+  const gui = ((b.data ?? []) as VbGui[]).filter((g) => g.noi_nhan.some((n) => !n.nhan_luc));
+  return { chuaNhan: (a.data ?? []) as VbNhan[], guiCho: gui };
+}
+
+async function tai(chuTri: string | null, donViMinh: string | null, hoSo: HoSo | null) {
   const nam = new Date().getFullYear();
   let qKy = supabase.from('v_tinh_hinh_nop').select('ky_id, chu_tri_don_vi_id, don_vi_giao, ten, loai, han_nop, han_gui_tinh, so_don_vi, da_nop, da_duyet, can_bo_sung, chua_nop').eq('trang_thai_ky', 'mo').eq('cap', 'don_vi');
   let qNop = supabase.from('v_theo_doi_nop').select('nop_id, ky_id, don_vi_id, don_vi, thu_tu, ky, loai, trang_thai, han, nop_luc, dung_han, tre_ngay, tu_ngay')
@@ -46,7 +71,14 @@ async function tai(chuTri: string | null, donViMinh: string | null) {
     nvQuaLauNhat: quaHan.reduce((m, n) => Math.max(m, -(n.con_ngay ?? 0)), 0),
     nvChuY: nv.filter((n) => n.qua_han || (n.con_ngay != null && n.con_ngay <= 14)).sort((x, y) => (x.con_ngay ?? 99) - (y.con_ngay ?? 99)).slice(0, 7),
     canNop: ((e as { data: unknown }).data ?? []) as { nop_id: string; ten: string; han_nop: string; don_vi_giao: string | null }[],
+    ...(await taiThem(chuTri, hoSo)),
   };
+}
+async function taiThem(chuTri: string | null, hoSo: HoSo | null) {
+  const dsLv = (['chuyen_doi_so', 'de_an_06'] as LvChiTieu[]).filter((lv) => (chuTri ? !!quyenCt(hoSo, lv) : true));
+  const vb = !chuTri && ['quan_tri', 'admin'].includes(hoSo?.vai_tro ?? '');
+  const [ct, v] = await Promise.all([taiChiTieu(dsLv).catch(() => null), vb ? taiVanBan().catch(() => null) : Promise.resolve(null)]);
+  return { ct, vb: v };
 }
 
 const daGui = (x: Dong) => !!x.nop_luc && ['da_nop', 'da_duyet', 'can_bo_sung'].includes(x.trang_thai);
@@ -109,7 +141,7 @@ export default function TongQuan({ chuTri = null }: { chuTri?: string | null }) 
   const nhacDuoc = quanTri || !!chuTri;
   const nav = useNavigate();
   const [tim, setTim] = useState('');
-  const { data, loi, dangTai, taiLai } = useDuLieu(() => tai(chuTri, hoSo?.vai_tro === 'quan_tri' ? hoSo.don_vi_id : null), [chuTri]);
+  const { data, loi, dangTai, taiLai } = useDuLieu(() => tai(chuTri, hoSo?.vai_tro === 'quan_tri' ? hoSo.don_vi_id : null, hoSo), [chuTri]);
   const [tb, setTb] = useState<string | null>(null);
   const [nhacKy, setNhacKy] = useState<{ k: KyMo; ds: DonViNhac[] } | null>(null);
   if (loi) return <HopLoi loi={loi} taiLai={taiLai} />;
@@ -242,20 +274,34 @@ export default function TongQuan({ chuTri = null }: { chuTri?: string | null }) 
           phu={`${data.nvXong} hoàn thành · ${data.nvChuaTk} chưa triển khai`} />
         <OSo nhan="Nhiệm vụ quá hạn" so={<DemSo n={data.nvQuaHan} />} mau={data.nvQuaHan ? 'text-nguy' : 'text-den'} sau={data.nvQuaHan ? 'cần đôn đốc' : 'không có'} den="/nhiem-vu?tab=qua_han"
           phu={data.nvQuaHan ? `Lâu nhất: quá ${data.nvQuaLauNhat} ngày` : 'Tất cả trong hạn'} />
-        <OSo nhan={`Tỷ lệ nộp đúng hạn (quý ${LA_MA[quy]})`} so={tl == null ? '—' : `${tl}%`} mau="text-xanh" den="/ky-bao-cao?tab=theo_doi"
-          sau={tl != null && tlTruoc != null && tl !== tlTruoc ? `${tl > tlTruoc ? '↑' : '↓'} ${Math.abs(tl - tlTruoc)} điểm` : undefined}
-          phu={tlTruoc != null ? `So với quý ${LA_MA[quy - 1]}/${data.nam}` : 'Các kỳ đã đến hạn trong quý'} />
         {hoSo?.vai_tro === 'lanh_dao' && data.choDuyet > 0
           ? <OSo nhan="Nhiệm vụ chờ duyệt giao" so={<DemSo n={data.choDuyet} />} mau="text-cam" sau="đề xuất" den="/nhiem-vu?tab=cho_duyet" phu="Trưởng ban duyệt để giao" />
           : <OSo nhan="Bài chờ tiếp nhận" so={<DemSo n={soChoNhan} />} mau={soChoNhan ? 'text-cam' : 'text-den'} sau="bài đã nộp" den="/ky-bao-cao"
             phu={`${data.kyMo.length} kỳ đang mở · ${soChuaNop} bài chưa nộp`} />}
+        {data.vb
+          ? <OSo nhan="Văn bản đến chưa nhận" so={<DemSo n={data.vb.chuaNhan.length} />} mau={data.vb.chuaNhan.length ? 'text-nguy' : 'text-den'} sau="văn bản" den="/van-ban"
+            phu={data.vb.guiCho.length ? `${data.vb.guiCho.length} văn bản gửi đi chưa đủ nơi nhận` : 'Văn bản gửi đi đã nhận đủ'} />
+          : <OSo nhan={`Tỷ lệ nộp đúng hạn (quý ${LA_MA[quy]})`} so={tl == null ? '—' : `${tl}%`} mau="text-xanh" den="/ky-bao-cao?tab=theo_doi"
+            sau={tl != null && tlTruoc != null && tl !== tlTruoc ? `${tl > tlTruoc ? '↑' : '↓'} ${Math.abs(tl - tlTruoc)} điểm` : undefined}
+            phu={tlTruoc != null ? `So với quý ${LA_MA[quy - 1]}/${data.nam}` : 'Các kỳ đã đến hạn trong quý'} />}
       </div>
+
+      {/* 3. Chỉ tiêu số liệu + văn bản đến – đi */}
+      {(data.ct || data.vb) && (
+        <div className={cx('grid grid-cols-1 gap-5', data.ct && data.vb && 'xl:grid-cols-[minmax(0,1.43fr)_minmax(0,1fr)]')}>
+          {data.ct && <TheChiTieu d={data.ct} />}
+          {data.vb && <TheVanBan d={data.vb} />}
+        </div>
+      )}
 
       {/* 3. Tình hình nộp của đơn vị + nhiệm vụ cần chú ý */}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.43fr)_minmax(0,1fr)]">
         <The className="flex min-w-0 flex-col gap-3 p-4 sm:p-6">
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-            <h2 className="m-0 min-w-[180px] flex-1 text-[1rem] font-bold">Tình hình nộp báo cáo của đơn vị</h2>
+            <div className="flex min-w-[180px] flex-1 flex-col gap-1">
+              <h2 className="m-0 text-[1rem] font-bold">Tình hình nộp báo cáo của đơn vị</h2>
+              {data.vb && tl != null && <span className="text-[0.75rem] font-semibold text-xanh">Quý {LA_MA[quy]}/{data.nam}: {tl}% bài nộp đúng hạn{tlTruoc != null && tl !== tlTruoc ? ` (${tl > tlTruoc ? '↑' : '↓'} ${Math.abs(tl - tlTruoc)} điểm)` : ''}</span>}
+            </div>
             <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] text-mo">
               {(Object.keys(MAU_O) as Exclude<O, null>[]).map((k) => <span key={k} className="flex items-center gap-1.5"><span className={cx('h-2 w-2 rounded-sm', MAU_O[k][0])} />{MAU_O[k][1]}</span>)}
             </div>
@@ -320,5 +366,94 @@ function FragmentHang({ ten, children }: { ten: string; children: ReactNode }) {
       <span className="min-w-0 truncate text-[0.7812rem] font-medium sm:text-[0.8125rem]" title={ten}><span className="sm:hidden">{ten.replace('Phòng Văn hóa – Xã hội', 'Phòng VH-XH').replace('Phòng Kinh tế – Hạ tầng và Đô thị', 'Phòng KT-HT-ĐT').split(' – ')[0]}</span><span className="hidden sm:inline">{ten}</span></span>
       {children}
     </>
+  );
+}
+
+// ---------- Chỉ tiêu số liệu (tóm tắt từng lĩnh vực) ----------
+type DuLieuCt = NonNullable<Awaited<ReturnType<typeof taiChiTieu>>>;
+function TheChiTieu({ d }: { d: DuLieuCt }) {
+  const lv = d.dsLv.map((l) => {
+    const ds = d.ct.filter((c) => c.linh_vuc === l);
+    const kq_ = ds.map((c) => { const gt = gtTheoKy(c, d.sl, d.ky); return { c, gt, dat: datMucTieu(c, gt) }; });
+    const dvGiao = [...new Set(ds.flatMap((c) => c.don_vi_ids))];
+    const dvXong = dvGiao.filter((u) => ds.filter((c) => c.don_vi_ids.includes(u)).every((c) => d.sl.some((s) => s.chi_tieu_id === c.id && s.don_vi_id === u && s.ky === d.ky && s.da_gui)));
+    const han = ds.length ? hanKy(d.ky, Math.min(...ds.map((c) => c.han_ngay))) : null;
+    return { l, ds, kq: kq_, dat: kq_.filter((x) => x.dat).length, chua: kq_.filter((x) => x.dat === false), trong: kq_.filter((x) => x.dat == null).length, dvGiao, dvXong, han };
+  });
+  return (
+    <The className="flex min-w-0 flex-col gap-3 p-4 sm:p-6">
+      <div className="flex items-center gap-2">
+        <Target className="h-[18px] w-[18px] text-[#8E1B22]" />
+        <h2 className="m-0 flex-1 text-[1rem] font-bold">Chỉ tiêu số liệu <span className="font-semibold text-mo">· {tenKyCt(d.ky)}</span></h2>
+        <Link to="/chi-tieu" className="text-[0.8125rem] font-semibold text-[#8E1B22]">Chi tiết →</Link>
+      </div>
+      <div className={cx('grid grid-cols-1 gap-3', lv.length > 1 && 'md:grid-cols-2')}>
+        {lv.map((x) => (
+          <Link key={x.l} to="/chi-tieu" className="the-noi flex min-w-0 flex-col gap-2.5 rounded-xl border border-vien bg-nen-2 p-3.5 text-den">
+            <div className="flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate text-[0.875rem] font-bold">{LV_CT[x.l].ten}</span>
+              {x.han && x.dvGiao.length > 0 && (x.dvXong.length === x.dvGiao.length ? <Chip nen="bg-[#DCFCE7]" chu="text-[#166534]">Đủ số liệu</Chip> : <ChipHan han={x.han} />)}
+            </div>
+            {!x.ds.length ? <span className="text-[0.8125rem] text-mo">Chưa cài đặt chỉ tiêu.</span> : <>
+              <div className="flex items-baseline gap-2">
+                <span className="mono text-[1.625rem] font-bold leading-none text-[#166534]">{x.dat}</span>
+                <span className="text-[0.8125rem] text-mo-2">/ {x.ds.length} chỉ tiêu đạt</span>
+                <span className="flex-1" />
+                <span className="text-[0.75rem] text-mo"><b className="so text-den">{x.dvXong.length}/{x.dvGiao.length}</b> đơn vị đã gửi</span>
+              </div>
+              <div className="flex h-2 overflow-hidden rounded-full bg-[#EEEBE3]">
+                <span className="thanh-chay h-2 bg-[#16A34A]" style={{ width: `${(x.dat / x.ds.length) * 100}%` }} />
+                <span className="h-2 bg-nguy" style={{ width: `${(x.chua.length / x.ds.length) * 100}%` }} />
+              </div>
+              <div className="flex gap-3 text-[11.5px] text-mo"><span className="text-[#166534]">{x.dat} đạt</span><span className="text-nguy">{x.chua.length} chưa đạt</span>{x.trong > 0 && <span>{x.trong} chưa có số liệu</span>}</div>
+              {x.chua.length > 0 && (
+                <ul className="m-0 flex list-none flex-col gap-1 border-t border-vien p-0 pt-2">
+                  {x.chua.slice(0, 3).map(({ c, gt }) => (
+                    <li key={c.id} className="flex items-center gap-2 text-[0.75rem]">
+                      <span className="so shrink-0 rounded bg-white px-1 text-[10.5px] font-bold text-mo-2">{c.ma}</span>
+                      <span className="min-w-0 flex-1 truncate">{c.ten}</span>
+                      <b className="so shrink-0 text-nguy">{dinhDangGt(c, gt)}</b><span className="shrink-0 text-mo">/ {dinhDangMucTieu(c).replace(/^[≥≤] /, '')}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>}
+          </Link>
+        ))}
+      </div>
+    </The>
+  );
+}
+
+// ---------- Văn bản đến – đi (Thường trực) ----------
+function TheVanBan({ d }: { d: NonNullable<Awaited<ReturnType<typeof taiVanBan>>> }) {
+  const ds = [
+    ...d.chuaNhan.slice(0, 3).map((x) => ({ k: 'n' + x.id, den: true, ten: x.trich_yeu, phu: `${x.so_ky_hieu ? x.so_ky_hieu + ' · ' : ''}${tenNgan(x.tu_don_vi)}`, luc: x.gui_luc, nhan: 'Chưa nhận' })),
+    ...d.guiCho.slice(0, 3).map((x) => ({ k: 'g' + x.id, den: false, ten: x.trich_yeu, phu: x.so_ky_hieu ?? 'Văn bản gửi đi', luc: x.gui_luc, nhan: `${x.noi_nhan.filter((n) => n.nhan_luc).length}/${x.noi_nhan.length} đã nhận` })),
+  ].slice(0, 5);
+  return (
+    <The className="flex min-w-0 flex-col gap-2 p-4 sm:p-6">
+      <div className="flex items-center gap-2">
+        <h2 className="m-0 flex-1 text-[1rem] font-bold">Văn bản đến – đi</h2>
+        <Link to="/van-ban" className="text-[0.8125rem] font-semibold text-[#8E1B22]">Mở →</Link>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Link to="/van-ban" className="flex flex-col rounded-xl bg-nen-2 px-3 py-2.5 text-den"><span className={cx('mono text-[1.375rem] font-bold leading-none', d.chuaNhan.length ? 'text-nguy' : '')}>{d.chuaNhan.length}</span><span className="mt-1 text-[11.5px] text-mo">văn bản đến chưa nhận</span></Link>
+        <Link to="/van-ban?tab=gui" className="flex flex-col rounded-xl bg-nen-2 px-3 py-2.5 text-den"><span className={cx('mono text-[1.375rem] font-bold leading-none', d.guiCho.length ? 'text-cam' : '')}>{d.guiCho.length}</span><span className="mt-1 text-[11.5px] text-mo">gửi đi chưa đủ nơi nhận</span></Link>
+      </div>
+      {ds.length === 0 ? <span className="py-2 text-[0.8125rem] font-semibold text-[#166534]">Không có văn bản cần xử lý.</span> : (
+        <ul className="m-0 flex list-none flex-col p-0">
+          {ds.map((x) => (
+            <li key={x.k}>
+              <Link to="/van-ban" className="-mx-2 flex items-center gap-2.5 rounded-xl px-2 py-2 text-den hover:bg-nen-2">
+                <span className={cx('grid h-8 w-8 shrink-0 place-items-center rounded-lg', x.den ? 'bg-nguy-nhat text-nguy' : 'bg-xanh-nhat text-xanh')}>{x.den ? <Inbox className="h-4 w-4" /> : <SendHorizontal className="h-4 w-4" />}</span>
+                <span className="flex min-w-0 flex-1 flex-col"><span className="truncate text-[0.8125rem] font-semibold">{x.ten}</span><span className="truncate text-[11.5px] text-mo">{x.phu} · {ngayGio(x.luc)}</span></span>
+                <span className={cx('shrink-0 text-[11px] font-bold', x.den ? 'text-nguy' : 'text-cam-dam')}>{x.nhan}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </The>
   );
 }

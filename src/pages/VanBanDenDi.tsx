@@ -31,7 +31,7 @@ const hanPh = (d: string) => `${d}T17:00:00+07:00`;
 export default function VanBanDenDi() {
   const { hoSo } = useAuth();
   const quanTri = laQuanTri(hoSo);
-  const [tab, setTab] = useState<'nhan' | 'gui'>('nhan');
+  const [tab, setTab] = useState<'nhan' | 'gui'>(new URLSearchParams(window.location.search).get('tab') === 'gui' ? 'gui' : 'nhan');
   const [tim, setTim] = useState('');
   const [xemNhan, setXemNhan] = useState<Nhan | null>(null);
   const [xemGui, setXemGui] = useState<Gui | null>(null);

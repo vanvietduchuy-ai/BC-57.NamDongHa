@@ -1,8 +1,8 @@
 // Theo dõi chỉ tiêu Chuyển đổi số – NQ 57 / Đề án 06
 //   · Đơn vị chủ trì (Phòng VH-XH: CĐS; Tổ CSKV: Đề án 06): cài đặt chỉ tiêu, giao đơn vị cập nhật, theo dõi, nhắc
 //   · Thường trực, lãnh đạo BCĐ: xem số liệu cả 2 lĩnh vực, xuất Excel
-import { useMemo, useState } from 'react';
-import { BellRing, ChevronLeft, ChevronRight, Download, Pencil, Plus, Settings2, TrendingDown, TrendingUp } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { BellRing, Check, ChevronLeft, ChevronRight, Download, Pencil, Plus, Settings2, TrendingDown, TrendingUp } from 'lucide-react';
 import { laCQTTHoacLanhDao, quyenCt, useAuth } from '../lib/auth';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { loiDe, supabase } from '../lib/supabase';
@@ -11,7 +11,7 @@ import {
   datMucTieu, dinhDangGt, dinhDangMucTieu, dauNam, giaTriDong, gopSoLieu, gtTheoKy, hanKy, KIEU_CT, kyLui, kyMacDinh, kyNay, LV_CT, tenKyCt, tenKyNgan, tienDo, vachMucTieu,
   type ChiTieu as Ct, type KieuChiTieu, type LvChiTieu, type SoLieu,
 } from '../lib/chiTieu';
-import { Chip, ChipHan, cx, DangTai, HopLoi, HopThoai, lopO, Nut, O, Rong, The, ThanhTyLe, TieuDeTrang } from '../components/ui';
+import { Chip, ChipHan, cx, DangTai, HopLoi, HopThoai, lopO, Nut, Rong, The, ThanhTyLe, TieuDeTrang } from '../components/ui';
 
 type Dv = { id: string; ten: string; loai: string };
 const SO_KY = 6;
@@ -270,62 +270,127 @@ function FormChiTieu({ lv, ct, dv, nhomCo, dong, xong }: { lv: LvChiTieu; ct: Ct
     const { error } = await supabase.from('chi_tieu').update({ hoat_dong: false }).eq('id', ct.id);
     if (error) setLoi(loiDe(error)); else xong();
   };
+  const chonKhoi = (ds: Dv[]) => { const ids = ds.map((d) => d.id); const du = ids.every((x) => f.don_vi_ids.includes(x));
+    setF({ ...f, don_vi_ids: du ? f.don_vi_ids.filter((x) => !ids.includes(x)) : [...new Set([...f.don_vi_ids, ...ids])] }); };
+  const mt = f.muc_tieu === '' ? null : Number(f.muc_tieu.replace(',', '.'));
+  const hau = f.kieu === 'so' ? (f.don_vi_tinh || 'số') : '%';
   return (
-    <HopThoai mo dong={dong} tieuDe={ct ? 'Sửa chỉ tiêu' : `Thêm chỉ tiêu · ${LV_CT[lv].ngan}`} rong="max-w-2xl">
-      <div className="flex flex-col gap-3">
+    <HopThoai mo dong={dong} tieuDe={ct ? `Sửa chỉ tiêu ${ct.ma}` : `Thêm chỉ tiêu · ${LV_CT[lv].ngan}`} rong="max-w-2xl">
+      <div className="flex flex-col gap-3.5">
         {loi && <HopLoi loi={loi} />}
-        <div className="grid grid-cols-[110px_1fr] gap-3">
-          <O nhan="Mã"><input className={cx(lopO, 'so uppercase')} placeholder="DVC-01" value={f.ma} onChange={(e) => setF({ ...f, ma: e.target.value })} /></O>
-          <O nhan="Nhóm"><input className={lopO} list="nhom-ct" placeholder="VD: Dịch vụ công trực tuyến" value={f.nhom} onChange={(e) => setF({ ...f, nhom: e.target.value })} />
-            <datalist id="nhom-ct">{nhomCo.map((n) => <option key={n} value={n} />)}</datalist></O>
-        </div>
-        <O nhan="Tên chỉ tiêu"><textarea rows={2} className={cx(lopO, 'py-2')} value={f.ten} onChange={(e) => setF({ ...f, ten: e.target.value })} /></O>
-        <O nhan="Loại số liệu" goiY={KIEU_CT[f.kieu].goiY}>
+
+        <Muc so={1} ten="Thông tin chỉ tiêu">
+          <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-2.5">
+            <NhanO nhan="Mã"><input className={cx(lopO, 'so w-full uppercase')} placeholder="DVC-01" value={f.ma} onChange={(e) => setF({ ...f, ma: e.target.value })} /></NhanO>
+            <NhanO nhan="Nhóm"><input className={cx(lopO, 'w-full')} list="nhom-ct" placeholder="Dịch vụ công" value={f.nhom} onChange={(e) => setF({ ...f, nhom: e.target.value })} />
+              <datalist id="nhom-ct">{nhomCo.map((n) => <option key={n} value={n} />)}</datalist></NhanO>
+          </div>
+          <NhanO nhan="Tên chỉ tiêu"><textarea rows={2} className={cx(lopO, 'w-full py-2 leading-snug')} placeholder="VD: Tỷ lệ hồ sơ thủ tục hành chính nộp trực tuyến" value={f.ten} onChange={(e) => setF({ ...f, ten: e.target.value })} /></NhanO>
+        </Muc>
+
+        <Muc so={2} ten="Cách tính số liệu">
           <div className="grid grid-cols-3 gap-1 rounded-xl bg-nen-3 p-1">
             {(Object.keys(KIEU_CT) as KieuChiTieu[]).map((k) => <button key={k} type="button" aria-pressed={f.kieu === k} onClick={() => setF({ ...f, kieu: k })}
-              className={cx('min-h-9 rounded-lg px-1 text-[0.8125rem] font-semibold leading-tight', f.kieu === k ? 'bg-white shadow-sm' : 'text-mo')}>{KIEU_CT[k].ten.split(' (')[0]}</button>)}
+              className={cx('min-h-9 rounded-lg px-1 text-[0.8125rem] font-semibold leading-tight transition', f.kieu === k ? 'bg-white text-den shadow-sm' : 'text-mo')}>{KIEU_CT[k].ten.split(' (')[0]}</button>)}
           </div>
-        </O>
-        {f.kieu === 'ty_le' && <div className="grid grid-cols-2 gap-3">
-          <O nhan="Tử số là"><input className={lopO} placeholder="Hồ sơ nộp trực tuyến" value={f.nhan_tu} onChange={(e) => setF({ ...f, nhan_tu: e.target.value })} /></O>
-          <O nhan="Mẫu số là"><input className={lopO} placeholder="Tổng hồ sơ tiếp nhận" value={f.nhan_mau} onChange={(e) => setF({ ...f, nhan_mau: e.target.value })} /></O>
-        </div>}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <O nhan="Mục tiêu"><div className="flex items-center gap-1"><input inputMode="decimal" className={cx(lopO, 'so w-full')} value={f.muc_tieu} onChange={(e) => setF({ ...f, muc_tieu: e.target.value })} />
-            <span className="text-[0.8125rem] text-mo">{f.kieu === 'so' ? '' : '%'}</span></div></O>
-          <O nhan="Đánh giá"><select className={lopO} value={f.chieu} onChange={(e) => setF({ ...f, chieu: e.target.value as Ct['chieu'] })}><option value="cao_hon_tot">Càng cao càng tốt</option><option value="thap_hon_tot">Càng thấp càng tốt</option></select></O>
-          {f.kieu === 'so' && <O nhan="Đơn vị tính"><input className={lopO} placeholder="tài khoản" value={f.don_vi_tinh} onChange={(e) => setF({ ...f, don_vi_tinh: e.target.value })} /></O>}
-          <O nhan="Hạn cập nhật"><div className="flex items-center gap-1"><span className="text-[0.8125rem] text-mo">Ngày</span><input inputMode="numeric" className={cx(lopO, 'so w-16')} value={f.han_ngay} onChange={(e) => setF({ ...f, han_ngay: e.target.value })} /></div></O>
-        </div>
-        {f.kieu !== 'co_khong' && (
-          <label className="flex items-start gap-3 rounded-xl border border-vien bg-nen-2 px-3 py-2.5">
-            <input type="checkbox" role="switch" className="mt-0.5 h-5 w-5 shrink-0 accent-ink" checked={f.luy_ke} onChange={(e) => setF({ ...f, luy_ke: e.target.checked })} />
-            <span className="flex flex-col"><span className="text-[0.875rem] font-semibold">Tính luỹ kế từ đầu năm</span>
-              <span className="text-[11.5px] leading-snug text-mo">{f.kieu === 'so' ? 'Đơn vị nhập số phát sinh trong tháng; hệ thống cộng dồn từ tháng 1 để so với mục tiêu năm.' : 'Đơn vị nhập tử số, mẫu số phát sinh trong tháng; tỷ lệ luỹ kế = tổng tử số / tổng mẫu số từ tháng 1.'}</span></span>
-          </label>
-        )}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center"><span className="flex-1 text-[0.8125rem] font-semibold">Đơn vị cập nhật số liệu <span className="font-normal text-mo">· {f.don_vi_ids.length} đơn vị</span></span>
-            <button className="min-h-8 text-[0.8125rem] font-semibold text-[#8E1B22]" onClick={() => setF({ ...f, don_vi_ids: f.don_vi_ids.length === dsDv.length ? [] : dsDv.map((d) => d.id) })}>{f.don_vi_ids.length === dsDv.length ? 'Bỏ chọn' : 'Chọn tất cả'}</button></div>
-          {nhomDv.filter(([, ds]) => ds.length).map(([ten, ds]) => (
-            <div key={ten} className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-wide text-mo">{ten}</span>
-              <div className="flex flex-wrap gap-1.5">
-                {ds.map((d) => <button key={d.id} type="button" aria-pressed={f.don_vi_ids.includes(d.id)} onClick={() => bat(d.id)}
-                  className={cx('min-h-8 rounded-full border px-3 text-[0.8125rem]', f.don_vi_ids.includes(d.id) ? 'border-do bg-do text-white' : 'border-vien-2 bg-white text-mo-2')}>{d.ten.replace(' – Công an phường', '')}</button>)}
-              </div>
+          {f.kieu === 'ty_le' && (
+            <div className="flex flex-col gap-1.5">
+              <input aria-label="Tử số" className={cx(lopO, 'min-h-10 w-full')} placeholder="Tử số: hồ sơ nộp trực tuyến" value={f.nhan_tu} onChange={(e) => setF({ ...f, nhan_tu: e.target.value })} />
+              <div className="mx-2 border-t-2 border-den/70" />
+              <input aria-label="Mẫu số" className={cx(lopO, 'min-h-10 w-full')} placeholder="Mẫu số: tổng hồ sơ tiếp nhận" value={f.nhan_mau} onChange={(e) => setF({ ...f, nhan_mau: e.target.value })} />
+              <span className="px-1 text-[11.5px] text-mo">Đơn vị nhập 2 số, hệ thống tự tính tỷ lệ %.</span>
             </div>
-          ))}
-        </div>
-        <O nhan="Hướng dẫn cách tính (đơn vị xem khi nhập)"><textarea rows={2} className={cx(lopO, 'py-2')} value={f.ghi_chu} onChange={(e) => setF({ ...f, ghi_chu: e.target.value })} /></O>
-        <div className="flex flex-wrap justify-end gap-2">
-          {ct && <Nut kieu="nguy" className="mr-auto" onClick={ngung}>Ngừng theo dõi</Nut>}
+          )}
+          {f.kieu === 'so' && <NhanO nhan="Đơn vị tính"><input className={cx(lopO, 'w-full')} placeholder="tài khoản, người, hồ sơ…" value={f.don_vi_tinh} onChange={(e) => setF({ ...f, don_vi_tinh: e.target.value })} /></NhanO>}
+          {f.kieu === 'co_khong' && <span className="text-[0.8125rem] text-mo">Đơn vị chọn Có / Chưa có. Kết quả là tỷ lệ % đơn vị đã có.</span>}
+          {f.kieu !== 'co_khong' && (
+            <button type="button" role="switch" aria-checked={f.luy_ke} onClick={() => setF({ ...f, luy_ke: !f.luy_ke })}
+              className={cx('flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition', f.luy_ke ? 'border-cam/50 bg-[#FEF9E7]' : 'border-vien bg-white')}>
+              <span className="flex min-w-0 flex-1 flex-col"><span className="text-[0.875rem] font-semibold">Tính luỹ kế từ đầu năm</span>
+                <span className="text-[11.5px] leading-snug text-mo">{f.kieu === 'so' ? 'Đơn vị nhập số trong tháng; cộng dồn từ tháng 1 để so mục tiêu năm.' : 'Tỷ lệ luỹ kế = tổng tử số / tổng mẫu số từ tháng 1.'}</span></span>
+              <span className={cx('relative h-6 w-11 shrink-0 rounded-full transition', f.luy_ke ? 'bg-do' : 'bg-[#D6D1C4]')}>
+                <span className={cx('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all', f.luy_ke ? 'left-[22px]' : 'left-0.5')} /></span>
+            </button>
+          )}
+        </Muc>
+
+        <Muc so={3} ten="Mục tiêu và hạn cập nhật">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-2.5">
+            <NhanO nhan="Mục tiêu">
+              <div className="relative">
+                <input inputMode="decimal" className={cx(lopO, 'so w-full pr-14 text-right')} placeholder={f.kieu === 'so' ? '300' : '90'} value={f.muc_tieu} onChange={(e) => setF({ ...f, muc_tieu: e.target.value })} />
+                <span className="pointer-events-none absolute right-3 top-1/2 max-w-12 -translate-y-1/2 truncate text-[0.8125rem] text-mo">{hau}</span>
+              </div>
+            </NhanO>
+            <NhanO nhan="Đánh giá">
+              <div className="grid min-h-11 grid-cols-2 gap-1 rounded-xl bg-nen-3 p-1">
+                {([['cao_hon_tot', '↑ Cao là tốt'], ['thap_hon_tot', '↓ Thấp là tốt']] as const).map(([k, t]) => <button key={k} type="button" aria-pressed={f.chieu === k} onClick={() => setF({ ...f, chieu: k })}
+                  className={cx('rounded-lg px-1 text-[0.8125rem] font-semibold', f.chieu === k ? 'bg-white text-den shadow-sm' : 'text-mo')}>{t}</button>)}
+              </div>
+            </NhanO>
+          </div>
+          <NhanO nhan="Hạn đơn vị gửi số liệu">
+            <select className={cx(lopO, 'w-full')} value={f.han_ngay} onChange={(e) => setF({ ...f, han_ngay: e.target.value })}>
+              {Array.from({ length: 28 }, (_, i) => String(i + 1)).map((d) => <option key={d} value={d}>Ngày {d} của tháng sau kỳ báo cáo</option>)}
+            </select>
+          </NhanO>
+          {mt != null && !Number.isNaN(mt) && (
+            <div className="rounded-lg bg-nen-2 px-3 py-2 text-[0.8125rem] text-mo-2">
+              Đạt khi {f.luy_ke && f.kieu !== 'co_khong' ? 'luỹ kế ' : ''}{f.chieu === 'cao_hon_tot' ? '≥' : '≤'} <b className="so text-den">{mt.toLocaleString('vi-VN')}{f.kieu === 'so' ? ` ${f.don_vi_tinh}` : '%'}</b>
+            </div>
+          )}
+        </Muc>
+
+        <Muc so={4} ten="Đơn vị cập nhật số liệu" phai={<span className={cx('so rounded-full px-2 py-0.5 text-[11.5px] font-bold', f.don_vi_ids.length ? 'bg-do text-white' : 'bg-nen-3 text-mo')}>{f.don_vi_ids.length} đơn vị</span>}>
+          {nhomDv.filter(([, ds]) => ds.length).map(([ten, ds]) => {
+            const n = ds.filter((d) => f.don_vi_ids.includes(d.id)).length;
+            return (
+              <div key={ten} className="flex flex-col gap-2 rounded-xl border border-vien bg-white p-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 text-[0.8125rem] font-bold">{ten} <span className="so font-semibold text-mo">{n}/{ds.length}</span></span>
+                  <button type="button" onClick={() => chonKhoi(ds)} className="min-h-8 rounded-lg px-2 text-[0.75rem] font-semibold text-[#8E1B22] hover:bg-do/5">{n === ds.length ? 'Bỏ cả khối' : 'Chọn cả khối'}</button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {ds.map((d) => { const on = f.don_vi_ids.includes(d.id); return (
+                    <button key={d.id} type="button" aria-pressed={on} onClick={() => bat(d.id)}
+                      className={cx('inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 text-[0.8125rem] transition', on ? 'border-do bg-do text-white' : 'border-vien-2 bg-nen-2 text-mo-2')}>
+                      {on && <Check className="h-3.5 w-3.5" />}{d.ten.replace(' – Công an phường', '')}</button>); })}
+                </div>
+              </div>
+            );
+          })}
+        </Muc>
+
+        <Muc so={5} ten="Hướng dẫn cách tính" phai={<span className="text-[11.5px] text-mo">không bắt buộc</span>}>
+          <textarea rows={2} className={cx(lopO, 'w-full py-2 leading-snug')} placeholder="Đơn vị xem khi nhập số, VD: lấy số liệu trên hệ thống ngày cuối tháng" value={f.ghi_chu} onChange={(e) => setF({ ...f, ghi_chu: e.target.value })} />
+        </Muc>
+
+        <div className="sticky bottom-[calc(-20px-env(safe-area-inset-bottom))] -mx-4 -mb-[calc(20px+env(safe-area-inset-bottom))] flex items-center gap-2 border-t border-[#F1EEE7] bg-white/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:bottom-[-20px] sm:-mx-5 sm:-mb-5 sm:px-5 sm:pb-4">
+          {ct ? <button type="button" onClick={ngung} className="min-h-10 px-1 text-[0.8125rem] font-semibold text-nguy">Ngừng theo dõi</button> : <span className="text-[11.5px] text-mo">{f.don_vi_ids.length ? `Giao ${f.don_vi_ids.length} đơn vị` : 'Chưa chọn đơn vị'}</span>}
+          <span className="flex-1" />
           <Nut onClick={dong}>Huỷ</Nut>
-          <Nut kieu="chinh" icon={<Settings2 className="h-4 w-4" />} dangChay={dang} onClick={luu}>Lưu chỉ tiêu</Nut>
+          <Nut kieu="chinh" icon={<Settings2 className="h-4 w-4" />} dangChay={dang} onClick={luu}>Lưu</Nut>
         </div>
       </div>
     </HopThoai>
   );
+}
+
+// Một khối của biểu mẫu: số thứ tự + tiêu đề
+function Muc({ so, ten, phai, children }: { so: number; ten: string; phai?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2.5 rounded-2xl bg-nen-2 p-3 sm:p-3.5 [&_input]:bg-white [&_select]:bg-white [&_textarea]:bg-white">
+      <div className="flex items-center gap-2">
+        <span className="so grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-bold text-white">{so}</span>
+        <h3 className="m-0 flex-1 text-[0.875rem] font-bold">{ten}</h3>
+        {phai}
+      </div>
+      {children}
+    </section>
+  );
+}
+function NhanO({ nhan, children }: { nhan: string; children: ReactNode }) {
+  return <label className="flex min-w-0 flex-col gap-1"><span className="text-[11.5px] font-semibold text-mo">{nhan}</span>{children}</label>;
 }
 
 // ---------- Nhắc đơn vị chưa cập nhật ----------
