@@ -3,6 +3,13 @@
 export type LvChiTieu = 'chuyen_doi_so' | 'de_an_06';
 export type KieuChiTieu = 'ty_le' | 'so' | 'co_khong';
 export type ChieuChiTieu = 'cao_hon_tot' | 'thap_hon_tot';
+// Kết quả chung của chỉ tiêu từ số liệu các đơn vị được phân công
+export type TongHop = 'tong' | 'trung_binh' | 'tung_don_vi';
+export const TONG_HOP: Record<TongHop, { ten: string; mo: string }> = {
+  tong: { ten: 'Cộng tổng các đơn vị', mo: 'Tỷ lệ = tổng tử số / tổng mẫu số; số lượng = cộng số các đơn vị' },
+  trung_binh: { ten: 'Trung bình các đơn vị', mo: 'Lấy trung bình kết quả của từng đơn vị' },
+  tung_don_vi: { ten: 'Từng đơn vị phải đạt', mo: 'Kết quả chung là tổng; chỉ đạt khi mọi đơn vị đều đạt mục tiêu' },
+};
 
 export const LV_CT: Record<LvChiTieu, { ten: string; ngan: string; dauMoi: string }> = {
   chuyen_doi_so: { ten: 'Chuyển đổi số – NQ 57', ngan: 'Chuyển đổi số', dauMoi: 'Phòng Văn hóa – Xã hội' },
@@ -17,7 +24,7 @@ export const KIEU_CT: Record<KieuChiTieu, { ten: string; goiY: string }> = {
 export type ChiTieu = {
   id: string; linh_vuc: LvChiTieu; nhom: string; ma: string; ten: string; kieu: KieuChiTieu; don_vi_tinh: string | null;
   nhan_tu: string | null; nhan_mau: string | null;              // nhãn tử số, mẫu số (tỷ lệ)
-  muc_tieu: number | null; chieu: ChieuChiTieu; han_ngay: number; luy_ke: boolean;   // luỹ kế: cộng dồn từ tháng 1 // hạn cập nhật: ngày … của tháng sau kỳ
+  muc_tieu: number | null; chieu: ChieuChiTieu; han_ngay: number; luy_ke: boolean; tong_hop?: TongHop;   // luỹ kế: cộng dồn từ tháng 1 // hạn cập nhật: ngày … của tháng sau kỳ
   don_vi_ids: string[]; thu_tu: number; hoat_dong: boolean; ghi_chu: string | null;
 };
 export type SoLieu = {
@@ -69,7 +76,21 @@ export const dauNam = (ky: string) => `${ky.slice(0, 4)}-01`;
 export const dongTheoKy = (ct: Pick<ChiTieu, 'id' | 'luy_ke'>, ds: SoLieu[], ky: string, dv?: string) =>
   ds.filter((s) => s.chi_tieu_id === ct.id && s.da_gui && (!dv || s.don_vi_id === dv)
     && (ct.luy_ke ? s.ky >= dauNam(ky) && s.ky <= ky : s.ky === ky));
-export const gtTheoKy = (ct: ChiTieu, ds: SoLieu[], ky: string, dv?: string) => gopSoLieu(ct, dongTheoKy(ct, ds, ky, dv)).gt;
+export const gtTheoKy = (ct: ChiTieu, ds: SoLieu[], ky: string, dv?: string) => (dv ? gopSoLieu(ct, dongTheoKy(ct, ds, ky, dv)).gt : ketQuaKy(ct, ds, ky).gt);
+
+// Kết quả chung tại kỳ theo cách tổng hợp; dvDat/dvCo: số đơn vị đạt / có số liệu
+export function ketQuaKy(ct: ChiTieu, ds: SoLieu[], ky: string) {
+  const dong = dongTheoKy(ct, ds, ky);
+  const theoDv = [...new Set(dong.map((s) => s.don_vi_id))]
+    .map((dv) => gopSoLieu(ct, dong.filter((s) => s.don_vi_id === dv)).gt).filter((g): g is number => g != null);
+  const th = ct.tong_hop ?? 'tong';
+  const gt = th === 'trung_binh' ? (theoDv.length ? theoDv.reduce((a, b) => a + b, 0) / theoDv.length : null) : gopSoLieu(ct, dong).gt;
+  const danhGia = theoDv.map((g) => datMucTieu(ct, g));
+  let dat = datMucTieu(ct, gt);
+  if (th === 'tung_don_vi' && ct.muc_tieu != null)
+    dat = !theoDv.length ? null : danhGia.some((x) => x === false) ? false : theoDv.length >= ct.don_vi_ids.length ? true : null;
+  return { gt, dat, dvDat: danhGia.filter(Boolean).length, dvCo: theoDv.length };
+}
 
 export const datMucTieu = (ct: ChiTieu, gt: number | null) =>
   gt == null || ct.muc_tieu == null ? null : ct.chieu === 'cao_hon_tot' ? gt >= ct.muc_tieu : gt <= ct.muc_tieu;
