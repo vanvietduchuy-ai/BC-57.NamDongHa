@@ -61,30 +61,31 @@ function TaiKhoan() {
     try { await goiChucNang('quan-tri-tai-khoan', { hanh_dong: 'dat_lai_mat_khau', id: nd.id, mat_khau: mk }); setLoi(null); window.alert('Đã đặt lại mật khẩu.'); }
     catch (e) { setLoi(loiDe(e)); }
   };
+  const nutSdt = (n: Nd) => {
+    const l = data?.lh.get(n.id);
+    return (
+      <button onClick={() => setSdtCua(n)} className="flex min-h-9 items-center gap-2 rounded-lg px-2 hover:bg-nen" aria-label={`Số điện thoại ${n.ho_ten}`}>
+        {l?.so_dien_thoai ? <>
+          <span className="so font-semibold">{hienSdt(l.so_dien_thoai)}</span>
+          {l.nhan_zalo && <MessageCircle className="h-3.5 w-3.5 text-xanh" aria-label="Nhận Zalo" />}
+          {l.nhan_goi && <PhoneCall className="h-3.5 w-3.5 text-xanh" aria-label="Nhận cuộc gọi" />}
+        </> : <span className="font-semibold text-[#8E1B22]">+ Thêm SĐT</span>}
+      </button>
+    );
+  };
   return (
     <>
       <div className="flex"><span className="flex-1" /><Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setMo(true)}>Tạo tài khoản</Nut></div>
       {(loi || loiTai) && <HopLoi loi={(loi || loiTai)!} />}
       {dangTai && !data && <DangTai />}
       {data && (
-        <The className="overflow-hidden"><div className="overflow-x-auto">
+        <The className="overflow-hidden"><div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[880px] text-[0.8125rem]">
             <thead className="bg-nen-2 text-left text-[11px] text-mo"><tr><th className="px-4 py-3">NGƯỜI DÙNG</th><th className="px-2">ĐIỆN THOẠI</th><th className="px-2">ĐƠN VỊ</th><th className="px-2">VAI TRÒ</th><th className="px-2">TRẠNG THÁI</th><th className="px-4 text-right">THAO TÁC</th></tr></thead>
             <tbody>{data.nd.map((n) => (
               <tr key={n.id} className="border-t border-[#F1EEE7]">
                 <td className="min-w-[220px] px-4 py-2.5"><div className="font-semibold">{n.ho_ten}</div><div className="text-xs text-mo">{n.email}{n.chuc_vu && ` · ${n.chuc_vu}`}</div></td>
-                <td className="whitespace-nowrap px-2">{(() => {
-                  const l = data.lh.get(n.id);
-                  return (
-                    <button onClick={() => setSdtCua(n)} className="flex min-h-9 items-center gap-2 rounded-lg px-2 hover:bg-nen" aria-label={`Số điện thoại ${n.ho_ten}`}>
-                      {l?.so_dien_thoai ? <>
-                        <span className="so font-semibold">{hienSdt(l.so_dien_thoai)}</span>
-                        {l.nhan_zalo && <MessageCircle className="h-3.5 w-3.5 text-xanh" aria-label="Nhận Zalo" />}
-                        {l.nhan_goi && <PhoneCall className="h-3.5 w-3.5 text-xanh" aria-label="Nhận cuộc gọi" />}
-                      </> : <span className="font-semibold text-[#8E1B22]">+ Thêm SĐT</span>}
-                    </button>
-                  );
-                })()}</td>
+                <td className="whitespace-nowrap px-2">{nutSdt(n)}</td>
                 <td className="px-2"><select aria-label="Đơn vị" className={cx(lopO, 'min-h-9 w-[200px] text-[0.8125rem]')} value={n.don_vi_id ?? ''} onChange={(e) => doi(n.id, { don_vi_id: e.target.value || null })}><option value="">—</option>{data.dv.map((d) => <option key={d.id} value={d.id}>{d.ten}</option>)}</select></td>
                 <td className="px-2"><select aria-label="Vai trò" className={cx(lopO, 'min-h-9 text-[0.8125rem]')} value={n.vai_tro} onChange={(e) => doi(n.id, { vai_tro: e.target.value })}>{Object.entries(VT).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}</select></td>
                 <td className="px-2"><Chip nen={n.hoat_dong ? 'bg-xanh-nhat' : 'bg-cam-nhat'} chu={n.hoat_dong ? 'text-xanh' : 'text-cam-dam'}>{n.hoat_dong ? 'Đang hoạt động' : 'Đã khoá'}</Chip></td>
@@ -95,7 +96,31 @@ function TaiKhoan() {
               </tr>
             ))}</tbody>
           </table>
-        </div></The>
+        </div>
+        {/* Điện thoại: mỗi tài khoản 1 thẻ, không cuộn ngang */}
+        <ul className="m-0 flex list-none flex-col p-0 md:hidden">
+          {data.nd.map((n) => (
+            <li key={n.id} className="flex flex-col gap-2.5 border-b border-[#F1EEE7] px-4 py-3.5 last:border-0">
+              <div className="flex items-start gap-2">
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="text-[0.9375rem] font-semibold leading-snug">{n.ho_ten}</span>
+                  <span className="break-all text-xs text-mo">{n.email}{n.chuc_vu && ` · ${n.chuc_vu}`}</span>
+                </div>
+                <Chip nen={n.hoat_dong ? 'bg-xanh-nhat' : 'bg-cam-nhat'} chu={n.hoat_dong ? 'text-xanh' : 'text-cam-dam'}>{n.hoat_dong ? 'Hoạt động' : 'Đã khoá'}</Chip>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <select aria-label="Đơn vị" className={cx(lopO, 'min-h-10 w-full min-w-0 text-[0.8125rem]')} value={n.don_vi_id ?? ''} onChange={(e) => doi(n.id, { don_vi_id: e.target.value || null })}><option value="">— Đơn vị —</option>{data.dv.map((d) => <option key={d.id} value={d.id}>{d.ten}</option>)}</select>
+                <select aria-label="Vai trò" className={cx(lopO, 'min-h-10 w-full min-w-0 text-[0.8125rem]')} value={n.vai_tro} onChange={(e) => doi(n.id, { vai_tro: e.target.value })}>{Object.entries(VT).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}</select>
+              </div>
+              <div className="-ml-2 flex items-center gap-1 text-[0.8125rem]">
+                {nutSdt(n)}
+                <span className="flex-1" />
+                <button className="min-h-9 px-2 font-semibold text-[#8E1B22]" onClick={() => datLaiMk(n)}>Đặt lại MK</button>
+                <button className={cx('min-h-9 px-2 font-semibold', n.hoat_dong ? 'text-nguy' : 'text-xanh')} onClick={() => doi(n.id, { hoat_dong: !n.hoat_dong })}>{n.hoat_dong ? 'Khoá' : 'Mở khoá'}</button>
+              </div>
+            </li>
+          ))}
+        </ul></The>
       )}
       {sdtCua && <HopLienHe key={sdtCua.id} mo dong={() => setSdtCua(null)} nguoiDungId={sdtCua.id} ten={sdtCua.ho_ten} xong={() => void taiLai()} />}
       <TaoTaiKhoan mo={mo} dong={() => setMo(false)} donVi={data?.dv ?? []} xong={() => { setMo(false); void taiLai(); }} />
@@ -191,7 +216,7 @@ function DonVi() {
       {loi && <HopLoi loi={loi} />}
       {dangTai && !data && <DangTai />}
       {data && (
-        <The className="overflow-hidden"><div className="overflow-x-auto">
+        <The className="overflow-hidden"><div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[640px] text-[0.8125rem]">
             <thead className="bg-nen-2 text-left text-[11px] text-mo"><tr><th className="px-4 py-3">MÃ</th><th className="px-2">TÊN ĐƠN VỊ</th><th className="px-2">PHẢI NỘP BÁO CÁO ĐỊNH KỲ</th><th className="px-2">HOẠT ĐỘNG</th></tr></thead>
             <tbody>{data.map((d) => (
@@ -203,6 +228,17 @@ function DonVi() {
             ))}</tbody>
           </table>
         </div>
+        <ul className="m-0 flex list-none flex-col p-0 md:hidden">
+          {data.map((d) => (
+            <li key={d.id} className="flex flex-col gap-2 border-b border-[#F1EEE7] px-4 py-3 last:border-0">
+              <div className="flex min-w-0 flex-col"><span className="text-[0.9375rem] font-semibold leading-snug">{d.ten}</span><span className="so text-xs text-mo">{d.ma}</span></div>
+              <div className="flex flex-wrap gap-x-5 gap-y-1 text-[0.8125rem]">
+                <label className="flex min-h-9 items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-ink" checked={d.phai_bao_cao} onChange={(e) => chay(supabase.from('don_vi').update({ phai_bao_cao: e.target.checked }).eq('id', d.id))} />Phải nộp báo cáo định kỳ</label>
+                <label className="flex min-h-9 items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-ink" checked={d.hoat_dong} onChange={(e) => chay(supabase.from('don_vi').update({ hoat_dong: e.target.checked }).eq('id', d.id))} />Hoạt động</label>
+              </div>
+            </li>
+          ))}
+        </ul>
         <div className="flex flex-wrap items-end gap-2 border-t border-vien bg-nen-2 p-4">
           <input aria-label="Mã đơn vị" placeholder="MÃ (vd DOAN_TN)" className={cx(lopO, 'w-full sm:w-40')} value={moi.ma} onChange={(e) => setMoi({ ...moi, ma: e.target.value.toUpperCase() })} />
           <input aria-label="Tên đơn vị" placeholder="Tên đơn vị" className={cx(lopO, 'flex-1')} value={moi.ten} onChange={(e) => setMoi({ ...moi, ten: e.target.value })} />
@@ -347,7 +383,7 @@ function NhatKy() {
       .map((k) => `${COT[k]}: ${giaTri(n.du_lieu_cu![k])} → ${giaTri(n.du_lieu_moi![k])}`).join('; ');
   };
   return (
-    <The className="overflow-hidden"><div className="overflow-x-auto">
+    <The className="overflow-hidden"><div className="hidden overflow-x-auto md:block">
       <table className="w-full min-w-[720px] text-[0.7812rem]">
         <thead className="bg-nen-2 text-left text-[11px] text-mo"><tr><th className="px-4 py-3">THỜI ĐIỂM</th><th className="px-2">NGƯỜI THỰC HIỆN</th><th className="px-2">DỮ LIỆU</th><th className="px-2">THAO TÁC</th><th className="px-4">THAY ĐỔI</th></tr></thead>
         <tbody>{data?.nk.map((n) => (
@@ -360,7 +396,16 @@ function NhatKy() {
           </tr>
         ))}</tbody>
       </table>
-    </div></The>
+    </div>
+    <ul className="m-0 flex list-none flex-col p-0 md:hidden">
+      {data?.nk.map((n) => (
+        <li key={n.id} className="flex flex-col gap-0.5 border-b border-[#F1EEE7] px-4 py-3 last:border-0">
+          <span className="text-xs text-mo"><span className="so">{ngayGio(n.luc)}</span> · {n.boi ? data.nd.get(n.boi) ?? 'Người dùng' : 'Hệ thống'}</span>
+          <span className="text-[0.875rem] font-semibold">{({ INSERT: 'Thêm', UPDATE: 'Sửa', DELETE: 'Xoá' } as Record<string, string>)[n.hanh_dong]} · {BANG[n.bang] ?? n.bang}</span>
+          {tomTat(n) && <span className="break-words text-xs text-mo-2">{tomTat(n)}</span>}
+        </li>
+      ))}
+    </ul></The>
   );
 }
 
