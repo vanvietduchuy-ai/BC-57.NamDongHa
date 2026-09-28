@@ -53,7 +53,7 @@ export default function SoLieu() {
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
+    <div className="flex flex-col gap-4">
       <TieuDeTrang tren={hoSo?.don_vi?.ten} ten="Cập nhật số liệu" />
       <div className="flex items-center gap-2">
         <button aria-label="Kỳ trước" onClick={() => setKy(kyLui(ky))} className="grid h-10 w-10 place-items-center rounded-xl border border-vien-2 bg-white"><ChevronLeft className="h-4 w-4" /></button>
