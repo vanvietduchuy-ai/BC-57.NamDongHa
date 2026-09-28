@@ -3,7 +3,7 @@
 //   · Thường trực, lãnh đạo BCĐ: xem số liệu cả 2 lĩnh vực, xuất Excel
 import { useMemo, useState } from 'react';
 import { BellRing, ChevronLeft, ChevronRight, Download, Pencil, Plus, Settings2, TrendingDown, TrendingUp } from 'lucide-react';
-import { dauMoiCds, dauMoiDa06, laCQTTHoacLanhDao, useAuth } from '../lib/auth';
+import { laCQTTHoacLanhDao, quyenCt, useAuth } from '../lib/auth';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { loiDe, supabase } from '../lib/supabase';
 import { ngayGio } from '../lib/dinhDang';
@@ -19,11 +19,12 @@ const SO_KY = 6;
 export default function ChiTieu() {
   const { hoSo } = useAuth();
   const xemTatCa = laCQTTHoacLanhDao(hoSo);
-  const cuaToi: LvChiTieu[] = [...(dauMoiCds(hoSo) ? ['chuyen_doi_so' as const] : []), ...(dauMoiDa06(hoSo) ? ['de_an_06' as const] : [])];
+  const cuaToi = (['chuyen_doi_so', 'de_an_06'] as LvChiTieu[]).filter((x) => quyenCt(hoSo, x));
   const dsLv: LvChiTieu[] = xemTatCa ? ['chuyen_doi_so', 'de_an_06'] : cuaToi;
   const [lv, setLv] = useState<LvChiTieu>(dsLv[0] ?? 'chuyen_doi_so');
   const [ky, setKy] = useState(kyMacDinh());
-  const chuTri = cuaToi.includes(lv);
+  const chuTri = quyenCt(hoSo, lv) === 'cai_dat';          // cài đặt chỉ tiêu
+  const theoDoi = !!quyenCt(hoSo, lv);                       // theo dõi, nhắc
   const [chon, setChon] = useState<Ct | null>(null);
   const [sua, setSua] = useState<Ct | 'moi' | null>(null);
   const [moNhac, setMoNhac] = useState(false);
@@ -79,7 +80,7 @@ export default function ChiTieu() {
   if (!dsLv.length) return <Rong>Tài khoản không theo dõi chỉ tiêu.</Rong>;
   return (
     <div className="flex flex-col gap-4">
-      <TieuDeTrang tren={chuTri ? 'Đơn vị chủ trì theo dõi, đôn đốc' : 'Số liệu các đơn vị cập nhật'} ten="Chỉ tiêu số liệu"
+      <TieuDeTrang tren={chuTri ? 'Quản lý chỉ tiêu · cài đặt, theo dõi, đôn đốc' : theoDoi ? 'Quản lý chỉ tiêu · theo dõi, đôn đốc' : 'Số liệu các đơn vị cập nhật'} ten="Chỉ tiêu số liệu"
         phai={<>
           <Nut icon={<Download className="h-4 w-4" />} onClick={xuatExcel} ngan="">Xuất Excel</Nut>
           {chuTri && <Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setSua('moi')} ngan="Thêm">Thêm chỉ tiêu</Nut>}
@@ -116,11 +117,11 @@ export default function ChiTieu() {
               <ThanhTyLe tyLe={tinh.dvGiao.length ? tinh.dvXong.length / tinh.dvGiao.length : 0} mauThanh="bg-do" cao="h-1.5" />
             </div>
             <span className="flex-1 sm:hidden" />{tinh.dvGiao.length > 0 && tinh.dvXong.length === tinh.dvGiao.length ? <Chip nen="bg-[#DCFCE7]" chu="text-[#166534]">Đủ số liệu</Chip> : tinh.han && <ChipHan han={tinh.han} />}
-            {chuTri && tinh.dvXong.length < tinh.dvGiao.length && <Nut kieu="nhe" icon={<BellRing className="h-4 w-4" />} onClick={() => setMoNhac(true)}>Nhắc</Nut>}
+            {theoDoi && tinh.dvXong.length < tinh.dvGiao.length && <Nut kieu="nhe" icon={<BellRing className="h-4 w-4" />} onClick={() => setMoNhac(true)}>Nhắc</Nut>}
           </div>
         </The>
 
-        {!data.ct.length && <Rong>{chuTri ? 'Chưa có chỉ tiêu. Bấm "Thêm chỉ tiêu" để cài đặt.' : 'Đơn vị chủ trì chưa cài đặt chỉ tiêu.'}</Rong>}
+        {!data.ct.length && <Rong>{chuTri ? 'Chưa có chỉ tiêu. Bấm "Thêm chỉ tiêu" để cài đặt.' : 'Người quản lý chưa cài đặt chỉ tiêu.'}</Rong>}
         {nhom.map(([ten, ds]) => (
           <section key={ten} className="flex flex-col gap-2">
             <h2 className="m-0 px-1 text-[11.5px] font-bold uppercase tracking-wide text-mo">{ten} · {ds.length}</h2>
