@@ -5,11 +5,13 @@ import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { useAuth, laQuanTri } from '../lib/auth';
 import { ngay, ngayGio, ngayGioDu } from '../lib/dinhDang';
-import { COT_NV, LINH_VUC, NHOM_NV, thieu6Ro, TT_NV, type NhiemVu, type TrangThaiNv } from '../lib/nhiemVu';
+import { COT_NV, DINH_KY, LINH_VUC, moTaDinhKy, NHOM_NV, tenKyNv, thieu6Ro, TT_NV, type NhiemVu, type TrangThaiNv } from '../lib/nhiemVu';
 import { Chip, DangTai, HopLoi, lopO, Nut, O, Rong, The, TieuDeThe, TieuDeTrang, cx } from '../components/ui';
 import FormNhiemVu, { tuNhiemVu } from '../components/FormNhiemVu';
 import { NutTepDrive } from '../components/TepDrive';
 import TepDinhKem, { type Tep } from '../components/TepDinhKem';
+import MinhChungVanBan, { COT_MINH_CHUNG, type MinhChung } from '../components/MinhChungVanBan';
+import TheoDoiDinhKy, { type KyNv } from '../components/TheoDoiDinhKy';
 import { HanNv, ThanhNv } from './NhiemVu';
 
 type CapNhat = { id: number; noi_dung: string; phan_tram: number | null; trang_thai_moi: TrangThaiNv | null; luc: string; boi_ten: string | null };
@@ -24,15 +26,19 @@ export default function NhiemVuChiTiet() {
   const { data, loi, dangTai, taiLai } = useDuLieu(async () => {
     const n = kq(await supabase.from('v_nhiem_vu').select(COT_NV).eq('id', id!).maybeSingle()) as unknown as NhiemVu | null;
     if (!n) return null;
-    const [cn, tep, dv, vb] = await Promise.all([
+    const [cn, tep, dv, vb, mc, kyNv] = await Promise.all([
       supabase.from('v_nhiem_vu_cap_nhat').select('id, noi_dung, phan_tram, trang_thai_moi, luc, boi_ten').eq('nhiem_vu_id', id!).order('luc', { ascending: false }),
       supabase.from('tep').select('id, drive_file_id, ten').eq('nhiem_vu_id', id!).order('tai_len_luc'),
       supabase.from('don_vi').select('id, ten'),
       n.can_cu_van_ban_id ? supabase.from('van_ban').select('id, so_ky_hieu, trich_yeu, drive_file_id').eq('id', n.can_cu_van_ban_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      supabase.from('v_minh_chung_nhiem_vu').select(COT_MINH_CHUNG).eq('nhiem_vu_id', id!).order('tao_luc'),
+      n.dinh_ky ? supabase.from('nhiem_vu_ky').select('ma_ky, xong_luc, ghi_chu').eq('nhiem_vu_id', id!).order('ma_ky', { ascending: false }).limit(24) : Promise.resolve({ data: [], error: null }),
     ]);
     return {
       n, cn: (kq(cn) ?? []) as CapNhat[], tep: (kq(tep) ?? []) as Tep[], dv: (kq(dv) ?? []) as { id: string; ten: string }[],
       vb: vb.data as { id: string; so_ky_hieu: string | null; trich_yeu: string; drive_file_id: string | null } | null,
+      mc: (mc.data ?? []) as unknown as MinhChung[],
+      ky: (kyNv.data ?? []) as KyNv[],
     };
   }, [id]);
 
@@ -53,6 +59,8 @@ export default function NhiemVuChiTiet() {
   const phoiHop = (n.phoi_hop_ids ?? []).includes(hoSo?.don_vi_id ?? '');
   const tenDv = (x: string) => data.dv.find((d) => d.id === x)?.ten ?? '';
   const thieu = thieu6Ro(n);
+  // Sửa nội dung: Thường trực, lãnh đạo BCĐ
+  const suaDuocNd = quanTri || lanhDao;
 
   const chay = async (ten: string, f: () => PromiseLike<{ error: unknown }>, sau?: () => void) => {
     setDangChay(ten); setLoiTT(null);
@@ -65,7 +73,7 @@ export default function NhiemVuChiTiet() {
     ['1', 'Rõ việc', n.ten],
     ['2', 'Rõ người', <>{n.chu_tri_ten ?? <i className="text-nguy">Chưa có</i>}{(n.phoi_hop_ids ?? []).length > 0 && <span className="block text-xs font-normal text-mo">Phối hợp: {(n.phoi_hop_ids ?? []).map(tenDv).join(', ')}</span>}</>],
     ['3', 'Rõ trách nhiệm', n.lanh_dao_phu_trach ?? <i className="text-nguy">Chưa có</i>],
-    ['4', 'Rõ thời gian', n.han ? ngay(n.han) : <i className="text-nguy">Chưa chốt</i>],
+    ['4', 'Rõ thời gian', n.dinh_ky ? <>{moTaDinhKy(n.dinh_ky, n.han_trong_ky)}{n.han && <span className="block text-xs font-normal text-mo">Theo dõi đến {ngay(n.han)}</span>}</> : n.han ? ngay(n.han) : <i className="text-nguy">Chưa chốt</i>],
     ['5', 'Rõ sản phẩm', n.san_pham ?? <i className="text-nguy">Chưa có</i>],
     ['6', 'Rõ thẩm quyền', n.tham_quyen ?? <i className="text-nguy">Chưa có</i>],
   ];
@@ -78,7 +86,7 @@ export default function NhiemVuChiTiet() {
           {!daGiao && (lanhDao || quanTri) && <Nut kieu="chinh" dangChay={dangChay === 'duyet'} icon={<ShieldCheck className="h-4 w-4" />}
             onClick={() => chay('duyet', () => supabase.from('nhiem_vu').update({ trang_thai_giao: 'da_duyet' }).eq('id', n.id))}>
             {lanhDao ? 'Duyệt giao nhiệm vụ' : 'Ghi nhận Trưởng ban đã duyệt'}</Nut>}
-          {quanTri && <Nut icon={<Pencil className="h-4 w-4" />} onClick={() => setMoSua(true)}>Sửa</Nut>}
+          {suaDuocNd && <Nut icon={<Pencil className="h-4 w-4" />} onClick={() => setMoSua(true)}>Sửa</Nut>}
           {quanTri && daGiao && <Nut icon={<Undo2 className="h-4 w-4" />} dangChay={dangChay === 'thu_hoi'}
             onClick={() => { if (window.confirm('Thu hồi về đề xuất? Đơn vị sẽ không thấy nhiệm vụ này.')) void chay('thu_hoi', () => supabase.from('nhiem_vu').update({ trang_thai_giao: 'de_xuat' }).eq('id', n.id)); }}>Thu hồi</Nut>}
           {quanTri && <Nut kieu="nguy" icon={<Trash2 className="h-4 w-4" />} dangChay={dangChay === 'xoa'}
@@ -91,11 +99,12 @@ export default function NhiemVuChiTiet() {
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl bg-gradient-to-br from-[#7C1419] via-ink to-ink-3 px-4 py-3.5 text-white sm:px-5 sm:py-4">
         <div className="flex flex-col gap-1"><span className="text-[11px] font-semibold tracking-wider text-[#F0C9C4]">TRẠNG THÁI</span><Chip nen={tt.nen} chu={tt.chu}>{tt.nhan}</Chip></div>
         <div className="flex min-w-[180px] flex-1 flex-col gap-1.5"><span className="text-[11px] font-semibold tracking-wider text-[#F0C9C4]">TIẾN ĐỘ</span><ThanhNv n={n} /></div>
-        <div className="flex flex-col gap-1"><span className="text-[11px] font-semibold tracking-wider text-[#F0C9C4]">HẠN {n.han && ngay(n.han)}</span><HanNv n={n} /></div>
+        <div className="flex flex-col items-start gap-1"><span className="text-[11px] font-semibold tracking-wider text-[#F0C9C4]">{n.dinh_ky ? `${DINH_KY[n.dinh_ky].toUpperCase()} · KỲ ${tenKyNv(n.ky_ma).toUpperCase()}` : `HẠN ${n.han ? ngay(n.han) : ''}`}</span><HanNv n={n} /></div>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex flex-col gap-5">
+          {n.dinh_ky && <TheoDoiDinhKy n={n} ds={data.ky} xacNhanDuoc={daGiao && (chuTri || quanTri)} xong={taiLai} />}
           {daGiao && (chuTri || phoiHop || quanTri || lanhDao) && (
             <CapNhatTienDo key={`${n.trang_thai}-${n.phan_tram}-${data.cn.length}`} n={n} laChuTri={chuTri || quanTri} quanTri={quanTri} xong={taiLai}
               tieuDe={chuTri || quanTri ? 'Báo cáo tiến độ' : lanhDao ? 'Ý kiến chỉ đạo' : 'Ý kiến của đơn vị phối hợp'} />
@@ -149,7 +158,9 @@ export default function NhiemVuChiTiet() {
           <div id="tep" className="-mb-3 scroll-mt-6" />
           <The className="flex flex-col gap-3 p-4">
             <TieuDeThe>Sản phẩm, minh chứng</TieuDeThe>
-            {data.tep.length === 0 && !(daGiao && (chuTri || phoiHop || quanTri)) && <Rong>Chưa có tệp.</Rong>}
+            {data.tep.length === 0 && data.mc.length === 0 && !(daGiao && (chuTri || phoiHop || quanTri)) && <Rong>Chưa có minh chứng.</Rong>}
+            <MinhChungVanBan nhiemVuId={n.id} ds={data.mc} suaDuoc={(daGiao && (chuTri || phoiHop)) || quanTri} xoaDuoc={quanTri} xong={taiLai} />
+            {(data.tep.length > 0 || (daGiao && (chuTri || phoiHop || quanTri))) && <span className="pt-1 text-xs font-semibold text-mo">Tệp khác (ảnh, Word, Excel…)</span>}
             <TepDinhKem loai="nhiem_vu" dichId={n.id} suaDuoc={daGiao && (chuTri || phoiHop || quanTri)} xoaDuoc={quanTri} tep={data.tep} xong={taiLai} />
           </The>
 
@@ -167,7 +178,7 @@ export default function NhiemVuChiTiet() {
         </div>
       </div>
 
-      {quanTri && <FormNhiemVu mo={moSua} dong={() => setMoSua(false)} id={n.id} dau={tuNhiemVu(n)} xong={() => { setMoSua(false); void taiLai(); }} />}
+      {suaDuocNd && <FormNhiemVu mo={moSua} dong={() => setMoSua(false)} id={n.id} dau={tuNhiemVu(n)} xong={() => { setMoSua(false); void taiLai(); }} />}
     </>
   );
 }

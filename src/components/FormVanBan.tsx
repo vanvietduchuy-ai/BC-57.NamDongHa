@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Trash2 } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { docVanBanPdf, soKyHieu, type MetaVb } from '../lib/docPdf';
 import { taiPdfLenDrive } from './VanBanPdf';
-import { idTuLinkDrive, LOAI_VB, SO_THEO_THU_MUC, THU_MUC, TT_VB, type LoaiVb, type ThuMuc, type TtVb, type VanBan } from '../lib/vanBan';
+import { idTuLinkDrive, LOAI_VB, SO_THEO_THU_MUC, THU_MUC, TT_VB, xoaVanBan, type LoaiVb, type ThuMuc, type TtVb, type VanBan } from '../lib/vanBan';
 import { HopLoi, HopThoai, lopO, Nut, O, cx } from './ui';
 
 type G = {
@@ -18,9 +18,15 @@ const tuVb = (v?: Partial<VanBan>): G => ({
 });
 
 // Thêm / sửa văn bản trong kho. Tệp đưa lên Google Drive qua Edge Function (thư mục "Kho văn bản/<thư mục>").
-export default function FormVanBan({ mo, dong, vb, dau, xong }: {
-  mo: boolean; dong: () => void; vb?: VanBan; dau?: Partial<VanBan>; xong: (id: string) => void;
+export default function FormVanBan({ mo, dong, vb, dau, xong, daXoa }: {
+  mo: boolean; dong: () => void; vb?: VanBan; dau?: Partial<VanBan>; xong: (id: string) => void; daXoa?: () => void;
 }) {
+  const [dangXoa, setDangXoa] = useState(false);
+  const xoa = async () => {
+    if (!vb || !window.confirm(`Xoá văn bản "${vb.so_ky_hieu ?? vb.trich_yeu}"?\n\nVăn bản bị gỡ khỏi sổ công văn, bỏ liên kết căn cứ / minh chứng nhiệm vụ; tệp trên Google Drive chuyển vào thùng rác.`)) return;
+    setDangXoa(true); setLoi(null);
+    try { await xoaVanBan(vb.id); (daXoa ?? dong)(); } catch (e) { setLoi(loiDe(e)); } finally { setDangXoa(false); }
+  };
   const [g, setG] = useState<G>(tuVb(vb ?? dau));
   const [file, setFile] = useState<File | null>(null);
   const [doc, setDoc] = useState<MetaVb | null>(null);
@@ -110,7 +116,8 @@ export default function FormVanBan({ mo, dong, vb, dau, xong }: {
           <span><ShieldAlert className="mr-1 inline h-4 w-4" /><b>Văn bản không mật</b> (hệ thống không lưu văn bản mật)</span>
         </label>
         {loi && <HopLoi loi={loi} />}
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          {vb && <Nut kieu="nguy" className="mr-auto" icon={<Trash2 className="h-4 w-4" />} dangChay={dangXoa} onClick={() => void xoa()}>Xoá văn bản</Nut>}
           <Nut onClick={dong}>Huỷ</Nut>
           <Nut kieu="chinh" dangChay={dangChay} onClick={luu}>{file ? 'Tải lên và lưu' : 'Lưu'}</Nut>
         </div>

@@ -164,7 +164,8 @@ function TaoKyDotXuat({ mo, dong, mauBieu, chuTri }: { mo: boolean; dong: () => 
       ]);
       const dm = ((b.data ?? []) as { don_vi_id: string }[]).map((x) => x.don_vi_id);
       const d = ((a.data ?? []) as { id: string; ten: string; phai_bao_cao: boolean; nop_cho_dau_moi: string | null }[])
-        .filter((x) => (chuTri ? x.id !== chuTri && (x.phai_bao_cao || x.nop_cho_dau_moi === chuTri) : dm.includes(x.id)));
+        // Đầu mối giao: các đơn vị phải báo cáo trừ đầu mối kia (đầu mối chỉ nộp Thường trực) + đơn vị nộp riêng cho mình
+        .filter((x) => (chuTri ? x.id !== chuTri && ((x.phai_bao_cao && !dm.includes(x.id)) || x.nop_cho_dau_moi === chuTri) : dm.includes(x.id)));
       setDonVi(d); setChon(d.map((x) => x.id));
     })();
   }, [mo]); // eslint-disable-line react-hooks/exhaustive-deps

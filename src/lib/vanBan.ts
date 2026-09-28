@@ -1,3 +1,4 @@
+import { CHE_DO_THU, goiChucNang, supabase } from './supabase';
 export type ThuMuc = 'cap_tren_trung_uong' | 'cap_tren_tinh' | 'cap_tren_cong_an_tinh' | 'bcd_phuong_ban_hanh' | 'bao_cao_gui_cap_tren' | 'bao_cao_don_vi' | 'hop_bcd' | 'kiem_tra_giam_sat' | 'mau_bieu';
 export type LoaiVb = 'nghi_quyet' | 'quyet_dinh' | 'chi_thi' | 'ket_luan' | 'ke_hoach' | 'chuong_trinh' | 'quy_che' | 'cong_van' | 'bao_cao' | 'to_trinh' | 'thong_bao' | 'giay_moi' | 'bien_ban' | 'khac';
 export type TtVb = 'du_thao' | 'ban_hanh' | 'het_hieu_luc';
@@ -45,3 +46,15 @@ export function idTuLinkDrive(s: string): string | null {
 // Thư mục -> sổ công văn của Cơ quan Thường trực
 export const SO_THEO_THU_MUC = (t: ThuMuc): 'den' | 'di' | null =>
   t.startsWith('cap_tren') ? 'den' : ['bcd_phuong_ban_hanh', 'hop_bcd', 'bao_cao_gui_cap_tren'].includes(t) ? 'di' : null;
+
+// Xoá văn bản trong kho (Thường trực): gỡ khỏi sổ, bỏ liên kết; tệp Google Drive vào thùng rác
+export async function xoaVanBan(id: string) {
+  if (CHE_DO_THU) {
+    const { error } = await supabase.rpc('xoa_van_ban', { p_id: id });
+    if (error) throw error;
+    return;
+  }
+  const fd = new FormData();
+  fd.append('loai', 'xoa_van_ban'); fd.append('van_ban_id', id);
+  await goiChucNang('drive-upload', fd, true);
+}

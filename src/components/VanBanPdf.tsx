@@ -24,11 +24,12 @@ const laThu = (id?: string | null) => !id || id.startsWith('thu-');
 export const linkXemDrive = (id?: string | null) => (laThu(id) ? null : `https://drive.google.com/file/d/${id}/view`);
 
 // Tải PDF lên Google Drive qua Edge Function (chế độ thử: không có Drive)
-export async function taiPdfLenDrive(file: File, loai: 'van_ban_nop' | 'van_ban', o: { nopId?: string; thuMuc?: string } = {}) {
+export async function taiPdfLenDrive(file: File, loai: 'van_ban_nop' | 'van_ban' | 'van_ban_nhiem_vu', o: { nopId?: string; nhiemVuId?: string; thuMuc?: string } = {}) {
   if (CHE_DO_THU) return { drive_file_id: `thu-${Date.now()}`, url: null as string | null };
   const fd = new FormData();
   fd.append('file', file); fd.append('loai', loai);
   if (o.nopId) fd.append('nop_bao_cao_id', o.nopId);
+  if (o.nhiemVuId) fd.append('nhiem_vu_id', o.nhiemVuId);
   if (o.thuMuc) fd.append('thu_muc', o.thuMuc);
   return goiChucNang<{ drive_file_id: string; url: string | null }>('drive-upload', fd, true);
 }

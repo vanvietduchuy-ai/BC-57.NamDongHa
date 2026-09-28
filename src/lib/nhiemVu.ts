@@ -32,20 +32,41 @@ export type NhiemVu = {
   can_cu_van_ban_id: string | null; can_cu_so_ky_hieu: string | null;
   trang_thai: TrangThaiNv; phan_tram: number; trang_thai_giao: 'de_xuat' | 'da_duyet'; duyet_luc: string | null;
   da_cap_nhat_theodoinq: boolean; qua_han: boolean; con_ngay: number | null;
-  phoi_hop_ids: string[] | null; cap_nhat_cuoi: string | null; so_tep: number; tao_luc: string;
+  phoi_hop_ids: string[] | null; cap_nhat_cuoi: string | null; so_tep: number; tao_luc: string; tao_boi: string | null;
+  // Nhiệm vụ định kỳ: chu kỳ, hạn trong kỳ; kỳ hiện tại (mã, hạn, đã xong), kỳ trước
+  dinh_ky: DinhKy | null; han_trong_ky: number | null;
+  ky_ma: string | null; ky_han: string | null; ky_xong: boolean; ky_truoc_ma: string | null; ky_truoc_xong: boolean;
 };
 
-export const COT_NV = 'id, ma, nhom, linh_vuc, ten, mo_ta, chu_tri_don_vi_id, chu_tri_ten, lanh_dao_phu_trach, han, san_pham, tham_quyen, can_cu_van_ban_id, can_cu_so_ky_hieu, trang_thai, phan_tram, trang_thai_giao, duyet_luc, da_cap_nhat_theodoinq, qua_han, con_ngay, phoi_hop_ids, cap_nhat_cuoi, so_tep, tao_luc';
+export type DinhKy = 'tuan' | 'thang' | 'quy' | 'nam';
+export const DINH_KY: Record<DinhKy, string> = { tuan: 'Hằng tuần', thang: 'Hằng tháng', quy: 'Hằng quý', nam: 'Hằng năm' };
+export const THU: Record<number, string> = { 1: 'Thứ Hai', 2: 'Thứ Ba', 3: 'Thứ Tư', 4: 'Thứ Năm', 5: 'Thứ Sáu', 6: 'Thứ Bảy', 7: 'Chủ nhật' };
+// "Hằng tháng, hạn ngày 25" · "Hằng tuần, hạn Thứ Sáu"
+export function moTaDinhKy(dk: DinhKy, h: number | null): string {
+  if (dk === 'tuan') return `${DINH_KY[dk]}, hạn ${THU[h ?? 5]}`;
+  if (dk === 'thang') return `${DINH_KY[dk]}, hạn ${h ? `ngày ${h}` : 'ngày cuối tháng'}`;
+  return `${DINH_KY[dk]}, hạn ${h ? `ngày ${h}` : 'ngày cuối'} tháng cuối ${dk === 'quy' ? 'quý' : 'năm'}`;
+}
+// "2026-10" -> "tháng 10/2026"; "2026-T40" -> "tuần 40/2026"; "2026-Q4" -> "quý IV/2026"
+export function tenKyNv(ma: string | null | undefined): string {
+  if (!ma) return '';
+  let m = ma.match(/^(\d{4})-T(\d+)$/); if (m) return `tuần ${+m[2]}/${m[1]}`;
+  m = ma.match(/^(\d{4})-Q(\d)$/); if (m) return `quý ${['', 'I', 'II', 'III', 'IV'][+m[2]]}/${m[1]}`;
+  m = ma.match(/^(\d{4})-(\d{2})$/); if (m) return `tháng ${+m[2]}/${m[1]}`;
+  return `năm ${ma}`;
+}
+
+export const COT_NV = 'id, ma, nhom, linh_vuc, ten, mo_ta, chu_tri_don_vi_id, chu_tri_ten, lanh_dao_phu_trach, han, san_pham, tham_quyen, can_cu_van_ban_id, can_cu_so_ky_hieu, trang_thai, phan_tram, trang_thai_giao, duyet_luc, da_cap_nhat_theodoinq, qua_han, con_ngay, phoi_hop_ids, cap_nhat_cuoi, so_tep, tao_luc, tao_boi, dinh_ky, han_trong_ky, ky_ma, ky_han, ky_xong, ky_truoc_ma, ky_truoc_xong';
 
 // Hạn nhiệm vụ là ngày: tính đến 17:00 ngày đó (giờ VN)
 export const hanNv = (han: string) => `${han}T17:00:00+07:00`;
 
 // "6 rõ" còn thiếu -> nhắc CQTT hoàn thiện trước khi trình duyệt
-export function thieu6Ro(n: Pick<NhiemVu, 'ten' | 'chu_tri_don_vi_id' | 'lanh_dao_phu_trach' | 'han' | 'san_pham' | 'tham_quyen'>): string[] {
+export function thieu6Ro(n: Pick<NhiemVu, 'ten' | 'chu_tri_don_vi_id' | 'lanh_dao_phu_trach' | 'han' | 'san_pham' | 'tham_quyen'> & { dinh_ky?: DinhKy | null }): string[] {
   const t: string[] = [];
   if (!n.chu_tri_don_vi_id) t.push('rõ người (đơn vị chủ trì)');
   if (!n.lanh_dao_phu_trach) t.push('rõ trách nhiệm (lãnh đạo phụ trách)');
-  if (!n.han) t.push('rõ thời gian (hạn)');
+  if (!n.han && !n.dinh_ky) t.push('rõ thời gian (hạn)');
   if (!n.san_pham) t.push('rõ sản phẩm');
   if (!n.tham_quyen) t.push('rõ thẩm quyền');
   return t;

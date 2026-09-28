@@ -15,7 +15,7 @@ import { Chuong } from '../components/KhungTrang';
 
 type KyMo = { ky_id: string; chu_tri_don_vi_id: string | null; don_vi_giao: string | null; ten: string; loai: string; han_nop: string; han_gui_tinh: string | null; so_don_vi: number; da_nop: number; da_duyet: number; can_bo_sung: number; chua_nop: number };
 type Dong = { nop_id: string; ky_id: string; don_vi_id: string; don_vi: string; thu_tu: number; ky: string; loai: string; trang_thai: string; han: string; nop_luc: string | null; dung_han: boolean | null; tre_ngay: number; tu_ngay: string | null };
-type NvChuY = Pick<NhiemVu, 'id' | 'ma' | 'ten' | 'han' | 'qua_han' | 'con_ngay' | 'trang_thai' | 'phan_tram' | 'chu_tri_ten'>;
+type NvChuY = Pick<NhiemVu, 'id' | 'ma' | 'ten' | 'han' | 'qua_han' | 'con_ngay' | 'trang_thai' | 'phan_tram' | 'chu_tri_ten' | 'dinh_ky' | 'ky_han'>;
 
 const LOAI_KY: Record<string, string> = { thang: 'THÁNG', quy: 'QUÝ', sau_thang: '6 THÁNG', nam: 'NĂM', dot_xuat: 'ĐỘT XUẤT' };
 
@@ -24,7 +24,7 @@ async function tai(chuTri: string | null, donViMinh: string | null) {
   let qKy = supabase.from('v_tinh_hinh_nop').select('ky_id, chu_tri_don_vi_id, don_vi_giao, ten, loai, han_nop, han_gui_tinh, so_don_vi, da_nop, da_duyet, can_bo_sung, chua_nop').eq('trang_thai_ky', 'mo').eq('cap', 'don_vi');
   let qNop = supabase.from('v_theo_doi_nop').select('nop_id, ky_id, don_vi_id, don_vi, thu_tu, ky, loai, trang_thai, han, nop_luc, dung_han, tre_ngay, tu_ngay')
     .eq('cap', 'don_vi').gte('han', `${nam}-01-01T00:00:00+07:00`).lte('han', `${nam}-12-31T23:59:59+07:00`);
-  let qNv = supabase.from('v_nhiem_vu').select('id, ma, ten, han, qua_han, con_ngay, trang_thai, phan_tram, chu_tri_ten')
+  let qNv = supabase.from('v_nhiem_vu').select('id, ma, ten, han, qua_han, con_ngay, trang_thai, phan_tram, chu_tri_ten, dinh_ky, ky_han')
     .eq('trang_thai_giao', 'da_duyet');
   if (chuTri) { qKy = qKy.eq('chu_tri_don_vi_id', chuTri); qNop = qNop.eq('chu_tri_don_vi_id', chuTri); qNv = qNv.eq('chu_tri_don_vi_id', chuTri); }
   const [a, b, d, f, e] = await Promise.all([
@@ -290,7 +290,7 @@ export default function TongQuan({ chuTri = null }: { chuTri?: string | null }) 
                     <span className="flex items-baseline gap-3">
                       <span className="min-w-0 flex-1 truncate text-[0.8438rem] font-semibold">{n.ten}</span>
                       <span className={cx('mono shrink-0 text-[0.75rem] font-bold', n.qua_han ? 'text-nguy' : 'text-xanh')}>{n.phan_tram}%</span>
-                      <span className="shrink-0 text-[0.75rem] text-mo">{n.han ? (n.qua_han ? `quá ${-(n.con_ngay ?? 0)} ngày` : `hạn ${ngay(n.han).replace(/\/\d{4}$/, '')}`) : 'chưa chốt hạn'}</span>
+                      <span className="shrink-0 text-[0.75rem] text-mo">{(n.ky_han ?? n.han) ? (n.qua_han ? `quá ${-(n.con_ngay ?? 0)} ngày` : `hạn ${ngay((n.ky_han ?? n.han)!).replace(/\/\d{4}$/, '')}`) : 'chưa chốt hạn'}</span>
                     </span>
                     <span className="h-2 overflow-hidden rounded-full bg-[#EEEBE3]"><span className={cx('thanh-chay block h-2 rounded-full', n.qua_han ? 'bg-nguy' : 'bg-xanh')} style={{ width: `${Math.max(2, n.phan_tram)}%` }} /></span>
                   </Link>

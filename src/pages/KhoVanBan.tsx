@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Download, Folder, Pencil, Search, Upload } from 'lucide-react';
+import { Download, Folder, Pencil, Search, Trash2, Upload } from 'lucide-react';
 import { useManRong } from '../lib/manHinh';
-import { supabase } from '../lib/supabase';
+import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { useAuth, laQuanTri } from '../lib/auth';
 import { ngay } from '../lib/dinhDang';
 import { khongDau } from '../lib/nhiemVu';
 import { moTepDrive } from '../components/TepDrive';
-import { COT_VB, linkVb, LOAI_VB, THU_MUC, TT_VB, type LoaiVb, type ThuMuc, type VanBan } from '../lib/vanBan';
+import { COT_VB, linkVb, LOAI_VB, THU_MUC, TT_VB, xoaVanBan, type LoaiVb, type ThuMuc, type VanBan } from '../lib/vanBan';
 import { Chip, DangTai, HopLoi, Nut, Rong, The, cx } from '../components/ui';
 import FormVanBan from '../components/FormVanBan';
 
@@ -31,6 +31,14 @@ export default function KhoVanBan() {
   const [hetHl, setHetHl] = useState(false);
   const [form, setForm] = useState<{ vb?: VanBan } | null>(null);
   const [chonId, setChonId] = useState<string | null>(null);
+  const [dangXoa, setDangXoa] = useState<string | null>(null);
+  const [tb, setTb] = useState<string | null>(null);
+  const xoa = async (v: VanBan) => {
+    if (!window.confirm(`Xoá văn bản "${v.so_ky_hieu ?? v.trich_yeu}"?\n\nVăn bản bị gỡ khỏi sổ công văn, bỏ liên kết căn cứ / minh chứng nhiệm vụ; tệp trên Google Drive chuyển vào thùng rác.`)) return;
+    setDangXoa(v.id); setTb(null);
+    try { await xoaVanBan(v.id); setChonId(null); setTb(`Đã xoá văn bản ${v.so_ky_hieu ?? ''}.`); void taiLai(); }
+    catch (e) { setTb(loiDe(e)); } finally { setDangXoa(null); }
+  };
 
   const hop = (v: VanBan, tm: ThuMuc | 'cap_tren' | '') => !tm || (tm === 'cap_tren' ? v.thu_muc.startsWith('cap_tren') : v.thu_muc === tm);
   const conHl = (v: VanBan) => hetHl || v.trang_thai !== 'het_hieu_luc';
@@ -68,6 +76,7 @@ export default function KhoVanBan() {
         {quanTri && <Nut kieu="chinh" icon={<Upload className="h-4 w-4" />} onClick={() => setForm({})} ngan="Tải lên">Tải lên văn bản</Nut>}
       </header>
 
+      {tb && <div role="status" className="rounded-xl bg-xanh-nhat px-4 py-3 text-sm text-xanh">{tb}</div>}
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[236px_minmax(0,1fr)] xl:grid-cols-[236px_minmax(0,1fr)_330px] 2xl:grid-cols-[236px_minmax(0,1fr)_360px]">
         <div className="flex flex-col gap-4 lg:sticky lg:top-6">
           <nav aria-label="Thư mục" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0">
@@ -110,6 +119,10 @@ export default function KhoVanBan() {
                       </span>
                       <Chip nen={c[0]} chu={c[1]}>{c[2]}</Chip>
                     </button>
+                    {quanTri && !rong && <div className="-mt-2 flex justify-end gap-1 border-b border-[#F1EEE7] px-3 pb-2">
+                      <button type="button" onClick={() => setForm({ vb: v })} className="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[0.8125rem] font-semibold text-mo-2 hover:bg-nen"><Pencil className="h-3.5 w-3.5" />Sửa</button>
+                      <button type="button" onClick={() => void xoa(v)} className="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[0.8125rem] font-semibold text-nguy hover:bg-nguy-nhat"><Trash2 className="h-3.5 w-3.5" />Xoá</button>
+                    </div>}
                   </li>
                 );
               })}
@@ -150,13 +163,14 @@ export default function KhoVanBan() {
                 : <span className="flex-1 self-center text-[0.8125rem] text-mo">Chưa gắn tệp Google Drive.</span>}
               {linkVb(vbChon) && <Nut aria-label="Tải về" title="Tải về" className="px-3" onClick={() => void moTepDrive('van_ban', vbChon.id, vbChon.ten_tep ?? `${vbChon.so_ky_hieu ?? 'van-ban'}.pdf`, 'tai', vbChon.drive_url)}><Download className="h-4 w-4" /></Nut>}
               {quanTri && <Nut aria-label="Sửa văn bản" title="Sửa" className="px-3" onClick={() => setForm({ vb: vbChon })}><Pencil className="h-4 w-4" /></Nut>}
+              {quanTri && <Nut kieu="nguy" aria-label="Xoá văn bản" title="Xoá" className="px-3" dangChay={dangXoa === vbChon.id} onClick={() => void xoa(vbChon)}><Trash2 className="h-4 w-4" /></Nut>}
             </div>
           </The>
         )}
       </div>
 
       <FormVanBan mo={!!form} dong={() => setForm(null)} vb={form?.vb} dau={thuMuc && thuMuc !== 'cap_tren' ? { thu_muc: thuMuc } : undefined}
-        xong={() => { setForm(null); void taiLai(); }} />
+        xong={() => { setForm(null); void taiLai(); }} daXoa={() => { setForm(null); setChonId(null); setTb('Đã xoá văn bản.'); void taiLai(); }} />
     </>
   );
 }

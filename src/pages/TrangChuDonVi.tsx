@@ -5,7 +5,7 @@ import { kq, useBayGio, useDuLieu } from '../lib/useDuLieu';
 import { useAuth } from '../lib/auth';
 import { conLai, hai, ngay, ngayGio, tenNgan } from '../lib/dinhDang';
 import { TT_NOP } from './KyBaoCaoChiTiet';
-import { type TrangThaiNv } from '../lib/nhiemVu';
+import { DINH_KY, type DinhKy, type TrangThaiNv } from '../lib/nhiemVu';
 import { Chip, DangTai, HopLoi, Rong, The, TieuDeThe, cx } from '../components/ui';
 import { Chuong } from '../components/KhungTrang';
 
@@ -20,7 +20,7 @@ export const NHAN_LOAI: Record<string, [string, string]> = {
   quy: ['ĐỊNH KỲ', 'text-xanh'], sau_thang: ['ĐỊNH KỲ', 'text-xanh'], nam: ['ĐỊNH KỲ', 'text-xanh'],
 };
 
-type NvDv = { id: string; ma: string | null; ten: string; han: string | null; trang_thai: TrangThaiNv; phan_tram: number; qua_han: boolean; con_ngay: number | null; chu_tri_don_vi_id: string | null };
+type NvDv = { id: string; ma: string | null; ten: string; han: string | null; trang_thai: TrangThaiNv; phan_tram: number; qua_han: boolean; con_ngay: number | null; chu_tri_don_vi_id: string | null; dinh_ky: DinhKy | null; ky_han: string | null; ky_xong: boolean };
 
 type DaGui = { id: string; trang_thai: string; nop_luc: string; ky_bao_cao: { ten: string } };
 
@@ -31,7 +31,7 @@ export default function TrangChuDonVi() {
     const [a, b, c] = await Promise.all([
       supabase.from('v_viec_can_nop').select('*').eq('don_vi_id', dv).order('han_nop'),
       supabase.from('nop_bao_cao').select('id, trang_thai, nop_luc, ky_bao_cao(ten)').eq('don_vi_id', dv).not('nop_luc', 'is', null).order('nop_luc', { ascending: false }).limit(5),
-      supabase.from('v_nhiem_vu').select('id, ma, ten, han, trang_thai, phan_tram, qua_han, con_ngay, chu_tri_don_vi_id, phoi_hop_ids').neq('trang_thai', 'hoan_thanh').neq('trang_thai', 'tam_dung').order('han', { nullsFirst: false }),
+      supabase.from('v_nhiem_vu').select('id, ma, ten, han, trang_thai, phan_tram, qua_han, con_ngay, chu_tri_don_vi_id, phoi_hop_ids, dinh_ky, ky_han, ky_xong').neq('trang_thai', 'hoan_thanh').neq('trang_thai', 'tam_dung').order('han', { nullsFirst: false }),
     ]);
     const nv = ((kq(c) ?? []) as (NvDv & { phoi_hop_ids: string[] | null })[]).filter((n) => n.chu_tri_don_vi_id === dv || (n.phoi_hop_ids ?? []).includes(dv));
     return { viec: (kq(a) ?? []) as Viec[], daGui: (kq(b) ?? []) as unknown as DaGui[], nv };
@@ -76,7 +76,7 @@ export default function TrangChuDonVi() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#EEEBE3]"><div className={cx('thanh-chay h-1.5 rounded-full', n.qua_han ? 'bg-nguy' : 'bg-xanh')} style={{ width: `${n.phan_tram}%` }} /></div>
-                  <span className="shrink-0 text-[0.7812rem] text-mo">{n.han ? `Hạn ${ngay(n.han).replace(/\/\d{4}$/, '')}` : 'Chưa chốt hạn'}</span>
+                  <span className="shrink-0 text-[0.7812rem] text-mo">{n.dinh_ky ? (n.ky_xong ? `${DINH_KY[n.dinh_ky]} · kỳ này xong` : `${DINH_KY[n.dinh_ky]} · hạn ${n.ky_han ? ngay(n.ky_han).replace(/\/\d{4}$/, '') : '—'}`) : n.han ? `Hạn ${ngay(n.han).replace(/\/\d{4}$/, '')}` : 'Chưa chốt hạn'}</span>
                 </div>
               </Link>
             );

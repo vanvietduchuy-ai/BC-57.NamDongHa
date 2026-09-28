@@ -46,7 +46,7 @@ export default function LichDinhKy({ chuTri, hanMacDinh = 8 }: { chuTri: string 
     quy_tac: MAC_DINH[loai], mau_bieu_id: data.mau, don_vi_ap_dung: null, don_vi_id: chuTri,
   });
   // Đơn vị phải nộp (dùng chung cho 4 lịch của đơn vị giao)
-  const coTheNop = data.donVi.filter((d) => d.id !== chuTri && (chuTri ? d.phai_bao_cao || d.nop_cho_dau_moi === chuTri : data.dauMoi.includes(d.id)));
+  const coTheNop = data.donVi.filter((d) => d.id !== chuTri && (chuTri ? (d.phai_bao_cao && !data.dauMoi.includes(d.id)) || d.nop_cho_dau_moi === chuTri : data.dauMoi.includes(d.id)));
   const nhanHienTai = nhan ?? data.lich.find((l) => l.don_vi_ap_dung?.length)?.don_vi_ap_dung ?? coTheNop.map((d) => d.id);
   const doi = (l: LichSua, x: Partial<LichSua> | { qt: Partial<QuyTacLich> }) => {
     const moi = 'qt' in x ? { ...l, quy_tac: { ...l.quy_tac, ...x.qt } } : { ...l, ...x };

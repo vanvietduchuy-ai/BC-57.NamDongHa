@@ -56,6 +56,9 @@
   img, svg, video, canvas { max-width: 100%; }
   /* iPhone tự phóng khi bấm vào ô nhập chữ nhỏ hơn 16px -> luôn 16px trên điện thoại */
   @media (max-width: 639px) { input, select, textarea { font-size: 16px !important; } }
+  /* Ô chọn có dòng dài (VD văn bản căn cứ) không được làm tràn ngang */
+  select { max-width: 100%; text-overflow: ellipsis; }
+  input[type='date'], input[type='time'] { min-width: 0; }
   /* Điện thoại: chữ, khoảng cách nhỏ gọn hơn (cỡ chữ dùng rem nên thu theo) */
   @media (max-width: 639px) { html { font-size: 15px; } }
   /* Điện thoại: tiêu đề trang gọn — nút phụ chỉ hiện biểu tượng, nút chính rút gọn */

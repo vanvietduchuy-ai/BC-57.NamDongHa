@@ -159,7 +159,7 @@ export function HopThoai({ mo, dong, tieuDe, children, rong = 'max-w-lg' }: { mo
   return (
     <div className="mo-dan fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 backdrop-blur-[2px] sm:items-center sm:p-4" onClick={dong}>
       <div role="dialog" aria-modal="true" aria-label={tieuDe} onClick={(e) => e.stopPropagation()}
-        className={cx('hien-hop max-h-[92vh] w-full overflow-auto rounded-t-3xl bg-white p-5 pb-[calc(20px+env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl sm:pb-5', rong)}>
+        className={cx('hien-hop max-h-[92vh] w-full overflow-y-auto overflow-x-hidden rounded-t-3xl bg-white p-5 pb-[calc(20px+env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl sm:pb-5', rong)}>
         <div className="mb-4 flex items-center gap-3">
           <h2 className="m-0 flex-1 text-lg font-bold">{tieuDe}</h2>
           <button onClick={dong} aria-label="Đóng" className="flex h-10 w-10 items-center justify-center rounded-xl hover:bg-nen"><X className="h-5 w-5" /></button>
@@ -172,7 +172,7 @@ export function HopThoai({ mo, dong, tieuDe, children, rong = 'max-w-lg' }: { mo
 
 export function O({ nhan, children, goiY }: { nhan: string; children: ReactNode; goiY?: string }) {
   return (
-    <label className="flex flex-col gap-1.5 text-[0.8125rem] font-semibold text-mo-2">
+    <label className="flex min-w-0 flex-col gap-1.5 text-[0.8125rem] font-semibold text-mo-2 [&>input]:w-full [&>select]:w-full [&>textarea]:w-full">
       {nhan}
       {children}
       {goiY && <span className="text-xs font-normal text-mo">{goiY}</span>}

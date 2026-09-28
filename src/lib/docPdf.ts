@@ -218,7 +218,8 @@ export function phanTich(trang: Trang[], ocr = false, soTrang = trang.length): M
 
   // Người ký, chức vụ: cột phải phần cuối (ngang dòng "Nơi nhận" trở xuống) của trang cuối
   const pc = trang[trang.length - 1];
-  const yNN = pc.dong.find((d) => /^Nơi nhận/i.test(d.text))?.y ?? pc.cao * 0.45;
+  // Không có "Nơi nhận" (văn bản ngắn 1 trang): tìm từ sau phần trích yếu trở xuống
+  const yNN = pc.dong.find((d) => /^Nơi nhận/i.test(d.text))?.y ?? (trang.length === 1 && yThan >= 0 ? yThan + 30 : pc.cao * 0.45);
   const phai = pc.dong.filter((d) => d.y >= yNN - 30 && d.x + d.w / 2 > pc.rong * 0.5);
   const ten = [...phai].reverse().find((d) => TEN_NGUOI.test(d.text) && !laHoa(d.text));
   if (ten) {

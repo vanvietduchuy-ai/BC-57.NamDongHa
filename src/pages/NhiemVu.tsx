@@ -6,13 +6,18 @@ import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { useAuth, laQuanTri } from '../lib/auth';
 import { ngay } from '../lib/dinhDang';
-import { COT_NV, hanNv, khongDau, LINH_VUC, NHOM_NV, TT_NV, type LinhVuc, type NhiemVu, type NhomNv } from '../lib/nhiemVu';
+import { COT_NV, DINH_KY, hanNv, khongDau, LINH_VUC, moTaDinhKy, NHOM_NV, tenKyNv, TT_NV, type LinhVuc, type NhiemVu, type NhomNv } from '../lib/nhiemVu';
 import { Chip, ChipHan, DangTai, HopLoi, lopO, Nut, Rong, The, TieuDeTrang, cx } from '../components/ui';
 import FormNhiemVu from '../components/FormNhiemVu';
 
 type Tab = 'chu_y' | 'tat_ca' | 'cho_duyet' | 'qua_han' | 'hoan_thanh' | 'dang' | 'chua';
 
-export function HanNv({ n }: { n: Pick<NhiemVu, 'han' | 'trang_thai'> }) {
+export function HanNv({ n }: { n: Pick<NhiemVu, 'han' | 'trang_thai'> & Partial<Pick<NhiemVu, 'dinh_ky' | 'ky_han' | 'ky_xong'>> }) {
+  // Nhiệm vụ định kỳ: trạng thái kỳ hiện tại
+  if (n.dinh_ky && n.trang_thai !== 'hoan_thanh' && n.trang_thai !== 'tam_dung') {
+    if (n.ky_xong) return <Chip nen="bg-[#DCFCE7]" chu="text-[#166534]">Kỳ này: xong</Chip>;
+    if (n.ky_han) return <ChipHan han={hanNv(n.ky_han)} />;
+  }
   if (!n.han) return <Chip>Chưa chốt hạn</Chip>;
   if (n.trang_thai === 'hoan_thanh') return <span className="so text-xs text-mo">hạn {ngay(n.han)}</span>;
   if (n.trang_thai === 'tam_dung') return <Chip>Tạm dừng</Chip>;
@@ -111,7 +116,7 @@ export default function NhiemVuTrang() {
     const dong = ds.map((n, i) => ({
       'TT': i + 1, 'Mã': n.ma, 'Nhiệm vụ (rõ việc)': n.ten, 'Nhóm': NHOM_NV[n.nhom], 'Lĩnh vực': LINH_VUC[n.linh_vuc],
       'Chủ trì (rõ người)': n.chu_tri_ten ?? '', 'Phối hợp': (n.phoi_hop_ids ?? []).map(tenDv).join('; '),
-      'Lãnh đạo phụ trách': n.lanh_dao_phu_trach ?? '', 'Hạn (rõ thời gian)': n.han ? ngay(n.han) : '',
+      'Lãnh đạo phụ trách': n.lanh_dao_phu_trach ?? '', 'Hạn (rõ thời gian)': n.dinh_ky ? moTaDinhKy(n.dinh_ky, n.han_trong_ky) : n.han ? ngay(n.han) : '',
       'Sản phẩm': n.san_pham ?? '', 'Thẩm quyền': n.tham_quyen ?? '', 'Căn cứ': n.can_cu_so_ky_hieu ?? '',
       'Trạng thái': TT_NV[n.trang_thai].nhan, 'Tiến độ (%)': n.phan_tram, 'Quá hạn': n.qua_han ? 'x' : '',
       'Giao': n.trang_thai_giao === 'da_duyet' ? 'Đã duyệt' : 'Đề xuất',
@@ -143,6 +148,7 @@ export default function NhiemVuTrang() {
         phai={<>
           {!donVi && <Nut icon={<Download className="h-4 w-4" />} onClick={xuatExcel}>Xuất danh mục nhiệm vụ</Nut>}
           {quanTri && <Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setMoForm(true)} ngan="Giao việc">Tham mưu giao nhiệm vụ</Nut>}
+          {lanhDao && <Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setMoForm(true)} ngan="Giao việc">Giao nhiệm vụ</Nut>}
         </>} />
 
       {/* Nhóm nhiệm vụ */}
@@ -253,7 +259,7 @@ export default function NhiemVuTrang() {
                         <span className="line-clamp-2 text-[0.8125rem] leading-snug text-mo-2"><span className="md:hidden"><Users className="mr-1 inline h-3.5 w-3.5 text-mo" /></span>{tenNganDv(n.chu_tri_ten) || 'Chưa rõ chủ trì'}{ph.length ? `; ${ph.join('; ')}` : ''}</span>
                         <span className="flex items-center gap-2 md:block">
                           <span className="min-w-0 flex-1 md:hidden"><ThanhNv n={n} /></span>
-                          <span className="mono whitespace-nowrap text-[0.7812rem] text-mo-2 max-md:ml-auto">{n.han ? ngay(n.han) : <span className="font-sans">chưa chốt</span>}</span>
+                          <span className="mono whitespace-nowrap text-[0.7812rem] text-mo-2 max-md:ml-auto">{n.dinh_ky ? <span className="font-sans"><span className="block text-[0.7188rem] font-semibold text-xanh">{DINH_KY[n.dinh_ky]}</span>{n.ky_han && <span className="mono">{ngay(n.ky_han).replace(/\/\d{4}$/, '')}</span>}</span> : n.han ? ngay(n.han) : <span className="font-sans">chưa chốt</span>}</span>
                         </span>
                         <span className="hidden md:block"><Chip nen={tt.nen} chu={tt.chu}>{tt.nhan}</Chip>{n.qua_han && <span className="mt-0.5 block text-[11px] font-bold text-nguy">quá hạn</span>}</span>
                       </Link>
@@ -267,7 +273,7 @@ export default function NhiemVuTrang() {
         {nvChon && <KhungNv key={nvChon.id} n={nvChon} quanTri={quanTri} donVi={donVi} lanhDao={lanhDao} tenDv={(id) => data?.dv.find((d) => d.id === id)?.ten ?? ''} duyet={() => duyet([nvChon.id])} dangDuyet={dangDuyet} doi={() => void taiLai()} />}
       </div>
 
-      <FormNhiemVu mo={moForm} dong={() => setMoForm(false)} xong={(id) => { setMoForm(false); nav(`/nhiem-vu/${id}`); }} />
+      <FormNhiemVu mo={moForm} dong={() => setMoForm(false)} tieuDe={lanhDao ? 'Giao nhiệm vụ (Trưởng ban giao trực tiếp)' : undefined} xong={(id) => { setMoForm(false); nav(`/nhiem-vu/${id}`); }} />
     </>
   );
 }
@@ -286,7 +292,7 @@ function KhungNv({ n, quanTri, donVi, lanhDao, tenDv, duyet, dangDuyet, doi }: {
     ['Rõ việc', n.mo_ta || n.ten],
     ['Rõ người', n.chu_tri_ten ? `${n.chu_tri_ten}${ph.length ? ` chủ trì; ${ph.join(', ')} phối hợp` : ''}` : null],
     ['Rõ trách nhiệm', n.lanh_dao_phu_trach],
-    ['Rõ thời gian', n.han ? `Hạn ${ngay(n.han)}` : null],
+    ['Rõ thời gian', n.dinh_ky ? `${moTaDinhKy(n.dinh_ky, n.han_trong_ky)} · kỳ ${tenKyNv(n.ky_ma)}: ${n.ky_xong ? 'đã xong' : `hạn ${n.ky_han ? ngay(n.ky_han) : '—'}`}` : n.han ? `Hạn ${ngay(n.han)}` : null],
     ['Rõ sản phẩm', n.san_pham],
     ['Rõ thẩm quyền', n.tham_quyen],
   ];
