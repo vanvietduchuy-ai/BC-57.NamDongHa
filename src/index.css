@@ -144,5 +144,5 @@ td.so, th.so { font-variant-numeric: tabular-nums; }
 @supports not (overflow: clip) { html, body { overflow-x: hidden; } #root { overflow-x: visible; } }
 
 /* Thanh thao tác dính đáy: nằm trên thanh điều hướng điện thoại (kể cả vùng vuốt của iPhone) */
-.day-duoi { bottom: calc(4.75rem + env(safe-area-inset-bottom)); }
+.day-duoi { bottom: 0.75rem; }
 @media (min-width: 1024px) { .day-duoi { bottom: 1rem; } }
