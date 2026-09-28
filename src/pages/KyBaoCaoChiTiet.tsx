@@ -6,7 +6,7 @@ import { supabase, loiDe } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { laDauMoi, useAuth, laQuanTri } from '../lib/auth';
 import { ngay, ngayGio, ngayGioDu } from '../lib/dinhDang';
-import { Chip, DangTai, DongHoChu, MenuThaoTac, HopLoi, HopThoai, lopO, Nut, O, Rong, The, TieuDeTrang, cx } from '../components/ui';
+import { Chip, DangTai, DongHo, DongHoChu, MenuThaoTac, HopLoi, HopThoai, lopO, Nut, O, Rong, The, TieuDeTrang, cx } from '../components/ui';
 import { DieuChinhDonVi, SuaKy, ThemDonVi } from '../components/DieuChinhKy';
 import { COT_VB_NOP, ThongTinVanBan, type VanBanDaNop } from '../components/VanBanPdf';
 import { NutTepDrive } from '../components/TepDrive';
@@ -87,7 +87,7 @@ export default function KyBaoCaoChiTiet({ kyId, nhung, sauXoa, khe, themNut }: {
   const soanChung = !ky.chu_tri_don_vi_id && hoSo?.vai_tro !== 'don_vi';
   const nutKy = (
     <>
-      {quanLy && chuaNop.length > 0 && ky.trang_thai === 'mo' && <Nut icon={<Bell className="h-4 w-4" />} onClick={() => nhac(chuaNop)}>Nhắc {chuaNop.length} đơn vị chưa nộp</Nut>}
+      {quanLy && chuaNop.length > 0 && ky.trang_thai === 'mo' && <Nut className="max-md:hidden" icon={<Bell className="h-4 w-4" />} onClick={() => nhac(chuaNop)}>Nhắc {chuaNop.length} đơn vị chưa nộp</Nut>}
       {quanLy && <MenuThaoTac nhan="Thao tác kỳ" ds={[
         { ten: 'Sửa kỳ', icon: <Pencil className="h-4 w-4" />, bam: () => setMoSua(true) },
         { ten: 'Thêm đơn vị', icon: <UserPlus className="h-4 w-4" />, bam: () => setMoThem(true), an: ky.trang_thai !== 'mo' },
@@ -130,9 +130,38 @@ export default function KyBaoCaoChiTiet({ kyId, nhung, sauXoa, khe, themNut }: {
       {thongBao && <div role="status" className="rounded-xl bg-xanh-nhat px-4 py-3 text-sm text-xanh">{thongBao}</div>}
       {ky.yeu_cau && <div className="whitespace-pre-line rounded-xl bg-nen-3 px-4 py-3 text-sm"><b>Yêu cầu:</b> {ky.yeu_cau}</div>}
 
+      {/* Điện thoại: khối đếm ngược + tiến độ */}
+      <section className="flex flex-col gap-3 rounded-3xl bg-gradient-to-br from-[#7C1419] via-ink to-ink-3 p-4 text-white shadow-[0_12px_32px_-16px_rgba(106,15,20,0.6)] md:hidden">
+        <div className="flex items-center gap-2">
+          <span className="flex-1 text-[0.8125rem] text-[#F0C9C4]">{ky.trang_thai === 'mo' ? 'Còn lại đến hạn đơn vị nộp' : 'Kỳ đã khoá sổ'}</span>
+          <span className="rounded-full bg-white/12 px-2.5 py-0.5 text-[11.5px] font-semibold text-[#FFF4DA]">{loaiNhan}</span>
+        </div>
+        {ky.trang_thai === 'mo' && <DongHo han={ky.han_nop} />}
+        <div className="text-[0.75rem] text-[#F0C9C4]">Hạn <b className="font-semibold text-white">{ngayGioDu(ky.han_nop)}</b>{ky.tu_ngay && ` · kỳ ${ngay(ky.tu_ngay).replace(/\/\d{4}$/, '')} – ${ngay(ky.den_ngay).replace(/\/\d{4}$/, '')}`}</div>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex h-2 overflow-hidden rounded-full bg-white/15">
+            {([['da_duyet', 'bg-[#93C5FD]'], ['da_nop', 'bg-white'], ['can_bo_sung', 'bg-vang']] as const).map(([t, m]) => { const n = dem([t]); return n ? <div key={t} className={cx('h-2', m)} style={{ width: `${(n / Math.max(1, nop.length)) * 100}%` }} /> : null; })}
+          </div>
+          <div className="flex items-baseline gap-1.5 text-[0.8125rem]"><b className="mono text-[1.0625rem]">{dem(['da_nop', 'da_duyet'])}/{nop.length}</b><span className="text-[#F0C9C4]">đơn vị đã nộp</span>
+            {dem(['chua_nop', 'nhap']) > 0 && <span className="ml-auto text-[#FFF4DA]">{dem(['chua_nop', 'nhap'])} chưa nộp</span>}</div>
+        </div>
+        {quanLy && chuaNop.length > 0 && ky.trang_thai === 'mo' && (
+          <button type="button" onClick={() => nhac(chuaNop)} className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white text-[0.875rem] font-bold text-ink active:scale-[0.98]"><Bell className="h-4 w-4" />Nhắc {chuaNop.length} đơn vị chưa hoàn thành</button>
+        )}
+      </section>
+
       <The className="flex min-w-0 flex-col overflow-hidden">
-        {/* Còn lại + số lượng + lọc */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-vien px-4 py-4 sm:gap-y-4 sm:px-6 sm:py-5">
+        {/* Điện thoại: lọc nhanh theo trạng thái */}
+        <div className="-mb-px flex gap-1.5 overflow-x-auto border-b border-vien px-3 py-3 md:hidden" role="tablist" aria-label="Lọc trạng thái">
+          {LOC.map(([k, t, ds]) => { const n = k ? dem(ds) : nop.length; const on = loc === k; return (
+            <button key={k} type="button" role="tab" aria-selected={on} onClick={() => setLoc(k)}
+              className={cx('flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-semibold transition-colors', on ? 'bg-ink text-white' : 'bg-nen-2 text-mo-2')}>
+              {k ? t : 'Tất cả'}<span className={cx('mono rounded-full px-1.5 text-[11.5px]', on ? 'bg-white/20' : 'bg-white text-den')}>{n}</span>
+            </button>
+          ); })}
+        </div>
+        {/* Máy tính: còn lại + số lượng + lọc */}
+        <div className="hidden flex-wrap items-center gap-x-6 gap-y-3 border-b border-vien px-4 py-4 sm:gap-y-4 sm:px-6 sm:py-5 md:flex">
           <div className="flex flex-col gap-1.5 sm:pr-6 md:border-r md:border-vien">
             <span className="text-[0.7812rem] text-mo">{ky.trang_thai === 'mo' ? 'Còn lại đến hạn đơn vị nộp' : 'Kỳ đã khoá sổ'}</span>
             {ky.trang_thai === 'mo' ? <DongHoChu han={ky.han_nop} /> : <Chip>Đã khoá sổ</Chip>}
@@ -186,22 +215,31 @@ export default function KyBaoCaoChiTiet({ kyId, nhung, sauXoa, khe, themNut }: {
             </tbody>
           </table>
         </div>
-        {/* Điện thoại: thẻ */}
+        {/* Điện thoại: mỗi đơn vị 1 dòng gọn */}
         <ul className="flex flex-col md:hidden">
           {dsHien.map((n) => {
             const t = TT_NOP[n.trang_thai];
+            const cham = n.trang_thai === 'da_duyet' ? 'bg-xanh' : n.trang_thai === 'da_nop' ? 'bg-den' : n.trang_thai === 'can_bo_sung' ? 'bg-[#F59E0B]' : 'bg-[#CFC9BC]';
+            const tre = n.nop_luc && new Date(n.nop_luc) > new Date(n.han_rieng ?? ky.han_nop);
+            const chuaNopBai = n.trang_thai === 'chua_nop' || n.trang_thai === 'nhap';
             return (
-              <li key={n.id} className="flex flex-col gap-1.5 border-b border-[#F1EEE7] px-4 py-3 last:border-0">
-                <div className="flex items-start gap-2">
-                  <span className="min-w-0 flex-1 text-[0.9062rem] font-semibold leading-snug">{n.don_vi.ten}</span>
-                  <Chip cham nen={t.nen} chu={t.chu}>{t.nhan}</Chip>
+              <li key={n.id} className="flex items-center gap-3 border-b border-[#F1EEE7] px-4 py-3 last:border-0">
+                <span className={cx('h-2.5 w-2.5 shrink-0 rounded-full', cham)} aria-hidden />
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[0.9062rem] font-semibold leading-snug">{n.don_vi.ten}</span>
+                  <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-[0.75rem] text-mo">
+                    <span className={cx('font-semibold', t.chu)}>{t.nhan}</span>
+                    {n.nop_luc && <span className="mono">· {luc(n.nop_luc)}</span>}
+                    {tre && <span className="font-bold text-cam">· trễ</span>}
+                    {n.han_rieng && <span className="font-semibold text-cam-dam">· gia hạn {ngayGio(n.han_rieng)}</span>}
+                    {n.nop_ngoai && <span>· bản giấy</span>}
+                  </span>
+                  {(n.van_ban || n.tep.length > 0) && <span className="min-w-0 text-[0.75rem]">{vanBan(n)}</span>}
                 </div>
-                <div className="flex items-center gap-3 text-[0.7812rem] text-mo">
-                  <span className="mono shrink-0">{n.nop_luc ? luc(n.nop_luc) : 'Chưa nộp'}</span>
-                  <span className="min-w-0 flex-1 truncate">{n.van_ban || n.tep.length ? vanBan(n) : ''}</span>
-                  {thaoTac(n)}
-                  {quanLy && ky.trang_thai === 'mo' && <button aria-label={`Điều chỉnh ${n.don_vi.ten}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-mo hover:bg-nen" onClick={() => setDieuChinh(n)}><MoreHorizontal className="h-4 w-4" /></button>}
-                </div>
+                {chuaNopBai
+                  ? (quanLy && ky.trang_thai === 'mo' && <button type="button" onClick={() => nhac([n])} className="flex min-h-9 shrink-0 items-center gap-1 rounded-full border border-[#E9C6C3] px-3 text-[0.8125rem] font-semibold text-nguy active:bg-nguy-nhat"><Bell className="h-3.5 w-3.5" />Nhắc</button>)
+                  : <span className="shrink-0 text-[0.8125rem]">{thaoTac(n)}</span>}
+                {quanLy && ky.trang_thai === 'mo' && <button aria-label={`Điều chỉnh ${n.don_vi.ten}`} className="-mr-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-mo active:bg-nen" onClick={() => setDieuChinh(n)}><MoreHorizontal className="h-4 w-4" /></button>}
               </li>
             );
           })}
