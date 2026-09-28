@@ -7,6 +7,7 @@ import { LOAI_VB, type LoaiVb } from '../lib/vanBan';
 import { ngay } from '../lib/dinhDang';
 import { HopLoi, lopO, O, cx } from './ui';
 import { NutTepDrive, useXemTruocDrive } from './TepDrive';
+import XemPdf from './XemPdf';
 
 export type VanBanDaNop = {
   id: string; so_van_ban: string | null; ky_hieu: string | null; so_ky_hieu: string | null; ngay_ban_hanh: string | null;
@@ -104,7 +105,7 @@ export default function OVanBanPdf({ meta, doiMeta, tep, chonTep, driveId, hienC
           </label>
         </div>
         {xem
-          ? <iframe title="Xem văn bản PDF" src={xem} className="h-[420px] w-full rounded-xl border border-vien bg-nen lg:h-[560px]" />
+          ? (blob ? <XemPdf url={blob} cao="h-[420px] lg:h-[560px]" /> : <iframe title="Xem văn bản PDF" src={xem} className="h-[420px] w-full rounded-xl border border-vien bg-nen lg:h-[560px]" />)
           : <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[0.8125rem] text-mo">Bản thử — không có tệp trên Google Drive</div>}
       </div>
       <div className="flex min-w-0 flex-col gap-3">
@@ -158,7 +159,7 @@ export function ThongTinVanBan({ vb, xemTruoc = true, them }: { vb: VanBanDaNop;
       </dl>
       {xemTruoc && (!coTep
         ? <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[0.8125rem] text-mo">Bản thử — không có tệp trên Google Drive</div>
-        : xt.url ? <iframe title="Xem văn bản" src={xt.url} className="h-[480px] w-full rounded-xl border border-vien bg-nen" />
+        : xt.url ? <XemPdf url={xt.url} />
         : xt.loi ? <iframe title="Xem văn bản" src={`https://drive.google.com/file/d/${vb.drive_file_id}/preview`} className="h-[480px] w-full rounded-xl border border-vien bg-nen" />
         : <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[0.8125rem] text-mo">Đang tải văn bản từ Google Drive…</div>)}
     </div>

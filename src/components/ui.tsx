@@ -160,8 +160,8 @@ export function HopThoai({ mo, dong, tieuDe, children, rong = 'max-w-lg' }: { mo
   return (
     <div className="mo-dan fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 backdrop-blur-[2px] sm:items-center sm:p-4" onClick={dong}>
       <div role="dialog" aria-modal="true" aria-label={tieuDe} onClick={(e) => e.stopPropagation()}
-        className={cx('hien-hop max-h-[92vh] w-full overflow-y-auto overflow-x-hidden rounded-t-3xl bg-white p-5 pb-[calc(20px+env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl sm:pb-5', rong)}>
-        <div className="mb-4 flex items-center gap-3">
+        className={cx('hien-hop max-h-[calc(100dvh-env(safe-area-inset-top)-12px)] w-full min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain rounded-t-3xl bg-white px-4 pb-[calc(20px+env(safe-area-inset-bottom))] shadow-xl sm:max-h-[92vh] sm:rounded-3xl sm:px-5 sm:pb-5', rong)}>
+        <div className="sticky top-0 z-10 -mx-4 mb-3 flex items-center gap-3 border-b border-[#F1EEE7] bg-white/95 px-4 pb-3 pt-4 backdrop-blur sm:-mx-5 sm:px-5 sm:pt-5">
           <h2 className="m-0 flex-1 text-lg font-bold">{tieuDe}</h2>
           <button onClick={dong} aria-label="Đóng" className="flex h-10 w-10 items-center justify-center rounded-xl hover:bg-nen"><X className="h-5 w-5" /></button>
         </div>

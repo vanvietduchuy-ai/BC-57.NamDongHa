@@ -22,7 +22,6 @@ function menu(h: HoSo): Muc[] {
     { den: '/viec-can-nop', ten: 'Việc cần nộp', icon: i(FileText) },
     { den: '/nhiem-vu', ten: 'Nhiệm vụ', icon: i(CheckSquare) },
     { den: '/kho-van-ban', ten: 'Văn bản', icon: i(Archive) },
-    { den: '/so-cong-van', ten: 'Sổ công văn', icon: i(BookOpen) },
   ];
   const chung: Muc[] = [
     { den: '/', ten: 'Tổng quan', icon: i(LayoutGrid), nhom: 'ĐIỀU HÀNH' },
