@@ -69,17 +69,19 @@ export default function KhoVanBan() {
           <span className="text-[0.8125rem] text-mo">Lưu trữ · đồng bộ Google Drive</span>
           <h1 className="m-0 text-[1.375rem] font-extrabold tracking-tight md:text-[1.625rem]">Kho văn bản</h1>
         </div>
-        <label className="relative w-full sm:w-[340px]">
+        <div className="flex w-full gap-2 sm:contents">
+        <label className="relative min-w-0 flex-1 sm:w-[340px] sm:flex-none">
           <Search className="pointer-events-none absolute left-3.5 top-3 h-[18px] w-[18px] text-mo" />
           <input className="h-11 w-full rounded-xl border border-vien bg-white pl-10 pr-3 text-base outline-none focus:border-xanh sm:text-sm" placeholder="Số ký hiệu, trích yếu, nội dung" value={tim} onChange={(e) => setTim(e.target.value)} aria-label="Tìm văn bản" />
         </label>
-        {quanTri && <Nut kieu="chinh" icon={<Upload className="h-4 w-4" />} onClick={() => setForm({})} ngan="Tải lên">Tải lên văn bản</Nut>}
+        {quanTri && <Nut kieu="chinh" className="shrink-0" icon={<Upload className="h-4 w-4" />} onClick={() => setForm({})} ngan="Tải lên">Tải lên văn bản</Nut>}
+        </div>
       </header>
 
       {tb && <div role="status" className="rounded-xl bg-xanh-nhat px-4 py-3 text-sm text-xanh">{tb}</div>}
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[236px_minmax(0,1fr)] xl:grid-cols-[236px_minmax(0,1fr)_330px] 2xl:grid-cols-[236px_minmax(0,1fr)_360px]">
-        <div className="flex flex-col gap-4 lg:sticky lg:top-6">
-          <nav aria-label="Thư mục" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0">
+        <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-6">
+          <nav aria-label="Thư mục" className="-mx-3.5 flex gap-1.5 overflow-x-auto px-3.5 pb-1 sm:-mx-4 sm:px-4 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0">
             {nutTM('', 'Tất cả văn bản')}
             {nutTM('cap_tren', 'Văn bản cấp trên')}
             {(['cap_tren_trung_uong', 'cap_tren_tinh', 'cap_tren_cong_an_tinh'] as ThuMuc[]).map((k) => nutTM(k, THU_MUC[k], true))}
@@ -109,7 +111,7 @@ export default function KhoVanBan() {
                   <li key={v.id}>
                     <button type="button" onClick={() => (rong ? setChonId(v.id) : linkVb(v) ? moVb(v) : quanTri && setForm({ vb: v }))}
                       className={cx('grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-[#F1EEE7] px-4 py-3 text-left transition-colors sm:grid-cols-[120px_minmax(0,1fr)_auto]',
-                        dangXem ? 'bg-[#FDF1F0] shadow-[inset_3px_0_0_var(--color-ink)]' : 'hover:bg-nen-2', v.trang_thai === 'het_hieu_luc' && 'opacity-60')}>
+                        dangXem ? 'bg-[#FDF1F0] shadow-[inset_3px_0_0_var(--color-ink)]' : 'hover:bg-nen-2', v.trang_thai === 'het_hieu_luc' && 'opacity-60', quanTri && !rong && 'border-b-0 pb-1')}>
                       <span className="mono col-span-2 flex gap-2 text-[0.75rem] leading-snug text-mo-2 sm:col-span-1 sm:flex-col sm:gap-0">
                         <b className="font-bold text-den">{v.so_ky_hieu ?? '…'}</b><span>{v.ngay_ban_hanh ? ngay(v.ngay_ban_hanh) : '…'}</span>
                       </span>
@@ -119,9 +121,9 @@ export default function KhoVanBan() {
                       </span>
                       <Chip nen={c[0]} chu={c[1]}>{c[2]}</Chip>
                     </button>
-                    {quanTri && !rong && <div className="-mt-2 flex justify-end gap-1 border-b border-[#F1EEE7] px-3 pb-2">
-                      <button type="button" onClick={() => setForm({ vb: v })} className="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[0.8125rem] font-semibold text-mo-2 hover:bg-nen"><Pencil className="h-3.5 w-3.5" />Sửa</button>
-                      <button type="button" onClick={() => void xoa(v)} className="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[0.8125rem] font-semibold text-nguy hover:bg-nguy-nhat"><Trash2 className="h-3.5 w-3.5" />Xoá</button>
+                    {quanTri && !rong && <div className="-mt-px flex justify-end gap-1 border-b border-[#F1EEE7] px-3 pb-1.5">
+                      <button type="button" onClick={() => setForm({ vb: v })} className="flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 text-[0.8125rem] font-semibold text-mo-2 hover:bg-nen"><Pencil className="h-3.5 w-3.5" />Sửa</button>
+                      <button type="button" onClick={() => void xoa(v)} className="flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 text-[0.8125rem] font-semibold text-nguy hover:bg-nguy-nhat"><Trash2 className="h-3.5 w-3.5" />Xoá</button>
                     </div>}
                   </li>
                 );

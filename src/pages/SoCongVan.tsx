@@ -1,12 +1,12 @@
 // Sổ công văn đến / đi — tự vào sổ khi đơn vị gửi báo cáo văn bản, khi Cơ quan Thường trực thêm văn bản vào kho.
 import { useMemo, useState } from 'react';
-import { ExternalLink, FileSpreadsheet, Plus, Search } from 'lucide-react';
+import { ExternalLink, FilePen, FileSpreadsheet, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { useAuth, laQuanTri } from '../lib/auth';
 import { ngay } from '../lib/dinhDang';
 import { khongDau } from '../lib/nhiemVu';
-import { LOAI_VB, type LoaiVb } from '../lib/vanBan';
+import { COT_VB, LOAI_VB, type LoaiVb, type VanBan } from '../lib/vanBan';
 import { linkXemDrive, ThongTinVanBan, type VanBanDaNop } from '../components/VanBanPdf';
 import { moTepDrive } from '../components/TepDrive';
 import FormVanBan from '../components/FormVanBan';
@@ -72,18 +72,20 @@ export default function SoCongVan() {
           <Nut icon={<FileSpreadsheet className="h-4 w-4" />} onClick={xuatExcel}>Xuất Excel</Nut>
           {quanTri && <Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setThem(true)}>Vào sổ văn bản</Nut>}
         </>} />
-      <div className="flex flex-wrap items-center gap-2">
-        <div role="tablist" className="grid grid-cols-2 rounded-xl bg-[#E7E3D9] p-1">
-          {([['den', 'Sổ đến'], ['di', 'Sổ đi']] as const).map(([k, t]) => (
-            <button key={k} role="tab" aria-selected={so === k} onClick={() => setSo(k)} className={cx('h-10 rounded-lg px-4 text-[0.8125rem]', so === k ? 'bg-white font-bold' : 'font-medium text-mo-2')}>{t} · {dem(k)}</button>
-          ))}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex gap-2">
+          <div role="tablist" className="grid flex-1 grid-cols-2 rounded-xl bg-[#E7E3D9] p-1 sm:flex-none">
+            {([['den', 'Sổ đến'], ['di', 'Sổ đi']] as const).map(([k, t]) => (
+              <button key={k} role="tab" aria-selected={so === k} onClick={() => setSo(k)} className={cx('h-10 whitespace-nowrap rounded-lg px-4 text-[0.875rem]', so === k ? 'bg-white font-bold shadow-sm' : 'font-medium text-mo-2')}>{t} <span className="mono text-mo">{dem(k)}</span></button>
+            ))}
+          </div>
+          <select aria-label="Năm" className={cx(lopO, 'min-h-12 w-[104px] shrink-0 bg-white')} value={nam} onChange={(e) => setNam(Number(e.target.value))}>
+            {[0, 1, 2].map((i) => new Date().getFullYear() - i).map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
         </div>
-        <select aria-label="Năm" className={cx(lopO, 'min-h-11')} value={nam} onChange={(e) => setNam(Number(e.target.value))}>
-          {[0, 1, 2].map((i) => new Date().getFullYear() - i).map((n) => <option key={n} value={n}>{n}</option>)}
-        </select>
-        <label className="relative min-w-52 flex-1">
+        <label className="relative sm:min-w-52 sm:flex-1">
           <Search className="pointer-events-none absolute left-3 top-3 h-5 w-5 text-mo" />
-          <input className={cx(lopO, 'w-full pl-10')} placeholder="Tìm số, trích yếu, nơi gửi…" value={tim} onChange={(e) => setTim(e.target.value)} aria-label="Tìm trong sổ" />
+          <input className={cx(lopO, 'w-full bg-white pl-10')} placeholder="Tìm số, trích yếu, nơi gửi…" value={tim} onChange={(e) => setTim(e.target.value)} aria-label="Tìm trong sổ" />
         </label>
       </div>
 
@@ -118,13 +120,15 @@ export default function SoCongVan() {
           </div>
           <ul className="m-0 flex list-none flex-col p-0 md:hidden">
             {ds.map((d) => (
-              <li key={d.id}>
-                <button onClick={() => setChon(d)} className="flex w-full gap-3 border-b border-[#F1EEE7] px-4 py-3 text-left">
-                  <span className="so w-10 shrink-0 text-lg font-bold">{d.so_thu_tu}</span>
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="so text-xs text-mo">{ngay(d.ngay)} · <b className="text-den">{d.so_ky_hieu ?? '—'}</b></span>
-                    <span className="text-sm font-semibold leading-snug">{d.trich_yeu}</span>
-                    <span className="text-xs text-mo">{so === 'den' ? `Từ: ${d.noi_gui ?? '—'}` : `Gửi: ${d.noi_nhan ?? '—'}`}</span>
+              <li key={d.id} className="border-b border-[#F1EEE7] last:border-0">
+                <button onClick={() => setChon(d)} className="flex w-full items-start gap-3 px-4 py-3.5 text-left active:bg-nen-2">
+                  <span className={cx('mono flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl leading-none', so === 'den' ? 'bg-xanh-nhat text-xanh' : 'bg-[#FDF1F0] text-ink')}>
+                    <span className="text-[1.0625rem] font-bold">{d.so_thu_tu}</span><span className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-wide">{so === 'den' ? 'đến' : 'đi'}</span>
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="flex items-center gap-2 text-xs text-mo"><b className="mono truncate text-den">{d.so_ky_hieu ?? '—'}</b><span className="shrink-0">· {ngay(d.ngay)}</span></span>
+                    <span className="line-clamp-3 text-[0.875rem] font-semibold leading-snug">{d.trich_yeu}</span>
+                    <span className="truncate text-xs text-mo">{so === 'den' ? `Từ: ${d.noi_gui ?? '—'}` : `Gửi: ${d.noi_nhan ?? '—'}`}{d.ghi_chu ? ` · ${d.ghi_chu}` : ''}</span>
                   </span>
                 </button>
               </li>
@@ -141,28 +145,86 @@ export default function SoCongVan() {
 }
 
 function ChiTietSo({ d, dong, xong }: { d: Dong | null; dong: () => void; xong: () => void }) {
-  const [ghiChu, setGhiChu] = useState('');
+  const { hoSo } = useAuth();
+  const quanTri = laQuanTri(hoSo);
+  const [sua, setSua] = useState(false);
+  const [g, setG] = useState({ so_thu_tu: '', ngay: '', noi: '', ghi_chu: '' });
   const [loi, setLoi] = useState<string | null>(null);
+  const [dang, setDang] = useState(false);
+  const [vbSua, setVbSua] = useState<VanBan | null>(null);
   const [dCu, setDCu] = useState<Dong | null>(null);
-  if (d !== dCu) { setDCu(d); setGhiChu(d?.ghi_chu ?? ''); setLoi(null); }
+  if (d !== dCu) {
+    setDCu(d); setSua(false); setLoi(null); setVbSua(null);
+    setG({ so_thu_tu: String(d?.so_thu_tu ?? ''), ngay: d?.ngay ?? '', noi: (d?.loai_so === 'den' ? d?.noi_gui : d?.noi_nhan) ?? '', ghi_chu: d?.ghi_chu ?? '' });
+  }
   if (!d) return null;
+  const den = d.loai_so === 'den';
   const vb: VanBanDaNop = { id: d.van_ban_id, so_van_ban: null, ky_hieu: null, so_ky_hieu: d.so_ky_hieu, ngay_ban_hanh: d.ngay_ban_hanh, trich_yeu: d.trich_yeu, loai: d.loai,
     nguoi_ky: d.nguoi_ky, chuc_vu_nguoi_ky: d.chuc_vu_nguoi_ky, co_quan_ban_hanh: d.co_quan_ban_hanh, drive_file_id: d.drive_file_id, drive_url: d.drive_url, ten_tep: d.ten_tep };
   const luu = async () => {
-    const { error } = await supabase.from('so_van_ban').update({ ghi_chu: ghiChu.trim() || null }).eq('id', d.id);
+    setLoi(null);
+    const so = Number(g.so_thu_tu);
+    if (quanTri && sua) {
+      if (!Number.isInteger(so) || so < 1) { setLoi(`Nhập ${den ? 'số đến' : 'số đi'} là số nguyên dương`); return; }
+      if (!g.ngay) { setLoi(`Nhập ${den ? 'ngày đến' : 'ngày gửi'}`); return; }
+    }
+    setDang(true);
+    const capNhat = quanTri && sua
+      ? { so_thu_tu: so, ngay: g.ngay, nam: Number(g.ngay.slice(0, 4)), [den ? 'noi_gui' : 'noi_nhan']: g.noi.trim() || null, ghi_chu: g.ghi_chu.trim() || null }
+      : { ghi_chu: g.ghi_chu.trim() || null };
+    const { error } = await supabase.from('so_van_ban').update(capNhat).eq('id', d.id);
+    setDang(false);
+    if (error) setLoi(/duplicate|unique/i.test(error.message) ? `${den ? 'Số đến' : 'Số đi'} ${so}/${g.ngay.slice(0, 4)} đã có trong sổ — chọn số khác.` : loiDe(error));
+    else xong();
+  };
+  const xoaKhoiSo = async () => {
+    if (!window.confirm(`Xoá văn bản "${d.so_ky_hieu ?? d.trich_yeu}" khỏi ${den ? 'sổ đến' : 'sổ đi'}? Văn bản vẫn còn trong kho văn bản.`)) return;
+    setDang(true);
+    const { error } = await supabase.from('so_van_ban').delete().eq('id', d.id);
+    setDang(false);
     if (error) setLoi(loiDe(error)); else xong();
   };
+  const moSuaVb = async () => {
+    setLoi(null);
+    const { data, error } = await supabase.from('van_ban').select(COT_VB).eq('id', d.van_ban_id).maybeSingle();
+    if (error || !data) setLoi(error ? loiDe(error) : 'Không mở được văn bản'); else setVbSua(data as unknown as VanBan);
+  };
   return (
-    <HopThoai mo dong={dong} tieuDe={`${d.loai_so === 'den' ? 'Số đến' : 'Số đi'} ${d.so_thu_tu}/${d.nam}`} rong="max-w-[900px]">
-      <div className="flex flex-col gap-4">
-        <ThongTinVanBan vb={vb} them={<>
-          <dt className="text-mo">{d.loai_so === 'den' ? 'Nơi gửi' : 'Nơi nhận'}</dt><dd className="m-0">{(d.loai_so === 'den' ? d.noi_gui : d.noi_nhan) ?? '—'}</dd>
-          <dt className="text-mo">{d.loai_so === 'den' ? 'Ngày đến' : 'Ngày gửi'}</dt><dd className="so m-0">{ngay(d.ngay)}</dd>
-        </>} />
-        <O nhan="Ghi chú (xử lý, chuyển…)"><input className={lopO} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} /></O>
-        {loi && <HopLoi loi={loi} />}
-        <div className="flex justify-end gap-2"><Nut onClick={dong}>Đóng</Nut><Nut kieu="chinh" onClick={luu}>Lưu ghi chú</Nut></div>
-      </div>
-    </HopThoai>
+    <>
+      <HopThoai mo dong={dong} tieuDe={`${den ? 'Số đến' : 'Số đi'} ${d.so_thu_tu}/${d.nam}`} rong="max-w-[900px]">
+        <div className="flex flex-col gap-4">
+          {sua ? (
+            <div className="flex flex-col gap-3 rounded-2xl border border-vien bg-nen-2 p-3 sm:p-4">
+              <div className="flex items-center gap-2 text-[0.8125rem] font-bold text-den"><Pencil className="h-4 w-4" />Sửa thông tin vào sổ</div>
+              <div className="grid grid-cols-2 gap-3">
+                <O nhan={den ? 'Số đến' : 'Số đi'}><input inputMode="numeric" className={lopO} value={g.so_thu_tu} onChange={(e) => setG({ ...g, so_thu_tu: e.target.value.replace(/\D/g, '') })} /></O>
+                <O nhan={den ? 'Ngày đến' : 'Ngày gửi'}><input type="date" className={lopO} value={g.ngay} onChange={(e) => setG({ ...g, ngay: e.target.value })} /></O>
+              </div>
+              <O nhan={den ? 'Nơi gửi' : 'Nơi nhận'}><input className={lopO} value={g.noi} onChange={(e) => setG({ ...g, noi: e.target.value })} /></O>
+              <O nhan="Ghi chú (xử lý, chuyển…)"><input className={lopO} value={g.ghi_chu} onChange={(e) => setG({ ...g, ghi_chu: e.target.value })} /></O>
+              <p className="m-0 text-xs text-mo">Số, ký hiệu, trích yếu, người ký… sửa ở <button type="button" onClick={() => void moSuaVb()} className="font-semibold text-[#8E1B22] underline">thông tin văn bản</button>.</p>
+            </div>
+          ) : (
+            <ThongTinVanBan vb={vb} them={<>
+              <dt className="text-mo">{den ? 'Nơi gửi' : 'Nơi nhận'}</dt><dd className="m-0">{(den ? d.noi_gui : d.noi_nhan) ?? '—'}</dd>
+              <dt className="text-mo">{den ? 'Ngày đến' : 'Ngày gửi'}</dt><dd className="so m-0">{ngay(d.ngay)}</dd>
+            </>} />
+          )}
+          {!sua && <O nhan="Ghi chú (xử lý, chuyển…)"><input className={lopO} value={g.ghi_chu} onChange={(e) => setG({ ...g, ghi_chu: e.target.value })} /></O>}
+          {loi && <HopLoi loi={loi} />}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {quanTri && !sua && <>
+              <Nut icon={<Pencil className="h-4 w-4" />} onClick={() => setSua(true)}>Sửa sổ</Nut>
+              <Nut icon={<FilePen className="h-4 w-4" />} onClick={() => void moSuaVb()}>Sửa văn bản</Nut>
+              <Nut kieu="nguy" icon={<Trash2 className="h-4 w-4" />} dangChay={dang} onClick={() => void xoaKhoiSo()}>Xoá khỏi sổ</Nut>
+            </>}
+            <span className="hidden flex-1 sm:block" />
+            <Nut onClick={sua ? () => setSua(false) : dong}>{sua ? 'Huỷ sửa' : 'Đóng'}</Nut>
+            <Nut kieu="chinh" dangChay={dang} onClick={() => void luu()}>{sua ? 'Lưu thay đổi' : 'Lưu ghi chú'}</Nut>
+          </div>
+        </div>
+      </HopThoai>
+      {vbSua && <FormVanBan mo vb={vbSua} dong={() => setVbSua(null)} xong={() => { setVbSua(null); xong(); }} daXoa={() => { setVbSua(null); xong(); }} />}
+    </>
   );
 }
