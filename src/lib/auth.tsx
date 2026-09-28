@@ -6,7 +6,8 @@ export type VaiTro = 'admin' | 'quan_tri' | 'lanh_dao' | 'don_vi';
 export type HoSo = {
   id: string; ho_ten: string; chuc_vu: string | null; email: string | null; vai_tro: VaiTro;
   don_vi_id: string | null; don_vi: { id: string; ma: string; ten: string } | null;
-  dau_moi: string[];                                  // lĩnh vực đơn vị làm đầu mối (nq57, chuyen_doi_so, de_an_06…)
+  dau_moi: string[];
+  doi_mat_khau?: boolean;                             // tài khoản mới: bắt đổi mật khẩu lần đầu                                  // lĩnh vực đơn vị làm đầu mối (nq57, chuyen_doi_so, de_an_06…)
 };
 
 type Ctx = {
@@ -41,7 +42,7 @@ function uidTuJwt(t: string): string | null {
 async function taiHoSo(uid: string): Promise<HoSo | null> {
   const { data, error } = await supabase
     .from('nguoi_dung')
-    .select('id, ho_ten, chuc_vu, email, vai_tro, don_vi_id, hoat_dong, don_vi(id, ma, ten)')
+    .select('id, ho_ten, chuc_vu, email, vai_tro, don_vi_id, hoat_dong, doi_mat_khau, don_vi(id, ma, ten)')
     .eq('id', uid)
     .maybeSingle();
   if (error) throw error;
@@ -99,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const datMatKhau = async (matKhau: string) => {
     const { error } = await supabase.auth.updateUser({ password: matKhau });
     if (error) throw new Error(loiDangNhap(error.message));
+    if (hoSo?.doi_mat_khau) { await supabase.rpc('da_doi_mat_khau'); setHoSo({ ...hoSo, doi_mat_khau: false }); }
     setKhoiPhuc(false);
     window.history.replaceState(null, '', '/');
   };
