@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Archive, Bell, BookOpen, ChevronDown, ChevronUp, Radar, CheckSquare, FileText, Send, Home, LayoutGrid, LogOut, Menu, ShieldCheck, SlidersHorizontal, Mail,
+  Archive, Bell, BookOpen, ChevronDown, ChevronUp, Radar, CheckSquare, FileText, Send, Home, LayoutGrid, LogOut, Menu, ShieldCheck, SlidersHorizontal, Mail, BarChart3, Target,
 } from 'lucide-react';
 import { laDauMoi, TEN_VAI_TRO, useAuth, type HoSo, type VaiTro } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -18,8 +18,9 @@ function menu(h: HoSo): Muc[] {
   const i = (C: typeof Home) => <C className="h-5 w-5" strokeWidth={1.8} />;
   if (vt === 'don_vi') return [
     { den: '/', ten: 'Trang chủ', icon: i(Home) },
-    ...(laDauMoi(h) ? [{ den: '/theo-doi', ten: 'Theo dõi đơn vị', icon: i(Radar) }, { den: '/ky-bao-cao', ten: 'Giao báo cáo', icon: i(Send) }] : []),
+    ...(laDauMoi(h) ? [{ den: '/theo-doi', ten: 'Theo dõi đơn vị', icon: i(Radar) }, { den: '/ky-bao-cao', ten: 'Giao báo cáo', icon: i(Send) }, { den: '/chi-tieu', ten: 'Theo dõi chỉ tiêu', ngan: 'Chỉ tiêu', icon: i(Target) }] : []),
     { den: '/viec-can-nop', ten: 'Việc cần nộp', icon: i(FileText) },
+    { den: '/so-lieu', ten: 'Cập nhật số liệu', ngan: 'Số liệu', icon: i(BarChart3) },
     { den: '/nhiem-vu', ten: 'Nhiệm vụ', icon: i(CheckSquare) },
     { den: '/van-ban', ten: 'Văn bản đến – đi', ngan: 'Văn bản', icon: i(Mail) },
     { den: '/kho-van-ban', ten: 'Văn bản', icon: i(Archive) },
@@ -28,6 +29,7 @@ function menu(h: HoSo): Muc[] {
     { den: '/', ten: 'Tổng quan', icon: i(LayoutGrid), nhom: 'ĐIỀU HÀNH' },
     { den: '/nhiem-vu', ten: 'Nhiệm vụ BCĐ', icon: i(CheckSquare), nhom: 'ĐIỀU HÀNH' },
     { den: '/ky-bao-cao', ten: 'Theo dõi kỳ báo cáo', ngan: 'Theo dõi kỳ', icon: i(FileText), nhom: 'ĐIỀU HÀNH' },
+    { den: '/chi-tieu', ten: 'Số liệu chỉ tiêu', ngan: 'Chỉ tiêu', icon: i(BarChart3), nhom: 'ĐIỀU HÀNH' },
   ];
   if (vt === 'lanh_dao') return [...chung,
     { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ' },
