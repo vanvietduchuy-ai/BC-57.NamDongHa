@@ -7,7 +7,8 @@ export type HoSo = {
   id: string; ho_ten: string; chuc_vu: string | null; email: string | null; vai_tro: VaiTro;
   don_vi_id: string | null; don_vi: { id: string; ma: string; ten: string } | null;
   dau_moi: string[];
-  doi_mat_khau?: boolean;                             // tài khoản mới: bắt đổi mật khẩu lần đầu                                  // lĩnh vực đơn vị làm đầu mối (nq57, chuyen_doi_so, de_an_06…)
+  doi_mat_khau?: boolean;
+  quyen_ct?: Record<string, 'cai_dat' | 'theo_doi'>;  // quyền quản lý chỉ tiêu theo lĩnh vực (Quản trị phân quyền)                             // tài khoản mới: bắt đổi mật khẩu lần đầu                                  // lĩnh vực đơn vị làm đầu mối (nq57, chuyen_doi_so, de_an_06…)
 };
 
 type Ctx = {
@@ -52,7 +53,9 @@ async function taiHoSo(uid: string): Promise<HoSo | null> {
     const r = await supabase.from('dau_moi_linh_vuc').select('linh_vuc').eq('don_vi_id', data.don_vi_id);
     dauMoi = ((r.data ?? []) as { linh_vuc: string }[]).map((x) => x.linh_vuc);
   }
-  return { ...(data as unknown as HoSo), dau_moi: dauMoi };
+  // Quyền quản lý chỉ tiêu (bản CSDL cũ chưa có hàm thì bỏ qua)
+  const q = await supabase.rpc('quyen_chi_tieu_cua_toi');
+  return { ...(data as unknown as HoSo), dau_moi: dauMoi, quyen_ct: (q.error ? {} : q.data ?? {}) as HoSo['quyen_ct'] };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -126,6 +129,8 @@ export const laQuanTri = (h: HoSo | null) => h?.vai_tro === 'quan_tri' || h?.vai
 export const laAdmin = (h: HoSo | null) => h?.vai_tro === 'admin';
 export const TEN_VAI_TRO: Record<VaiTro, string> = { admin: 'Quản trị hệ thống', quan_tri: 'Cơ quan Thường trực', lanh_dao: 'Lãnh đạo BCĐ', don_vi: 'Tài khoản đơn vị' };
 // Đầu mối lĩnh vực: Phòng VH-XH (NQ 57, KHCN, CĐS), Tổ CSKV (Đề án 06)
+export const quyenCt = (h: HoSo | null, lv: string) => h?.quyen_ct?.[lv] ?? null;
+export const coQuanLyCt = (h: HoSo | null) => Object.keys(h?.quyen_ct ?? {}).length > 0;
 export const laDauMoi = (h: HoSo | null) => !!h?.dau_moi?.length;
 export const dauMoiDa06 = (h: HoSo | null) => !!h?.dau_moi?.includes('de_an_06');
 export const dauMoiCds = (h: HoSo | null) => !!h?.dau_moi?.some((x) => ['nq57', 'khcn_dmst', 'chuyen_doi_so'].includes(x));
