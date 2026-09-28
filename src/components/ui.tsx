@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Loader2, MoreHorizontal, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { conLai, conLaiNgan, hai, MAU_GAP, mucGap } from '../lib/dinhDang';
 import { useBayGio } from '../lib/useDuLieu';
 
@@ -228,9 +229,13 @@ export type MucThaoTac = { ten: string; icon?: ReactNode; bam: () => void; nguy?
 export function MenuThaoTac({ ds, nhan = 'Thao tác', className }: { ds: MucThaoTac[]; nhan?: string; className?: string }) {
   const [mo, setMo] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const refSheet = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!mo) return;
-    const f = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setMo(false); };
+    const f = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (ref.current && !ref.current.contains(t) && !refSheet.current?.contains(t)) setMo(false);
+    };
     document.addEventListener('mousedown', f);
     return () => document.removeEventListener('mousedown', f);
   }, [mo]);
@@ -243,12 +248,25 @@ export function MenuThaoTac({ ds, nhan = 'Thao tác', className }: { ds: MucThao
         <MoreHorizontal className="h-4 w-4" /><span className="max-sm:hidden">{nhan}</span>
       </button>
       {mo && (
-        <div role="menu" className="bat-len absolute right-0 z-40 mt-2 flex w-56 origin-top-right flex-col overflow-hidden rounded-2xl border border-vien bg-white py-1.5 shadow-xl">
-          {hien.map((m) => (
-            <button key={m.ten} role="menuitem" type="button" onClick={() => { setMo(false); m.bam(); }}
-              className={cx('flex min-h-11 items-center gap-2.5 px-4 text-left text-sm hover:bg-nen-2', m.nguy ? 'text-nguy' : 'text-den')}>{m.icon}{m.ten}</button>
-          ))}
-        </div>
+        <>
+          {/* Điện thoại: bảng chọn trượt từ dưới lên (không tràn ra mép màn hình) */}
+          {createPortal(<div ref={refSheet} className="mo-dan fixed inset-0 z-50 bg-ink/40 sm:hidden" onClick={() => setMo(false)}>
+            <div role="menu" aria-label={nhan} className="truot-len absolute inset-x-0 bottom-0 flex flex-col rounded-t-3xl bg-white px-2 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3" onClick={(e) => e.stopPropagation()}>
+              <div className="px-4 pb-2 text-[0.8125rem] font-semibold text-mo">{nhan}</div>
+              {hien.map((m) => (
+                <button key={m.ten} role="menuitem" type="button" onClick={() => { setMo(false); m.bam(); }}
+                  className={cx('flex min-h-12 items-center gap-3 rounded-xl px-4 text-left text-[0.9375rem] font-medium hover:bg-nen-2', m.nguy ? 'text-nguy' : 'text-den')}>{m.icon}{m.ten}</button>
+              ))}
+              <button type="button" onClick={() => setMo(false)} className="mt-1 min-h-12 rounded-xl bg-nen-2 text-[0.9375rem] font-semibold text-den">Đóng</button>
+            </div>
+          </div>, document.body)}
+          <div role="menu" className="bat-len absolute right-0 z-40 mt-2 hidden w-56 origin-top-right flex-col overflow-hidden rounded-2xl border border-vien bg-white py-1.5 shadow-xl sm:flex">
+            {hien.map((m) => (
+              <button key={m.ten} role="menuitem" type="button" onClick={() => { setMo(false); m.bam(); }}
+                className={cx('flex min-h-11 items-center gap-2.5 px-4 text-left text-sm hover:bg-nen-2', m.nguy ? 'text-nguy' : 'text-den')}>{m.icon}{m.ten}</button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

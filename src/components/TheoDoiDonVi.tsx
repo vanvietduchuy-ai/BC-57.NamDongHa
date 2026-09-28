@@ -78,7 +78,7 @@ export default function TheoDoiDonVi({ chuTri }: { chuTri?: string | null }) {
       {loi && <HopLoi loi={loi} taiLai={taiLai} />}
       {dangTai && !data && <DangTai />}
       {data && (bang.length === 0 ? <Rong>Không có kỳ báo cáo trong khoảng này.</Rong> : (
-        <The className="overflow-hidden"><div className="overflow-x-auto">
+        <The className="overflow-hidden"><div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[760px] text-[0.8125rem]">
             <thead className="bg-nen-2 text-left text-[11px] text-mo">
               <tr><th className="px-4 py-3">ĐƠN VỊ</th><th className="w-40 px-2">ĐÚNG HẠN</th><th className="px-2 text-right">TRỄ</th><th className="px-2 text-right">KHÔNG NỘP</th><th className="px-4">TỪNG KỲ (cũ → mới)</th></tr>
@@ -108,7 +108,29 @@ export default function TheoDoiDonVi({ chuTri }: { chuTri?: string | null }) {
               ))}
             </tbody>
           </table>
-        </div></The>
+        </div>
+        {/* Điện thoại: mỗi đơn vị 1 thẻ */}
+        <ul className="m-0 flex list-none flex-col p-0 md:hidden">
+          {bang.map((b) => (
+            <li key={b.id} className="flex flex-col gap-2 border-b border-[#F1EEE7] px-4 py-3 last:border-0">
+              <div className="flex items-baseline gap-2">
+                <span className="min-w-0 flex-1 text-[0.9375rem] font-semibold leading-snug">{b.ten}</span>
+                <span className="so text-sm font-bold">{b.tyLe == null ? '—' : `${Math.round(b.tyLe * 100)}%`}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-[#EEEBE3]"><div className={cx('h-1.5 rounded-full', (b.tyLe ?? 1) >= 0.9 ? 'bg-xanh' : (b.tyLe ?? 1) >= 0.7 ? 'bg-[#F59E0B]' : 'bg-nguy')} style={{ width: `${(b.tyLe ?? 0) * 100}%` }} /></div>
+              <div className="flex flex-wrap gap-x-4 text-xs text-mo">
+                <span>Đúng hạn {b.dung}/{b.soKy} kỳ</span>
+                {b.tre > 0 && <span className="font-semibold text-cam-dam">Trễ {b.tre} (TB {b.treTb} ngày)</span>}
+                {b.khong > 0 && <span className="font-bold text-nguy">Không nộp {b.khong}</span>}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {b.dong.map((d) => { const o = trangThaiO(d, bayGio); return (
+                  <Link key={d.nop_id} to={`/ky-bao-cao/${d.ky_id}`} aria-label={`${d.ky}: ${o.nhan}`} className={cx('h-6 w-6 rounded-md', o.mau)} />
+                ); })}
+              </div>
+            </li>
+          ))}
+        </ul></The>
       ))}
     </div>
   );
