@@ -125,6 +125,18 @@ export default function KhungTrang() {
   const vungCuon = useRef<HTMLDivElement>(null);
   // Sang trang khác: về đầu trang (điện thoại cuộn trong khung riêng)
   useEffect(() => { vungCuon.current?.scrollTo(0, 0); }, [location.pathname]);
+  // iPhone: bàn phím mở làm cả trang (window) bị đẩy lên; đóng bàn phím không tự trả về -> thanh dưới lơ lửng giữa màn hình.
+  // Khung đã cố định (fixed) nên trang gốc không cần cuộn: đưa về 0 khi rời ô nhập / bàn phím đóng.
+  useEffect(() => {
+    const laO = (e: Element | null) => !!e && /^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName);
+    let hen = 0;
+    const veDau = () => { window.clearTimeout(hen); hen = window.setTimeout(() => { if (!laO(document.activeElement) && (window.scrollY || document.documentElement.scrollTop)) window.scrollTo(0, 0); }, 80); };
+    const vv = window.visualViewport;
+    const doiKhung = () => { if (vv && vv.height > window.innerHeight * 0.85) window.scrollTo(0, 0); };
+    document.addEventListener('focusout', veDau);
+    vv?.addEventListener('resize', doiKhung);
+    return () => { window.clearTimeout(hen); document.removeEventListener('focusout', veDau); vv?.removeEventListener('resize', doiKhung); };
+  }, []);
   const [moThem, setMoThem] = useState(false);
   const [moLienHe, setMoLienHe] = useState(false);
   const nav = useNavigate();
@@ -170,7 +182,7 @@ export default function KhungTrang() {
 
   return (
     // Điện thoại: khung cố định cao đúng màn hình (thanh trên – vùng cuộn – thanh dưới), thanh dưới không trôi khi cuộn trên iPhone
-    <div className="flex min-h-screen max-lg:h-[100dvh] max-lg:min-h-0 max-lg:overflow-hidden">
+    <div className="flex min-h-screen max-lg:fixed max-lg:inset-0 max-lg:min-h-0 max-lg:overflow-hidden">
       <nav aria-label="Điều hướng chính" className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-7 overflow-y-auto bg-gradient-to-b from-[#7C1419] via-ink to-ink-3 px-4 py-6 text-[#FFF4DA] lg:flex">
         <div className="flex items-center justify-between gap-2 px-2"><Logo />{location.pathname !== '/' && <Chuong moSangPhai toi />}</div>
         {nhom.map((n) => (
