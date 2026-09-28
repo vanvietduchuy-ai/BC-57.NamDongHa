@@ -24,7 +24,8 @@ function OVao({ nhan, icon, phai, ...p }: React.InputHTMLAttributes<HTMLInputEle
 }
 
 export default function DangNhap() {
-  const { dangNhap, dangNhapThu, loi: loiHoSo, khoiPhuc, guiEmailKhoiPhuc, datMatKhau } = useAuth();
+  const { dangNhap, dangNhapThu, loi: loiHoSo, khoiPhuc: kp, guiEmailKhoiPhuc, datMatKhau, hoSo } = useAuth();
+  const khoiPhuc = kp || !!hoSo?.doi_mat_khau;          // tài khoản mới: đặt mật khẩu riêng trước khi dùng
   const [cheDo, setCheDo] = useState<CheDo>(khoiPhuc ? 'dat' : 'dang_nhap');
   const [email, setEmail] = useState(docEmail);
   const [matKhau, setMatKhau] = useState('');
@@ -68,7 +69,7 @@ export default function DangNhap() {
     dang_nhap: ['Đăng nhập', ''],
     quen: ['Quên mật khẩu', 'Nhập email của tài khoản, hệ thống gửi liên kết đặt lại mật khẩu.'],
     da_gui: ['Kiểm tra email', ''],
-    dat: ['Đặt mật khẩu mới', 'Mật khẩu dùng cho các lần đăng nhập sau.'],
+    dat: ['Đặt mật khẩu mới', hoSo?.doi_mat_khau ? 'Lần đầu đăng nhập: đổi mật khẩu tạm thành mật khẩu riêng của bạn.' : 'Mật khẩu dùng cho các lần đăng nhập sau.'],
   };
 
   return (

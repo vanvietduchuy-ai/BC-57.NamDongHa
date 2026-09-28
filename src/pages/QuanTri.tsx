@@ -8,7 +8,9 @@ import { Chip, DangTai, Hang, HopLoi, HopThoai, lopO, Nut, O, The, ThanhThaoTac,
 import { NutTepDrive } from '../components/TepDrive';
 import LichDinhKy from '../components/LichDinhKy';
 import { useAuth } from '../lib/auth';
+import { khongDau } from '../lib/nhiemVu';
 import { HopLienHe, hienSdt, luuLienHe, type LienHe } from '../components/LienHe';
+import TaoTaiKhoanHangLoat, { KHOI_DV, khoiCua, type DvTk } from '../components/TaiKhoanHangLoat';
 
 type Tab = 'tai_khoan' | 'don_vi' | 'lich' | 'cai_dat' | 'luu_tru' | 'nhat_ky';
 const TABS: [Tab, string][] = [['tai_khoan', 'Tài khoản'], ['don_vi', 'Đơn vị'], ['lich', 'Lịch báo cáo định kỳ'], ['cai_dat', 'Cài đặt'], ['luu_tru', 'Lưu trữ & tự động'], ['nhat_ky', 'Nhật ký']];
@@ -33,22 +35,24 @@ export default function QuanTri() {
   );
 }
 
-type Nd = { id: string; ho_ten: string; email: string | null; chuc_vu: string | null; vai_tro: string; don_vi_id: string | null; hoat_dong: boolean; don_vi: { ten: string } | null };
+type Nd = { id: string; ho_ten: string; email: string | null; chuc_vu: string | null; vai_tro: string; don_vi_id: string | null; hoat_dong: boolean; don_vi: { ten: string; loai: string } | null };
 const VT: Record<string, [string, string, string]> = { admin: ['Quản trị hệ thống', 'bg-den', 'text-white'], quan_tri: ['Cơ quan Thường trực', 'bg-ink', 'text-white'], lanh_dao: ['Lãnh đạo', 'bg-nguy-nhat', 'text-nguy'], don_vi: ['Đơn vị', 'bg-nen-3', 'text-mo-2'] };
 
 function TaiKhoan() {
   const { hoSo } = useAuth();
   const [mo, setMo] = useState(false);
+  const [moNhieu, setMoNhieu] = useState(false);
+  const [khoi, setKhoi] = useState('');
   const [sdtCua, setSdtCua] = useState<Nd | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const { data, loi: loiTai, dangTai, taiLai } = useDuLieu(async () => {
     const [a, b, c] = await Promise.all([
-      supabase.from('nguoi_dung').select('id, ho_ten, email, chuc_vu, vai_tro, don_vi_id, hoat_dong, don_vi(ten)').order('vai_tro').order('ho_ten'),
-      supabase.from('don_vi').select('id, ten').eq('hoat_dong', true).order('thu_tu'),
+      supabase.from('nguoi_dung').select('id, ho_ten, email, chuc_vu, vai_tro, don_vi_id, hoat_dong, don_vi(ten, loai)').order('vai_tro').order('ho_ten'),
+      supabase.from('don_vi').select('id, ma, ten, loai').eq('hoat_dong', true).order('thu_tu'),
       supabase.from('lien_he_nguoi_dung').select('nguoi_dung_id, so_dien_thoai, nhan_zalo, nhan_goi'),
     ]);
     const lh = new Map(((kq(c) ?? []) as LienHe[]).map((x) => [x.nguoi_dung_id, x]));
-    return { nd: (kq(a) ?? []) as unknown as Nd[], dv: (kq(b) ?? []) as { id: string; ten: string }[], lh };
+    return { nd: (kq(a) ?? []) as unknown as Nd[], dv: (kq(b) ?? []) as DvTk[], lh };
   });
   const doi = async (id: string, sua: Partial<Nd>) => {
     if (id === hoSo?.id && (sua.vai_tro || sua.hoat_dong === false)) { setLoi('Không tự khoá hoặc đổi vai trò tài khoản đang dùng.'); return; }
@@ -75,14 +79,25 @@ function TaiKhoan() {
   };
   return (
     <>
-      <div className="flex"><span className="flex-1" /><Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setMo(true)}>Tạo tài khoản</Nut></div>
+      <div className="flex flex-col gap-2 sm:flex-row-reverse sm:items-center">
+        <div className="flex justify-end gap-2">
+          <Nut icon={<Plus className="h-4 w-4" />} onClick={() => setMo(true)}>Tạo 1 tài khoản</Nut>
+          <Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setMoNhieu(true)}>Tạo hàng loạt</Nut>
+        </div>
+        <div className="-mx-3.5 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-3.5 sm:mx-0 sm:px-0">
+          {[['', 'Tất cả'], ...KHOI_DV.map(([k, t]) => [k, t])].map(([k, t]) => {
+            const n = data?.nd.filter((x) => !k || (x.don_vi ? khoiCua(x.don_vi.loai) === k : false)).length ?? 0;
+            return <button key={k} aria-pressed={khoi === k} onClick={() => setKhoi(k)} className={cx('min-h-9 shrink-0 rounded-full border px-3 text-[0.8125rem] font-semibold', khoi === k ? 'border-ink bg-ink text-white' : 'border-vien-2 bg-white text-mo-2')}>{t} <span className="so opacity-70">{n}</span></button>;
+          })}
+        </div>
+      </div>
       {(loi || loiTai) && <HopLoi loi={(loi || loiTai)!} />}
       {dangTai && !data && <DangTai />}
       {data && (
         <The className="overflow-hidden"><div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[880px] text-[0.8125rem]">
             <thead className="bg-nen-2 text-left text-[11px] text-mo"><tr><th className="px-4 py-3">NGƯỜI DÙNG</th><th className="px-2">ĐIỆN THOẠI</th><th className="px-2">ĐƠN VỊ</th><th className="px-2">VAI TRÒ</th><th className="px-2">TRẠNG THÁI</th><th className="px-4 text-right">THAO TÁC</th></tr></thead>
-            <tbody>{data.nd.map((n) => (
+            <tbody>{data.nd.filter((x) => !khoi || (x.don_vi ? khoiCua(x.don_vi.loai) === khoi : false)).map((n) => (
               <tr key={n.id} className="border-t border-[#F1EEE7]">
                 <td className="min-w-[220px] px-4 py-2.5"><div className="font-semibold">{n.ho_ten}</div><div className="text-xs text-mo">{n.email}{n.chuc_vu && ` · ${n.chuc_vu}`}</div></td>
                 <td className="whitespace-nowrap px-2">{nutSdt(n)}</td>
@@ -99,7 +114,7 @@ function TaiKhoan() {
         </div>
         {/* Điện thoại: mỗi tài khoản 1 thẻ, không cuộn ngang */}
         <ul className="m-0 flex list-none flex-col p-0 md:hidden">
-          {data.nd.map((n) => (
+          {data.nd.filter((x) => !khoi || (x.don_vi ? khoiCua(x.don_vi.loai) === khoi : false)).map((n) => (
             <li key={n.id} className="flex flex-col gap-2.5 border-b border-[#F1EEE7] px-4 py-3.5 last:border-0">
               <div className="flex items-start gap-2">
                 <div className="flex min-w-0 flex-1 flex-col">
@@ -124,6 +139,7 @@ function TaiKhoan() {
       )}
       {sdtCua && <HopLienHe key={sdtCua.id} mo dong={() => setSdtCua(null)} nguoiDungId={sdtCua.id} ten={sdtCua.ho_ten} xong={() => void taiLai()} />}
       <TaoTaiKhoan mo={mo} dong={() => setMo(false)} donVi={data?.dv ?? []} xong={() => { setMo(false); void taiLai(); }} />
+      <TaoTaiKhoanHangLoat mo={moNhieu} dong={() => setMoNhieu(false)} donVi={data?.dv ?? []} xong={() => void taiLai()} />
     </>
   );
 }
@@ -208,45 +224,77 @@ type Dv = { id: string; ma: string; ten: string; loai: string; thu_tu: number; p
   & { the_thuc: string; co_quan_chu_quan: string | null; ten_ban_hanh: string | null; ky_hieu: string | null; nguoi_ky_chuc_danh: string | null; nguoi_ky_ho_ten: string | null };
 function DonVi() {
   const [loi, setLoi] = useState<string | null>(null);
-  const [moi, setMoi] = useState({ ma: '', ten: '', loai: 'phong_ban' });
-  const { data, dangTai, taiLai } = useDuLieu(async () => (kq(await supabase.from('don_vi').select('*').order('thu_tu')) ?? []) as Dv[]);
+  const [moThem, setMoThem] = useState<string | null>(null);
+  const { data, dangTai, taiLai } = useDuLieu(async () => {
+    const [a, b] = await Promise.all([supabase.from('don_vi').select('*').order('thu_tu'), supabase.from('nguoi_dung').select('don_vi_id').eq('hoat_dong', true)]);
+    const dem = new Map<string, number>(); ((kq(b) ?? []) as { don_vi_id: string | null }[]).forEach((x) => x.don_vi_id && dem.set(x.don_vi_id, (dem.get(x.don_vi_id) ?? 0) + 1));
+    return { dv: (kq(a) ?? []) as Dv[], dem };
+  });
   const chay = async (p: PromiseLike<{ error: unknown }>) => { setLoi(null); const { error } = await p; if (error) setLoi(loiDe(error)); else void taiLai(); };
   return (
     <>
       {loi && <HopLoi loi={loi} />}
       {dangTai && !data && <DangTai />}
-      {data && (
-        <The className="overflow-hidden"><div className="hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[640px] text-[0.8125rem]">
-            <thead className="bg-nen-2 text-left text-[11px] text-mo"><tr><th className="px-4 py-3">MÃ</th><th className="px-2">TÊN ĐƠN VỊ</th><th className="px-2">PHẢI NỘP BÁO CÁO ĐỊNH KỲ</th><th className="px-2">HOẠT ĐỘNG</th></tr></thead>
-            <tbody>{data.map((d) => (
-              <tr key={d.id} className="border-t border-[#F1EEE7]">
-                <td className="so px-4 py-2.5 text-xs">{d.ma}</td><td className="px-2 font-semibold">{d.ten}</td>
-                <td className="px-2"><input type="checkbox" aria-label="Phải nộp báo cáo" className="h-5 w-5 accent-ink" checked={d.phai_bao_cao} onChange={(e) => chay(supabase.from('don_vi').update({ phai_bao_cao: e.target.checked }).eq('id', d.id))} /></td>
-                <td className="px-2"><input type="checkbox" aria-label="Hoạt động" className="h-5 w-5 accent-ink" checked={d.hoat_dong} onChange={(e) => chay(supabase.from('don_vi').update({ hoat_dong: e.target.checked }).eq('id', d.id))} /></td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-        <ul className="m-0 flex list-none flex-col p-0 md:hidden">
-          {data.map((d) => (
-            <li key={d.id} className="flex flex-col gap-2 border-b border-[#F1EEE7] px-4 py-3 last:border-0">
-              <div className="flex min-w-0 flex-col"><span className="text-[0.9375rem] font-semibold leading-snug">{d.ten}</span><span className="so text-xs text-mo">{d.ma}</span></div>
-              <div className="flex flex-wrap gap-x-5 gap-y-1 text-[0.8125rem]">
-                <label className="flex min-h-9 items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-ink" checked={d.phai_bao_cao} onChange={(e) => chay(supabase.from('don_vi').update({ phai_bao_cao: e.target.checked }).eq('id', d.id))} />Phải nộp báo cáo định kỳ</label>
-                <label className="flex min-h-9 items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-ink" checked={d.hoat_dong} onChange={(e) => chay(supabase.from('don_vi').update({ hoat_dong: e.target.checked }).eq('id', d.id))} />Hoạt động</label>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <div className="flex flex-wrap items-end gap-2 border-t border-vien bg-nen-2 p-4">
-          <input aria-label="Mã đơn vị" placeholder="MÃ (vd DOAN_TN)" className={cx(lopO, 'w-full sm:w-40')} value={moi.ma} onChange={(e) => setMoi({ ...moi, ma: e.target.value.toUpperCase() })} />
-          <input aria-label="Tên đơn vị" placeholder="Tên đơn vị" className={cx(lopO, 'flex-1')} value={moi.ten} onChange={(e) => setMoi({ ...moi, ten: e.target.value })} />
-          <select aria-label="Loại" className={lopO} value={moi.loai} onChange={(e) => setMoi({ ...moi, loai: e.target.value })}><option value="phong_ban">Phòng, ban</option><option value="doan_the">Đoàn thể</option><option value="truong_hoc">Trường học</option><option value="cong_an">Công an</option><option value="khac">Khác</option></select>
-          <Nut disabled={!moi.ma || !moi.ten} onClick={() => chay(supabase.from('don_vi').insert({ ...moi, thu_tu: 95 }))}>Thêm đơn vị</Nut>
-        </div></The>
-      )}
+      {data && KHOI_DV.map(([k, ten, f]) => {
+        const ds = data.dv.filter((d) => f(d.loai));
+        if (!ds.length && k === 'lanh_dao') return null;
+        return (
+          <section key={k} className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 px-1">
+              <h2 className="m-0 flex-1 text-[0.8125rem] font-bold uppercase tracking-wide text-mo">{ten} <span className="so font-semibold">· {ds.length}</span></h2>
+              {k !== 'lanh_dao' && <Nut kieu="nhe" icon={<Plus className="h-4 w-4" />} onClick={() => setMoThem(k)}>Thêm</Nut>}
+            </div>
+            <The className="overflow-hidden">
+              <ul className="m-0 list-none p-0">
+                {ds.map((d) => (
+                  <li key={d.id} className={cx('flex flex-wrap items-center gap-x-4 gap-y-0.5 border-b border-[#F1EEE7] px-4 py-2.5 last:border-0', !d.hoat_dong && 'opacity-55')}>
+                    <div className="flex min-w-0 basis-full flex-col sm:flex-1 sm:basis-auto">
+                      <span className="text-[0.875rem] font-semibold leading-snug">{d.ten}</span>
+                      <span className="text-xs text-mo"><span className="so">{d.ma}</span> · {data.dem.get(d.id) ?? 0} tài khoản{d.loai === 'co_quan_thuong_truc' ? ' · Thường trực BCĐ' : ''}</span>
+                    </div>
+                    <label className="flex min-h-9 items-center gap-2 text-[0.8125rem]"><input type="checkbox" className="h-5 w-5 accent-ink" checked={d.phai_bao_cao} onChange={(e) => chay(supabase.from('don_vi').update({ phai_bao_cao: e.target.checked }).eq('id', d.id))} />Nộp báo cáo</label>
+                    <label className="flex min-h-9 items-center gap-2 text-[0.8125rem]"><input type="checkbox" className="h-5 w-5 accent-ink" checked={d.hoat_dong} onChange={(e) => chay(supabase.from('don_vi').update({ hoat_dong: e.target.checked }).eq('id', d.id))} />Hoạt động</label>
+                  </li>
+                ))}
+                {!ds.length && <li className="px-4 py-3 text-[0.8125rem] text-mo">Chưa có đơn vị.</li>}
+              </ul>
+            </The>
+          </section>
+        );
+      })}
+      {moThem && <ThemDonVi khoi={moThem} dong={() => setMoThem(null)} xong={() => { setMoThem(null); void taiLai(); }} daCo={data?.dv.map((d) => d.ma) ?? []} />}
     </>
+  );
+}
+
+// Thêm nhiều đơn vị một lần (mỗi dòng 1 tên) — mã tự sinh từ chữ đầu, sửa được
+const LOAI_THEO_KHOI: Record<string, string> = { cong_an: 'cong_an', truong_hoc: 'truong_hoc', phong_ban: 'phong_ban' };
+const TIEN_TO: Record<string, string> = { cong_an: 'CA_', truong_hoc: '', phong_ban: '' };
+const maTuTen = (khoi: string, ten: string) => TIEN_TO[khoi] + ten.replace(/^(Tổ|Trường|Phòng)\s+/i, '').split(/[\s–-]+/).filter((w) => w && !/^số$/i.test(w))
+  .map((w) => (/^\d+$/.test(w) || (w.length > 1 && w === w.toUpperCase()) ? khongDau(w) : khongDau(w)[0] ?? '')).join('').toUpperCase().slice(0, 12);
+function ThemDonVi({ khoi, dong, xong, daCo }: { khoi: string; dong: () => void; xong: () => void; daCo: string[] }) {
+  const [chu, setChu] = useState(''); const [phaiBc, setPhaiBc] = useState(khoi !== 'cong_an');
+  const [dang, setDang] = useState(false); const [loi, setLoi] = useState<string | null>(null);
+  const ds = chu.split(/\r?\n/).map((x) => x.trim()).filter(Boolean).map((ten) => ({ ten, ma: maTuTen(khoi, ten) }));
+  const trung = ds.filter((d, i) => daCo.includes(d.ma) || ds.findIndex((x) => x.ma === d.ma) !== i);
+  const them = async () => {
+    setDang(true); setLoi(null);
+    const { error } = await supabase.from('don_vi').insert(ds.map((d, i) => ({ ...d, loai: LOAI_THEO_KHOI[khoi], phai_bao_cao: phaiBc, thu_tu: ({ cong_an: 10, truong_hoc: 90, phong_ban: 40 } as Record<string, number>)[khoi] + i })));
+    setDang(false); if (error) setLoi(loiDe(error)); else xong();
+  };
+  const goiY = khoi === 'cong_an' ? 'Tổ Cảnh sát trật tự\nTổ Phòng chống tội phạm\nTổ An ninh' : khoi === 'truong_hoc' ? 'Trường Mầm non …\nTrường Tiểu học …\nTrường THCS …' : 'Phòng …';
+  return (
+    <HopThoai mo dong={dong} tieuDe={`Thêm đơn vị · ${KHOI_DV.find(([k]) => k === khoi)?.[1]}`}>
+      <div className="flex flex-col gap-3">
+        {loi && <HopLoi loi={loi} />}
+        <O nhan="Tên đơn vị (mỗi dòng 1 đơn vị)"><textarea rows={5} className={cx(lopO, 'py-2')} placeholder={goiY} value={chu} onChange={(e) => setChu(e.target.value)} /></O>
+        {ds.length > 0 && <ul className="m-0 flex list-none flex-col gap-1 rounded-xl border border-vien p-2">
+          {ds.map((d) => <li key={d.ten} className="flex items-center gap-2 text-[0.8125rem]"><span className={cx('so w-24 shrink-0 rounded bg-nen-3 px-1.5 text-center text-[11px] font-bold', trung.includes(d) && 'bg-nguy-nhat text-nguy')}>{d.ma}</span>{d.ten}</li>)}
+        </ul>}
+        <label className="flex min-h-9 items-center gap-2 text-[0.8125rem]"><input type="checkbox" className="h-5 w-5 accent-ink" checked={phaiBc} onChange={(e) => setPhaiBc(e.target.checked)} />Phải nộp báo cáo định kỳ BCĐ 57</label>
+        <div className="flex justify-end gap-2"><Nut onClick={dong}>Huỷ</Nut><Nut kieu="chinh" dangChay={dang} disabled={!ds.length || trung.length > 0} onClick={them}>Thêm {ds.length || ''} đơn vị</Nut></div>
+      </div>
+    </HopThoai>
   );
 }
 
