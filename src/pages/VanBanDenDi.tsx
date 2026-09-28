@@ -1,6 +1,7 @@
 // Văn bản đến – đi: đơn vị gửi văn bản PDF cho Cơ quan Thường trực; Thường trực gửi cho một, nhiều hoặc tất cả đơn vị.
 // Bên nhận xem PDF, bấm "Đã nhận"; bên gửi theo dõi ai đã xem, đã nhận, nhắc đơn vị chưa nhận. Tự vào sổ đến / sổ đi của Thường trực.
 import { useMemo, useState } from 'react';
+import { xoaTepNhap } from '../lib/nhapTam';
 import { Bell, CalendarClock, CheckCheck, CheckCircle2, Eye, Inbox, Search, Send, Users } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
@@ -259,13 +260,14 @@ function GuiVanBan({ mo, dong, quanTri, dsDv, coQuan, xong }: { mo: boolean; don
         p_noi_nhan: quanTri ? chon : null,
       });
       if (error) throw error;
+      void xoaTepNhap('cong_van:gui');
       xong(quanTri ? `Đã gửi văn bản cho ${chon.length} đơn vị, vào sổ đi.` : 'Đã gửi văn bản cho Cơ quan Thường trực BCĐ.');
     } catch (e) { setLoi(loiDe(e)); } finally { setDang(false); }
   };
   return (
     <HopThoai mo dong={dong} tieuDe="Gửi văn bản" rong="max-w-4xl">
       <div className="flex flex-col gap-4">
-        <OVanBanPdf meta={meta} doiMeta={setMeta} tep={tep} chonTep={(f, m) => { setTep(f); setMeta({ ...m, loai: m.loai || 'cong_van', co_quan_ban_hanh: m.co_quan_ban_hanh || coQuan }); }} hienCoQuan tieuDe="Chọn văn bản PDF đã ký, đóng dấu" />
+        <OVanBanPdf meta={meta} doiMeta={setMeta} tep={tep} chonTep={(f, m) => { setTep(f); setMeta({ ...m, loai: m.loai || 'cong_van', co_quan_ban_hanh: m.co_quan_ban_hanh || coQuan }); }} hienCoQuan tieuDe="Chọn văn bản PDF đã ký, đóng dấu" khoaNhap="cong_van:gui" />
         {quanTri ? (
           <fieldset className="m-0 flex flex-col gap-2 rounded-2xl border border-vien p-3">
             <legend className="px-1 text-[0.8125rem] font-semibold text-mo-2">Nơi nhận ({chon.length}/{dsDv.length})</legend>

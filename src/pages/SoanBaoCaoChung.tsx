@@ -3,6 +3,7 @@
 // Bản nháp lập từ dữ liệu mới nhất (lib/tongHop): tình hình gửi báo cáo, nội dung đọc từ PDF.
 // Ký xong: gắn bản PDF đã ký, đóng dấu -> vào sổ công văn đi, lưu Google Drive.
 import { useEffect, useState } from 'react';
+import { xoaTepNhap } from '../lib/nhapTam';
 import { Link, useParams } from 'react-router-dom';
 import { FileUp } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
@@ -127,13 +128,14 @@ function GanBanKy({ mo, dong, kyId, m, xong }: { mo: boolean; dong: () => void; 
       if (r.error) throw r.error;
       const u = await supabase.from('ky_bao_cao').update({ van_ban_gui_id: r.data.id }).eq('id', kyId);
       if (u.error) throw u.error;
+      void xoaTepNhap(`bcc:${kyId}`);
       xong();
     } catch (e) { setLoi(loiDe(e)); } finally { setDangChay(false); }
   };
   return (
     <HopThoai mo={mo} dong={dong} tieuDe="Gắn bản đã ký gửi Công an tỉnh" rong="max-w-[1000px]">
       <div className="flex flex-col gap-3">
-        <OVanBanPdf meta={meta} doiMeta={setMeta} tep={tep} chonTep={(f, x) => { setTep(f); setMeta({ ...x, co_quan_ban_hanh: x.co_quan_ban_hanh || 'Công an phường Nam Đông Hà' }); }} hienCoQuan />
+        <OVanBanPdf meta={meta} doiMeta={setMeta} tep={tep} chonTep={(f, x) => { setTep(f); setMeta({ ...x, co_quan_ban_hanh: x.co_quan_ban_hanh || 'Công an phường Nam Đông Hà' }); }} hienCoQuan khoaNhap={`bcc:${kyId}`} />
         {loi && <HopLoi loi={loi} />}
         <div className="flex justify-end gap-2"><Nut onClick={dong}>Huỷ</Nut><Nut kieu="chinh" dangChay={dangChay} onClick={luu}>Lưu, vào sổ đi</Nut></div>
       </div>

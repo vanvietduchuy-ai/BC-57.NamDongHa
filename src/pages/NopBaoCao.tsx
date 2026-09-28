@@ -83,7 +83,8 @@ function FormBaoCao({ nop, suaDuoc, xong }: { nop: Nop; suaDuoc: boolean; xong: 
   const [camKet, setCamKet] = useState(false);
   const [dangChay, setDangChay] = useState<'nhap' | 'nop' | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
-  useEffect(() => { setGt(nop.so_lieu ?? {}); setDoiChua(false); setTep(null); setMeta({ ...metaTuVanBan(nop.van_ban), co_quan_ban_hanh: nop.van_ban?.co_quan_ban_hanh ?? nop.don_vi.ten }); }, [nop]);
+  useEffect(() => { setGt(nop.so_lieu ?? {}); setDoiChua(false); setTep(null); setMeta({ ...metaTuVanBan(nop.van_ban), co_quan_ban_hanh: nop.van_ban?.co_quan_ban_hanh ?? nop.don_vi.ten }); }, [nop.id, nop.van_ban?.id, nop.trang_thai]); // eslint-disable-line react-hooks/exhaustive-deps
+  // (không đặt lại khi tải lại dữ liệu lúc quay về trang — giữ tệp đang chọn)
 
   const tepPhu = truong.filter((t) => t.kieu === 'tep');
 
@@ -129,7 +130,7 @@ function FormBaoCao({ nop, suaDuoc, xong }: { nop: Nop; suaDuoc: boolean; xong: 
         <The className="flex flex-col gap-3 p-4">
           <TieuDeThe>{laLinhVuc ? 'Báo cáo tổng hợp đã ký, đóng dấu' : 'Báo cáo đã ký, đóng dấu'}</TieuDeThe>
           {suaDuoc
-            ? <OVanBanPdf meta={meta} doiMeta={(m) => { setMeta(m); setDoiChua(true); }} tep={tep} driveId={nop.van_ban?.drive_file_id}
+            ? <OVanBanPdf meta={meta} doiMeta={(m) => { setMeta(m); setDoiChua(true); }} tep={tep} driveId={nop.van_ban?.drive_file_id} khoaNhap={suaDuoc ? `nop:${nop.id}` : undefined}
                 chonTep={(f, m) => { setTep(f); setMeta(m); setDoiChua(true); }} />
             : nop.van_ban ? <ThongTinVanBan vb={nop.van_ban} /> : <Rong>{nop.nop_ngoai ? 'Nộp ngoài hệ thống.' : 'Chưa có văn bản.'}</Rong>}
         </The>
