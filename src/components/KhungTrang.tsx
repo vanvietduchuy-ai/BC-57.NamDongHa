@@ -194,7 +194,7 @@ export default function KhungTrang() {
           </button>
           <Chuong />
         </div>
-        <div ref={vungCuon} className="flex flex-1 flex-col max-lg:min-h-0 max-lg:overflow-y-auto max-lg:overscroll-y-contain">
+        <div ref={vungCuon} className="flex flex-1 flex-col max-lg:min-h-0 max-lg:overflow-y-auto max-lg:overflow-x-hidden max-lg:overscroll-y-contain">
         <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-4 px-3.5 pb-6 pt-3.5 sm:gap-5 sm:px-4 sm:pt-5 lg:px-8 lg:pb-10 lg:pt-6">
           <div key={location.pathname} className="hien-trang flex flex-col gap-3.5 sm:gap-5"><Outlet /></div>
         </main>
