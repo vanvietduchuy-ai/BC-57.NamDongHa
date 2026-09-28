@@ -147,4 +147,6 @@ td.so, th.so { font-variant-numeric: tabular-nums; }
 
 /* Thanh thao tác dính đáy: nằm trên thanh điều hướng điện thoại (kể cả vùng vuốt của iPhone) */
 .day-duoi { bottom: 0.75rem; }
+/* Điện thoại: trang gốc không nảy/cuộn (khung cố định, chỉ vùng giữa cuộn) */
+@media (max-width: 1023px) { html, body { overscroll-behavior-y: none; } }
 @media (min-width: 1024px) { .day-duoi { bottom: 1rem; } }
