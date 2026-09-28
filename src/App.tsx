@@ -1,6 +1,6 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider, laDauMoi, useAuth, type VaiTro } from './lib/auth';
+import { AuthProvider, coQuanLyCt, laDauMoi, useAuth, type VaiTro } from './lib/auth';
 import KhungTrang from './components/KhungTrang';
 import { DangTai } from './components/ui';
 import DangNhap from './pages/DangNhap';
@@ -49,7 +49,7 @@ function CacTrang() {
           <Route path="kho-van-ban" element={<KhoVanBan />} />
           <Route path="so-cong-van" element={<SoCongVan />} />
           <Route path="van-ban" element={<Chan cho={['admin', 'quan_tri', 'don_vi']}><VanBanDenDi /></Chan>} />
-          <Route path="chi-tieu" element={<Chan cho={cqtt} hoac={laDauMoi(hoSo)}><ChiTieu /></Chan>} />
+          <Route path="chi-tieu" element={<Chan cho={cqtt} hoac={coQuanLyCt(hoSo)}><ChiTieu /></Chan>} />
           <Route path="so-lieu" element={<Chan cho={['don_vi']}><SoLieu /></Chan>} />
           <Route path="quan-tri" element={<Chan cho={['admin']}><QuanTri /></Chan>} />
           <Route path="cai-dat" element={<Chan cho={['admin', 'quan_tri']}><CaiDatTrang /></Chan>} />
