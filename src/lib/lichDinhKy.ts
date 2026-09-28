@@ -14,6 +14,14 @@ export const THANG_CHOT_MD: Record<string, number[]> = {
 };
 const thangChot = (l: LichDk) => (l.quy_tac.thang_chot?.length ? l.quy_tac.thang_chot : THANG_CHOT_MD[l.loai] ?? []);
 
+const TEN_MAC_DINH = ['Báo cáo tháng', 'Báo cáo quý', 'Báo cáo 6 tháng', 'Báo cáo năm'];
+// Như SQL ten_ky_theo_lich: lịch đặt tên riêng -> "Tên lịch tháng 10/2026"
+export function tenKyTheoLich(tenLich: string | null | undefined, loai: string, thang: number, nam: number) {
+  const t = (tenLich ?? '').trim();
+  const goc = tenKy(loai, thang, nam);
+  return !t || TEN_MAC_DINH.includes(t) ? goc : `${t} ${goc.replace(/^Báo cáo /, '')}`;
+}
+
 export function tenKy(loai: string, thang: number, nam: number) {
   if (loai === 'quy') return `Báo cáo quý ${['I', 'II', 'III', 'IV'][Math.floor((thang - 1) / 3)]}/${nam}`;
   if (loai === 'sau_thang') return `Báo cáo 6 tháng ${thang <= 6 ? 'đầu' : 'cuối'} năm ${nam}`;
@@ -29,7 +37,7 @@ const nd = (s: string) => s.split('-').reverse().join('/');
 
 // Chuỗi kỳ định kỳ kế tiếp (tính từ kỳ số liệu đang diễn ra hôm nay); kỳ sau được tạo khi kỳ trước hết hạn
 export type KyDuKien = { ten: string; loai: string; tu: string; den: string; han: string; taoSau: string | null };
-export function chuoiKyTiepTheo(ds: LichDk[], soKy = 6): KyDuKien[] {
+export function chuoiKyTiepTheo(ds: LichDk[], soKy = 6, theoTenLich = false): KyDuKien[] {
   const bat = ds.filter((l) => l.hoat_dong && CAP_LICH[l.loai]);
   if (!bat.length) return [];
   const mo = [...bat].sort((a, b) => CAP_LICH[a.loai] - CAP_LICH[b.loai])[0].quy_tac.mo_ngay ?? 15;
@@ -47,7 +55,7 @@ export function chuoiKyTiepTheo(ds: LichDk[], soKy = 6): KyDuKien[] {
       const denIdx = idx, tuIdx = idx - CAP_LICH[l.loai];
       const den = iso(Math.floor(denIdx / 12), (denIdx % 12) + 1, m - 1);
       const tu = iso(Math.floor(tuIdx / 12), (tuIdx % 12) + 1, m);
-      trong.push({ ten: tenKy(l.loai, tChot, nChot), loai: l.loai, tu: nd(tu), den: nd(den),
+      trong.push({ ten: theoTenLich ? tenKyTheoLich(l.ten, l.loai, tChot, nChot) : tenKy(l.loai, tChot, nChot), loai: l.loai, tu: nd(tu), den: nd(den),
         han: `${iso(nChot, tChot, l.quy_tac.han_ngay ?? 8)}T${l.quy_tac.han_gio ?? '17:00'}:00+07:00`, taoSau: hanTruoc });
     }
     if (trong.length) { ra.push(...trong); hanTruoc = trong.map((x) => x.han).sort().slice(-1)[0]; }

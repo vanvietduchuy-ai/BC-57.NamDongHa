@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { kq, useDuLieu } from '../lib/useDuLieu';
+import { kq, useBayGio, useDuLieu } from '../lib/useDuLieu';
 import { useAuth } from '../lib/auth';
-import { ngayGio } from '../lib/dinhDang';
-import { Chip, ChipHan, DangTai, HopLoi, Rong, TieuDeTrang, cx } from '../components/ui';
+import { conLai, hai, MAU_GAP, mucGap, ngayGio } from '../lib/dinhDang';
+import { Chip, DangTai, HopLoi, Rong, TieuDeTrang, cx } from '../components/ui';
 import { nhanViec, type Viec } from './TrangChuDonVi';
 import { TT_NOP } from './KyBaoCaoChiTiet';
 
@@ -24,10 +24,10 @@ export default function ViecCanNop() {
 
   return (
     <>
-      <TieuDeTrang ten="Việc cần nộp" />
-      <div role="tablist" className="grid max-w-md grid-cols-2 rounded-xl bg-[#E7E3D9] p-1">
+      <TieuDeTrang tren={hoSo?.don_vi?.ten} ten="Việc cần nộp" />
+      <div role="tablist" className="grid max-w-md grid-cols-2 rounded-2xl bg-[#E7E3D9] p-1">
         {([['mo', `Đang mở · ${data?.mo.length ?? 0}`], ['xong', 'Đã nộp']] as const).map(([k, t]) => (
-          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cx('h-10 rounded-lg text-[13px]', tab === k ? 'bg-white font-bold' : 'font-medium text-mo-2')}>{t}</button>
+          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cx('h-11 rounded-xl text-[0.875rem]', tab === k ? 'bg-white font-bold shadow-sm' : 'font-medium text-mo-2')}>{t}</button>
         ))}
       </div>
       {loi && <HopLoi loi={loi} taiLai={taiLai} />}
@@ -36,12 +36,11 @@ export default function ViecCanNop() {
         <div className="xep-hang grid grid-cols-1 gap-3 md:grid-cols-2">
           {data.mo.map((v) => (
             <Link key={v.nop_id} to={`/viec-can-nop/${v.nop_id}`} className="the-noi flex flex-col gap-2.5 rounded-2xl border border-vien bg-white p-4 text-den">
-              <div className="flex items-center gap-2"><span className={cx('min-w-0 flex-1 truncate text-[11px] font-bold tracking-wider', nhanViec(v)[1])}>{nhanViec(v)[0]}</span><ChipHan han={v.han_nop} /></div>
-              <span className="text-[15px] font-bold">{v.ten}</span>
-              <div className="flex items-center gap-2 text-xs text-mo">
-                <span className="flex-1">Hạn {ngayGio(v.han_nop)}</span>
-                <Chip nen={TT_NOP[v.trang_thai].nen} chu={TT_NOP[v.trang_thai].chu}>{TT_NOP[v.trang_thai].nhan}</Chip>
-                <span className="font-bold text-xanh">Nộp →</span>
+              <div className="flex items-center gap-2"><span className={cx('min-w-0 flex-1 truncate text-[11.5px] font-bold tracking-[1px]', nhanViec(v)[1])}>{nhanViec(v)[0]}</span><DemNguocGon han={v.han_nop} /></div>
+              <span className="text-[1rem] font-bold leading-snug">{v.ten}</span>
+              <div className="flex items-center gap-2 text-[0.7812rem] text-mo">
+                <span className="min-w-0 flex-1 truncate">Hạn {ngayGio(v.han_nop)}{v.trang_thai !== 'chua_nop' ? ` · ${TT_NOP[v.trang_thai].nhan.toLowerCase()}` : ''}</span>
+                <span className="shrink-0 font-bold text-xanh">{v.trang_thai === 'can_bo_sung' ? 'Bổ sung →' : 'Nộp →'}</span>
               </div>
             </Link>
           ))}
@@ -60,4 +59,12 @@ export default function ViecCanNop() {
       ))}
     </>
   );
+}
+
+// Đếm ngược gọn "1n 09:48:26" (màu theo mức gấp)
+function DemNguocGon({ han }: { han: string }) {
+  const t = useBayGio();
+  const c = conLai(han, t);
+  const m = MAU_GAP[mucGap(c.ms)];
+  return <span className={cx('mono shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[0.75rem] font-bold', m.nen, m.chu)}>{c.ms <= 0 ? 'Quá hạn' : `${c.ngay}n ${hai(c.gio)}:${hai(c.phut)}:${hai(c.giay)}`}</span>;
 }

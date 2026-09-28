@@ -52,7 +52,7 @@ export function NutTepDrive({ loai, id, ten, nhan, cheDo = 'xem', duPhong, class
   return (
     <button type="button" disabled={dang}
       onClick={async () => { setDang(true); try { await moTepDrive(loai, id, ten, cheDo, duPhong); } finally { setDang(false); } }}
-      className={cx('inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold text-[#A4161A] hover:bg-nen disabled:opacity-60', className)}>
+      className={cx('inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-[0.8125rem] font-semibold text-[#8E1B22] hover:bg-nen disabled:opacity-60', className)}>
       <Icon className="h-4 w-4" />{dang ? 'Đang mở…' : (nhan ?? (cheDo === 'tai' ? 'Tải về' : 'Mở'))}
     </button>
   );

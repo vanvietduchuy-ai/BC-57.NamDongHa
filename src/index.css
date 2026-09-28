@@ -20,14 +20,14 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Be Vietnam Pro", system-ui, sans-serif;
-  --font-mono: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Be Vietnam Pro", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Be Vietnam Pro", "Segoe UI", Roboto, Arial, sans-serif;
 
-  /* Bộ màu thống nhất: đỏ Đảng (nền đậm, nút chính) + vàng (điểm nhấn) + chữ đen ấm */
-  --color-den: #1F1A17;          /* chữ chính */
-  --color-ink: #5C0A0E;          /* nền đậm: thanh menu, khối nổi bật, nút chính */
-  --color-ink-2: #7A1015;
-  --color-ink-3: #470709;
+  /* Tông đỏ đô theo biểu trưng: đỏ đô đậm (menu, khối nổi bật), đỏ đô (nút chính), vàng (điểm nhấn) */
+  --color-den: #1C1717;          /* chữ chính */
+  --color-ink: #6A0F14;          /* nền đậm: thanh menu, khối nổi bật */
+  --color-ink-2: #85181E;
+  --color-ink-3: #4F0B0F;
   --color-vang: #F2C230;
   --color-vang-nhat: #FDE68A;
   --color-nen: #F4F2ED;
@@ -37,8 +37,8 @@
   --color-vien-2: #D6D1C4;
   --color-mo: #5B6170;
   --color-mo-2: #3D4350;
-  --color-do: #A4161A;
-  --color-do-2: #8A1216;
+  --color-do: #8E1B22;
+  --color-do-2: #74151B;
   --color-xanh: #1E3A8A;
   --color-xanh-nhat: #DCE8FF;
   --color-cam: #B45309;
@@ -56,6 +56,15 @@
   img, svg, video, canvas { max-width: 100%; }
   /* iPhone tự phóng khi bấm vào ô nhập chữ nhỏ hơn 16px -> luôn 16px trên điện thoại */
   @media (max-width: 639px) { input, select, textarea { font-size: 16px !important; } }
+  /* Điện thoại: chữ, khoảng cách nhỏ gọn hơn (cỡ chữ dùng rem nên thu theo) */
+  @media (max-width: 639px) { html { font-size: 15px; } }
+  /* Điện thoại: tiêu đề trang gọn — nút phụ chỉ hiện biểu tượng, nút chính rút gọn */
+  @media (max-width: 639px) {
+    .tieu-de-nut > button.co-icon:not(.nut-chinh) > .nhan,
+    .tieu-de-nut > * > button.co-icon:not(.nut-chinh) > .nhan { display: none; }
+    .tieu-de-nut > button.co-icon:not(.nut-chinh),
+    .tieu-de-nut > * > button.co-icon:not(.nut-chinh) { padding-inline: 0; width: 2.5rem; }
+  }
   body {
     margin: 0;
     background: var(--color-nen);
@@ -65,9 +74,11 @@
     text-rendering: optimizeLegibility;
   }
   input, select, textarea, button { font: inherit; }
-  :focus-visible { outline: 2px solid #A4161A; outline-offset: 2px; }
+  :focus-visible { outline: 2px solid #8E1B22; outline-offset: 2px; }
 }
-.so { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.so { font-variant-numeric: tabular-nums; }
+/* Số, mã, giờ theo kiểu thiết kế gốc (JetBrains Mono) */
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
 /* ---------- Chuyển động ---------- */
 @theme {

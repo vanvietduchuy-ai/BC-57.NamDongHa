@@ -82,8 +82,8 @@ export default function FormVanBan({ mo, dong, vb, dau, xong }: {
         <O nhan={vb?.drive_file_id ? 'Thay tệp (PDF: tự đọc thông tin)' : 'Tệp văn bản (PDF: tự đọc thông tin)'}>
           <input type="file" aria-label="Tệp văn bản" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip" className={cx(lopO, 'py-2')} onChange={(e) => void chonTep(e.target.files?.[0] ?? null)} />
         </O>
-        {dangDoc && <div className="rounded-xl bg-xanh-nhat px-3 py-2 text-[13px] text-xanh">{dangDoc}</div>}
-        {doc && !dangDoc && <div className="rounded-xl bg-nen-3 px-3 py-2 text-[12.5px] text-mo-2">{doc.ocr ? 'Bản scan: đã nhận dạng chữ.' : 'Đã đọc tự động từ PDF.'} Kiểm tra, sửa nếu sai.</div>}
+        {dangDoc && <div className="rounded-xl bg-xanh-nhat px-3 py-2 text-[0.8125rem] text-xanh">{dangDoc}</div>}
+        {doc && !dangDoc && <div className="rounded-xl bg-nen-3 px-3 py-2 text-[0.7812rem] text-mo-2">{doc.ocr ? 'Bản scan: đã nhận dạng chữ.' : 'Đã đọc tự động từ PDF.'} Kiểm tra, sửa nếu sai.</div>}
         <div className="grid gap-3 sm:grid-cols-[1fr_170px]">
           <O nhan="Số, ký hiệu"><input className={lopO} placeholder="VD: 12-TB/BCĐ" value={g.so_ky_hieu} onChange={(e) => dat('so_ky_hieu', e.target.value)} /></O>
           <O nhan="Ngày ban hành"><input type="date" className={lopO} value={g.ngay_ban_hanh} onChange={(e) => dat('ngay_ban_hanh', e.target.value)} /></O>
@@ -105,7 +105,7 @@ export default function FormVanBan({ mo, dong, vb, dau, xong }: {
           {['Bộ Chính trị', 'Ban Chấp hành Trung ương', 'Tỉnh ủy Quảng Trị', 'Ban Chỉ đạo 57 tỉnh Quảng Trị', 'Công an tỉnh Quảng Trị', 'Đảng ủy phường Nam Đông Hà', 'Ban Chỉ đạo 57 phường Nam Đông Hà', 'UBND phường Nam Đông Hà', 'Công an phường Nam Đông Hà'].map((x) => <option key={x} value={x} />)}
         </datalist>
         <O nhan="Ghi chú"><input className={lopO} value={g.ghi_chu} onChange={(e) => dat('ghi_chu', e.target.value)} /></O>
-        <label className="flex items-start gap-3 rounded-xl bg-nguy-nhat px-3 py-2.5 text-[13px] text-nguy">
+        <label className="flex items-start gap-3 rounded-xl bg-nguy-nhat px-3 py-2.5 text-[0.8125rem] text-nguy">
           <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0" checked={khongMat} onChange={(e) => setKhongMat(e.target.checked)} />
           <span><ShieldAlert className="mr-1 inline h-4 w-4" /><b>Văn bản không mật</b> (hệ thống không lưu văn bản mật)</span>
         </label>

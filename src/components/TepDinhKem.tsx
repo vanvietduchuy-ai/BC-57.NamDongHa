@@ -32,16 +32,16 @@ export default function TepDinhKem({ loai, dichId, thuMuc, suaDuoc, tep, xong, x
     <div className="flex flex-col gap-2">
       {tep.map((t) => (
         <div key={t.id} className="flex items-center gap-2 rounded-xl bg-nen px-3 py-2 text-sm">
-          <Paperclip className="h-4 w-4 shrink-0 text-do" />
+          <Paperclip className="h-4 w-4 shrink-0 text-xanh" />
           <span className="flex-1 truncate">{t.ten}</span>
           {t.drive_file_id.startsWith('thu-') ? <span className="text-xs text-mo">bản thử</span> : <NutTepDrive loai="tep" id={t.id} ten={t.ten} />}
           {xoaDuoc && <button aria-label={`Gỡ ${t.ten}`} onClick={() => xoa(t)} className="flex h-9 w-9 items-center justify-center rounded-lg text-nguy hover:bg-nguy-nhat"><Trash2 className="h-4 w-4" /></button>}
         </div>
       ))}
       {suaDuoc && (
-        <label className={cx('flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-dashed border-[#9AA1AE] bg-nen-2 px-3 text-center text-[13px] text-mo-2', dangChay && 'opacity-60')}>
-          <Upload className="h-5 w-5 text-do" />
-          <span>{dangChay ? 'Đang tải lên Google Drive…' : <><b className="text-do">Chọn tệp</b> hoặc chụp ảnh</>}</span>
+        <label className={cx('flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-dashed border-[#9AA1AE] bg-nen-2 px-3 text-center text-[0.8125rem] text-mo-2', dangChay && 'opacity-60')}>
+          <Upload className="h-5 w-5 text-xanh" />
+          <span>{dangChay ? 'Đang tải lên Google Drive…' : <><b className="text-xanh">Chọn tệp</b> hoặc chụp ảnh</>}</span>
           <input type="file" className="sr-only" disabled={dangChay} accept=".doc,.docx,.pdf,.xls,.xlsx,.jpg,.jpeg,.png,.heic,.zip"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void tai(f); e.target.value = ''; }} />
         </label>

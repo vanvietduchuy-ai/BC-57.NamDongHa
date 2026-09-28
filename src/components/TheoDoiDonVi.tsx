@@ -79,7 +79,7 @@ export default function TheoDoiDonVi({ chuTri }: { chuTri?: string | null }) {
       {dangTai && !data && <DangTai />}
       {data && (bang.length === 0 ? <Rong>Không có kỳ báo cáo trong khoảng này.</Rong> : (
         <The className="overflow-hidden"><div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-[13px]">
+          <table className="w-full min-w-[760px] text-[0.8125rem]">
             <thead className="bg-nen-2 text-left text-[11px] text-mo">
               <tr><th className="px-4 py-3">ĐƠN VỊ</th><th className="w-40 px-2">ĐÚNG HẠN</th><th className="px-2 text-right">TRỄ</th><th className="px-2 text-right">KHÔNG NỘP</th><th className="px-4">TỪNG KỲ (cũ → mới)</th></tr>
             </thead>

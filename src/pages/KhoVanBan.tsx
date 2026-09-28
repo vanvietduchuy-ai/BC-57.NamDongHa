@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ExternalLink, FileText, Folder, Pencil, Plus, Search } from 'lucide-react';
+import { Download, Folder, Pencil, Search, Upload } from 'lucide-react';
+import { useManRong } from '../lib/manHinh';
 import { supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { useAuth, laQuanTri } from '../lib/auth';
@@ -7,7 +8,7 @@ import { ngay } from '../lib/dinhDang';
 import { khongDau } from '../lib/nhiemVu';
 import { moTepDrive } from '../components/TepDrive';
 import { COT_VB, linkVb, LOAI_VB, THU_MUC, TT_VB, type LoaiVb, type ThuMuc, type VanBan } from '../lib/vanBan';
-import { Chip, DangTai, HopLoi, lopO, Nut, Rong, The, TieuDeTrang, cx } from '../components/ui';
+import { Chip, DangTai, HopLoi, Nut, Rong, The, cx } from '../components/ui';
 import FormVanBan from '../components/FormVanBan';
 
 export default function KhoVanBan() {
@@ -23,93 +24,150 @@ export default function KhoVanBan() {
     return { vb: kq(a) as unknown as VanBan[], dem };
   }, []);
 
-  const [thuMuc, setThuMuc] = useState<ThuMuc | ''>('');
+  const rong = useManRong();
+  const [thuMuc, setThuMuc] = useState<ThuMuc | 'cap_tren' | ''>('');
   const [loai, setLoai] = useState<LoaiVb | ''>('');
-  const [nam, setNam] = useState('');
   const [tim, setTim] = useState('');
   const [hetHl, setHetHl] = useState(false);
   const [form, setForm] = useState<{ vb?: VanBan } | null>(null);
+  const [chonId, setChonId] = useState<string | null>(null);
 
-  const cacNam = useMemo(() => [...new Set((data?.vb ?? []).map((v) => v.ngay_ban_hanh?.slice(0, 4)).filter(Boolean))].sort().reverse() as string[], [data]);
+  const hop = (v: VanBan, tm: ThuMuc | 'cap_tren' | '') => !tm || (tm === 'cap_tren' ? v.thu_muc.startsWith('cap_tren') : v.thu_muc === tm);
+  const conHl = (v: VanBan) => hetHl || v.trang_thai !== 'het_hieu_luc';
   const ds = useMemo(() => {
     const t = khongDau(tim.trim());
-    return (data?.vb ?? []).filter((v) =>
-      (!thuMuc || v.thu_muc === thuMuc) && (!loai || v.loai === loai) && (!nam || v.ngay_ban_hanh?.startsWith(nam))
-      && (hetHl || v.trang_thai !== 'het_hieu_luc')
+    return (data?.vb ?? []).filter((v) => hop(v, thuMuc) && (!loai || v.loai === loai) && conHl(v)
       && (!t || khongDau(`${v.so_ky_hieu ?? ''} ${v.trich_yeu} ${v.co_quan_ban_hanh} ${v.nguoi_ky ?? ''} ${v.ghi_chu ?? ''}`).includes(t)));
-  }, [data, thuMuc, loai, nam, tim, hetHl]);
-  const demTM = (k: ThuMuc) => (data?.vb ?? []).filter((v) => v.thu_muc === k && (hetHl || v.trang_thai !== 'het_hieu_luc')).length;
+  }, [data, thuMuc, loai, tim, hetHl]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cacLoai = useMemo(() => [...new Set((data?.vb ?? []).filter((v) => hop(v, thuMuc) && conHl(v)).map((v) => v.loai))], [data, thuMuc, hetHl]); // eslint-disable-line react-hooks/exhaustive-deps
+  const vbChon = rong ? (ds.find((v) => v.id === chonId) ?? ds[0] ?? null) : null;
 
   if (loi) return <HopLoi loi={loi} taiLai={taiLai} />;
   if (dangTai && !data) return <DangTai />;
 
-  const nutTM = (k: ThuMuc | '', ten: string, n: number) => (
-    <button key={k || 'all'} onClick={() => setThuMuc(k)} aria-pressed={thuMuc === k}
-      className={cx('flex min-h-10 shrink-0 items-center gap-2.5 rounded-xl px-3 text-left text-[13.5px] lg:w-full',
-        thuMuc === k ? 'bg-ink font-semibold text-white' : 'bg-nen text-mo-2 hover:bg-nen-3 lg:bg-transparent')}>
-      <Folder className="h-4 w-4 shrink-0" /><span className="flex-1 whitespace-nowrap lg:whitespace-normal">{ten}</span><span className="so text-xs opacity-70">{n}</span>
+  const nutTM = (k: ThuMuc | 'cap_tren' | '', ten: string, con = false) => (
+    <button key={k || 'all'} onClick={() => { setThuMuc(k); setLoai(''); }} aria-pressed={thuMuc === k}
+      className={cx('flex min-h-10 shrink-0 items-center gap-2.5 rounded-xl px-3 text-left text-[0.8438rem] lg:w-full', con && 'lg:pl-8',
+        thuMuc === k ? 'bg-white font-semibold text-den shadow-sm max-lg:bg-ink max-lg:text-white' : 'bg-white text-mo-2 hover:bg-white/70 lg:bg-transparent')}>
+      <Folder className="h-4 w-4 shrink-0" strokeWidth={1.8} /><span className="min-w-0 flex-1 whitespace-nowrap lg:truncate">{ten}</span>
     </button>
   );
+  const moVb = (v: VanBan) => void moTepDrive('van_ban', v.id, v.ten_tep ?? `${v.so_ky_hieu ?? 'van-ban'}.pdf`, 'xem', v.drive_url);
 
   return (
     <>
-      <TieuDeTrang ten="Kho văn bản"
-        phai={quanTri && <Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setForm({})}>Thêm văn bản</Nut>} />
+      <header className="flex flex-wrap items-center gap-3">
+        <div className="flex min-w-[min(100%,240px)] flex-1 flex-col gap-0.5">
+          <span className="text-[0.8125rem] text-mo">Lưu trữ · đồng bộ Google Drive</span>
+          <h1 className="m-0 text-[1.375rem] font-extrabold tracking-tight md:text-[1.625rem]">Kho văn bản</h1>
+        </div>
+        <label className="relative w-full sm:w-[340px]">
+          <Search className="pointer-events-none absolute left-3.5 top-3 h-[18px] w-[18px] text-mo" />
+          <input className="h-11 w-full rounded-xl border border-vien bg-white pl-10 pr-3 text-base outline-none focus:border-xanh sm:text-sm" placeholder="Số ký hiệu, trích yếu, nội dung" value={tim} onChange={(e) => setTim(e.target.value)} aria-label="Tìm văn bản" />
+        </label>
+        {quanTri && <Nut kieu="chinh" icon={<Upload className="h-4 w-4" />} onClick={() => setForm({})} ngan="Tải lên">Tải lên văn bản</Nut>}
+      </header>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
-        <nav aria-label="Thư mục" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0">
-          {nutTM('', 'Tất cả', (data?.vb ?? []).filter((v) => hetHl || v.trang_thai !== 'het_hieu_luc').length)}
-          {(Object.keys(THU_MUC) as ThuMuc[]).map((k) => nutTM(k, THU_MUC[k], demTM(k)))}
-        </nav>
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[236px_minmax(0,1fr)] xl:grid-cols-[236px_minmax(0,1fr)_330px] 2xl:grid-cols-[236px_minmax(0,1fr)_360px]">
+        <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+          <nav aria-label="Thư mục" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-0">
+            {nutTM('', 'Tất cả văn bản')}
+            {nutTM('cap_tren', 'Văn bản cấp trên')}
+            {(['cap_tren_trung_uong', 'cap_tren_tinh', 'cap_tren_cong_an_tinh'] as ThuMuc[]).map((k) => nutTM(k, THU_MUC[k], true))}
+            {(Object.keys(THU_MUC) as ThuMuc[]).filter((k) => !k.startsWith('cap_tren')).map((k) => nutTM(k, THU_MUC[k]))}
+          </nav>
+          <div className="hidden rounded-2xl bg-nen-3 px-4 py-3 text-[0.7812rem] leading-relaxed text-mo-2 lg:block">
+            Chỉ lưu văn bản thường. Văn bản mật lưu theo quy định bảo vệ bí mật nhà nước, không tải lên hệ thống.
+          </div>
+          <label className="hidden items-center gap-2 px-1 text-[0.7812rem] text-mo lg:flex">
+            <input type="checkbox" className="h-4 w-4" checked={hetHl} onChange={(e) => setHetHl(e.target.checked)} /> Hiện cả văn bản hết hiệu lực
+          </label>
+        </div>
 
-        <The className="flex min-w-0 flex-col">
-          <div className="grid gap-2 border-b border-vien p-4 sm:grid-cols-[1fr_auto_auto]">
-            <label className="relative">
-              <Search className="pointer-events-none absolute left-3 top-3 h-5 w-5 text-mo" />
-              <input className={cx(lopO, 'w-full pl-10')} placeholder="Tìm văn bản" value={tim} onChange={(e) => setTim(e.target.value)} aria-label="Tìm văn bản" />
-            </label>
-            <select className={lopO} value={loai} onChange={(e) => setLoai(e.target.value as LoaiVb | '')} aria-label="Loại văn bản">
-              <option value="">Mọi loại</option>{Object.entries(LOAI_VB).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-            <select className={lopO} value={nam} onChange={(e) => setNam(e.target.value)} aria-label="Năm">
-              <option value="">Mọi năm</option>{cacNam.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-            <label className="flex min-h-10 items-center gap-2 text-[13px] text-mo sm:col-span-3">
-              <input type="checkbox" className="h-4 w-4" checked={hetHl} onChange={(e) => setHetHl(e.target.checked)} /> Hiện cả văn bản hết hiệu lực
-            </label>
+        <The className="flex min-w-0 flex-col overflow-hidden">
+          <div className="flex flex-wrap gap-2 border-b border-vien p-4">
+            {[['', 'Tất cả'] as [LoaiVb | '', string], ...cacLoai.map((k) => [k, LOAI_VB[k]] as [LoaiVb, string])].map(([k, t]) => (
+              <button key={k || 'all'} type="button" onClick={() => setLoai(k)} aria-pressed={loai === k}
+                className={cx('min-h-8 rounded-full px-3 text-[0.8125rem]', loai === k ? 'bg-ink font-semibold text-white' : 'bg-nen text-mo-2 hover:bg-nen-3')}>{t}</button>
+            ))}
           </div>
           {ds.length === 0 ? <div className="p-4"><Rong>Không có văn bản phù hợp.</Rong></div> : (
             <ul className="flex flex-col">
               {ds.map((v) => {
-                const link = linkVb(v);
-                const tt = TT_VB[v.trang_thai];
+                const c = CHIP_LOAI(v);
+                const dangXem = vbChon?.id === v.id;
                 return (
-                  <li key={v.id} className={cx('flex items-start gap-3 border-b border-[#F1EEE7] px-4 py-3.5 last:border-0', v.trang_thai === 'het_hieu_luc' && 'opacity-60')}>
-                    <FileText className={cx('mt-0.5 h-5 w-5 shrink-0', link ? 'text-do' : 'text-vien-2')} />
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-mo">
-                        <span className="so font-bold text-den">{v.so_ky_hieu ?? 'Chưa có số'}</span>
-                        {v.ngay_ban_hanh && <span>ngày {ngay(v.ngay_ban_hanh)}</span>}
-                        <span>· {LOAI_VB[v.loai]}</span>
-                        {v.trang_thai !== 'ban_hanh' && <Chip nen={tt.nen} chu={tt.chu}>{tt.nhan}</Chip>}
-                        {quanTri && data?.dem[v.id] ? <Chip nen="bg-xanh-nhat" chu="text-xanh">căn cứ {data.dem[v.id]} nhiệm vụ</Chip> : null}
-                      </div>
-                      {link
-                        ? <button type="button" onClick={() => void moTepDrive('van_ban', v.id, v.ten_tep ?? `${v.so_ky_hieu ?? 'van-ban'}.pdf`, 'xem', v.drive_url)} className="text-left text-[14.5px] font-semibold leading-snug text-[#A4161A] hover:underline">{v.trich_yeu}<ExternalLink className="ml-1 inline h-3.5 w-3.5" /></button>
-                        : <span className="text-[14.5px] font-semibold leading-snug">{v.trich_yeu}</span>}
-                      <span className="text-xs text-mo">{v.co_quan_ban_hanh}{v.nguoi_ky ? ` · ${v.nguoi_ky} ký` : ''}{v.ghi_chu ? ` · ${v.ghi_chu}` : ''}</span>
-                    </div>
-                    {quanTri && <button aria-label={`Sửa ${v.trich_yeu}`} onClick={() => setForm({ vb: v })} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-mo hover:bg-nen"><Pencil className="h-4 w-4" /></button>}
+                  <li key={v.id}>
+                    <button type="button" onClick={() => (rong ? setChonId(v.id) : linkVb(v) ? moVb(v) : quanTri && setForm({ vb: v }))}
+                      className={cx('grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-[#F1EEE7] px-4 py-3 text-left transition-colors sm:grid-cols-[120px_minmax(0,1fr)_auto]',
+                        dangXem ? 'bg-[#FDF1F0] shadow-[inset_3px_0_0_var(--color-ink)]' : 'hover:bg-nen-2', v.trang_thai === 'het_hieu_luc' && 'opacity-60')}>
+                      <span className="mono col-span-2 flex gap-2 text-[0.75rem] leading-snug text-mo-2 sm:col-span-1 sm:flex-col sm:gap-0">
+                        <b className="font-bold text-den">{v.so_ky_hieu ?? '…'}</b><span>{v.ngay_ban_hanh ? ngay(v.ngay_ban_hanh) : '…'}</span>
+                      </span>
+                      <span className="flex min-w-0 flex-col">
+                        <span className="line-clamp-2 text-[0.875rem] font-semibold leading-snug text-den sm:line-clamp-1">{v.trich_yeu}</span>
+                        <span className="truncate text-[0.7812rem] text-mo">{v.co_quan_ban_hanh}</span>
+                      </span>
+                      <Chip nen={c[0]} chu={c[1]}>{c[2]}</Chip>
+                    </button>
                   </li>
                 );
               })}
             </ul>
           )}
         </The>
+
+        {vbChon && (
+          <The className="sticky top-6 hidden max-h-[calc(100vh-3rem)] flex-col overflow-hidden xl:flex">
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-5">
+              <div className="flex h-36 items-center justify-center rounded-2xl bg-nen">
+                <div className="flex h-28 w-20 flex-col gap-1.5 rounded bg-white p-3 shadow-sm">
+                  <span className="mx-auto mb-1 h-1 w-8 rounded bg-den" />
+                  {[1, 2, 3, 4, 5].map((i) => <span key={i} className={cx('h-0.5 rounded bg-vien-2', i === 5 ? 'w-2/3' : 'w-full')} />)}
+                </div>
+              </div>
+              <span className="mono pt-1 text-[0.7812rem] font-bold text-do">{vbChon.so_ky_hieu ?? 'Chưa có số'}{vbChon.ngay_ban_hanh ? ` · ${ngay(vbChon.ngay_ban_hanh)}` : ''}</span>
+              <h2 className="-mt-1 m-0 text-[1.125rem] font-bold leading-snug">{vbChon.trich_yeu}</h2>
+              <span className="-mt-1 text-[0.8125rem] text-mo">{vbChon.co_quan_ban_hanh} · {LOAI_VB[vbChon.loai]}</span>
+              <dl className="m-0 grid grid-cols-[100px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[0.8125rem]">
+                {([['Thư mục', vbChon.thu_muc.startsWith('cap_tren') ? `Văn bản cấp trên / ${THU_MUC[vbChon.thu_muc]}` : THU_MUC[vbChon.thu_muc]],
+                   ['Tệp', vbChon.ten_tep ?? (linkVb(vbChon) ? 'Google Drive' : 'Chưa có tệp')],
+                   ['Người ký', vbChon.nguoi_ky ?? '—'], ['Tải lên', ngay(vbChon.tai_len_luc)], ['Trạng thái', TT_VB[vbChon.trang_thai].nhan],
+                   ...(vbChon.ghi_chu ? [['Ghi chú', vbChon.ghi_chu]] : [])] as [string, string][]).map(([k, v]) => (
+                  <div key={k} className="contents"><dt className="text-mo">{k}</dt><dd className="m-0 min-w-0 break-words">{v}</dd></div>
+                ))}
+              </dl>
+              {quanTri && (
+                <div className="flex flex-col gap-2 pt-1">
+                  <span className="text-[0.8438rem] font-bold">Liên kết</span>
+                  <span className="flex items-start gap-2 rounded-xl bg-nen px-3 py-2 text-[0.8125rem]"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-xanh" />{data?.dem[vbChon.id] ? `Căn cứ của ${data.dem[vbChon.id]} nhiệm vụ BCĐ` : 'Chưa là căn cứ của nhiệm vụ nào'}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 border-t border-vien p-4">
+              {linkVb(vbChon)
+                ? <Nut kieu="chinh" className="flex-1" onClick={() => moVb(vbChon)}>Mở trên Google Drive</Nut>
+                : <span className="flex-1 self-center text-[0.8125rem] text-mo">Chưa gắn tệp Google Drive.</span>}
+              {linkVb(vbChon) && <Nut aria-label="Tải về" title="Tải về" className="px-3" onClick={() => void moTepDrive('van_ban', vbChon.id, vbChon.ten_tep ?? `${vbChon.so_ky_hieu ?? 'van-ban'}.pdf`, 'tai', vbChon.drive_url)}><Download className="h-4 w-4" /></Nut>}
+              {quanTri && <Nut aria-label="Sửa văn bản" title="Sửa" className="px-3" onClick={() => setForm({ vb: vbChon })}><Pencil className="h-4 w-4" /></Nut>}
+            </div>
+          </The>
+        )}
       </div>
 
-      <FormVanBan mo={!!form} dong={() => setForm(null)} vb={form?.vb} dau={thuMuc ? { thu_muc: thuMuc } : undefined}
+      <FormVanBan mo={!!form} dong={() => setForm(null)} vb={form?.vb} dau={thuMuc && thuMuc !== 'cap_tren' ? { thu_muc: thuMuc } : undefined}
         xong={() => { setForm(null); void taiLai(); }} />
     </>
   );
+}
+
+// Nhãn loại văn bản có màu theo thiết kế gốc
+function CHIP_LOAI(v: VanBan): [string, string, string] {
+  if (v.trang_thai === 'du_thao') return ['bg-nen-3', 'text-mo-2', 'Dự thảo'];
+  const m: Partial<Record<LoaiVb, [string, string]>> = {
+    nghi_quyet: ['bg-nguy-nhat', 'text-nguy'], quyet_dinh: ['bg-xanh-nhat', 'text-xanh'], ke_hoach: ['bg-[#DCFCE7]', 'text-[#166534]'],
+    quy_che: ['bg-cam-nhat', 'text-cam-dam'], chi_thi: ['bg-nguy-nhat', 'text-nguy'], ket_luan: ['bg-xanh-nhat', 'text-xanh'],
+  };
+  const c = m[v.loai] ?? ['bg-nen-3', 'text-mo-2'];
+  return [c[0], c[1], LOAI_VB[v.loai]];
 }

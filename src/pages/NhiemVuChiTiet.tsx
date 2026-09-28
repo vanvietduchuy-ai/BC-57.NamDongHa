@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, Pencil, ShieldCheck, Trash2, Undo2 } from 'lucide-react';
 import { loiDe, supabase } from '../lib/supabase';
@@ -37,6 +37,9 @@ export default function NhiemVuChiTiet() {
   }, [id]);
 
   const [moSua, setMoSua] = useState(false);
+  // Mở từ nút "Đính kèm dự thảo": cuộn tới phần tệp
+  const coDuLieu = !!data;
+  useEffect(() => { if (coDuLieu && window.location.hash === '#tep') document.getElementById('tep')?.scrollIntoView({ behavior: 'smooth' }); }, [coDuLieu]);
   const [dangChay, setDangChay] = useState<string | null>(null);
   const [loiTT, setLoiTT] = useState<string | null>(null);
 
@@ -85,10 +88,10 @@ export default function NhiemVuChiTiet() {
 
       {!daGiao && <div className="rounded-xl bg-cam-nhat px-4 py-3 text-sm text-cam-dam"><b>Chờ Trưởng ban duyệt giao.</b>{thieu.length > 0 && <> Thiếu: {thieu.join(', ')}.</>}</div>}
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl bg-ink px-5 py-4 text-white">
-        <div className="flex flex-col gap-1"><span className="text-[11px] font-semibold tracking-wider text-[#E9CBC7]">TRẠNG THÁI</span><Chip nen={tt.nen} chu={tt.chu}>{tt.nhan}</Chip></div>
-        <div className="flex min-w-[180px] flex-1 flex-col gap-1.5"><span className="text-[11px] font-semibold tracking-wider text-[#E9CBC7]">TIẾN ĐỘ</span><ThanhNv n={n} /></div>
-        <div className="flex flex-col gap-1"><span className="text-[11px] font-semibold tracking-wider text-[#E9CBC7]">HẠN {n.han && ngay(n.han)}</span><HanNv n={n} /></div>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl bg-gradient-to-br from-[#7C1419] via-ink to-ink-3 px-4 py-3.5 text-white sm:px-5 sm:py-4">
+        <div className="flex flex-col gap-1"><span className="text-[11px] font-semibold tracking-wider text-[#F0C9C4]">TRẠNG THÁI</span><Chip nen={tt.nen} chu={tt.chu}>{tt.nhan}</Chip></div>
+        <div className="flex min-w-[180px] flex-1 flex-col gap-1.5"><span className="text-[11px] font-semibold tracking-wider text-[#F0C9C4]">TIẾN ĐỘ</span><ThanhNv n={n} /></div>
+        <div className="flex flex-col gap-1"><span className="text-[11px] font-semibold tracking-wider text-[#F0C9C4]">HẠN {n.han && ngay(n.han)}</span><HanNv n={n} /></div>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -143,6 +146,7 @@ export default function NhiemVuChiTiet() {
             </The>
           )}
 
+          <div id="tep" className="-mb-3 scroll-mt-6" />
           <The className="flex flex-col gap-3 p-4">
             <TieuDeThe>Sản phẩm, minh chứng</TieuDeThe>
             {data.tep.length === 0 && !(daGiao && (chuTri || phoiHop || quanTri)) && <Rong>Chưa có tệp.</Rong>}
@@ -203,7 +207,7 @@ function CapNhatTienDo({ n, laChuTri, quanTri, xong, tieuDe }: { n: NhiemVu; laC
             {cacTT.map((k) => <option key={k} value={k}>{TT_NV[k].nhan}</option>)}</select></O>
         </div>
       )}
-      {tt === 'hoan_thanh' && n.trang_thai !== 'hoan_thanh' && <div className="flex items-center gap-2 rounded-xl bg-[#DCFCE7] px-3 py-2 text-[13px] text-[#166534]"><CheckCircle2 className="h-4 w-4" />Nhớ đính kèm sản phẩm{n.san_pham ? ` (${n.san_pham})` : ''}.</div>}
+      {tt === 'hoan_thanh' && n.trang_thai !== 'hoan_thanh' && <div className="flex items-center gap-2 rounded-xl bg-[#DCFCE7] px-3 py-2 text-[0.8125rem] text-[#166534]"><CheckCircle2 className="h-4 w-4" />Nhớ đính kèm sản phẩm{n.san_pham ? ` (${n.san_pham})` : ''}.</div>}
       {loi && <HopLoi loi={loi} />}
       <div className="flex justify-end"><Nut kieu="chinh" dangChay={dangChay} onClick={gui}>Gửi cập nhật</Nut></div>
     </The>

@@ -19,9 +19,9 @@ export default function QuanTri() {
   const setTab = (k: Tab) => setSp({ tab: k }, { replace: true });
   return (
     <>
-      <TieuDeTrang ten="Quản trị hệ thống" />
+      <TieuDeTrang tren="Chỉ tài khoản Quản trị hệ thống · tài khoản, đơn vị, lưu trữ, nhật ký" ten="Quản trị hệ thống" />
       <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-vien">
-        {TABS.map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cx('h-11 whitespace-nowrap px-4 text-sm', tab === k ? 'border-b-[2.5px] border-ink font-bold' : 'font-medium text-mo')}>{t}</button>)}
+        {TABS.map(([k, t]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cx('h-11 whitespace-nowrap px-4 text-[0.9062rem]', tab === k ? 'border-b-2 border-ink font-bold text-den' : 'font-medium text-mo hover:text-den')}>{t}</button>)}
       </div>
       {tab === 'tai_khoan' && <TaiKhoan />}
       {tab === 'don_vi' && <><DauMoi /><DonVi /></>}
@@ -68,7 +68,7 @@ function TaiKhoan() {
       {dangTai && !data && <DangTai />}
       {data && (
         <The className="overflow-hidden"><div className="overflow-x-auto">
-          <table className="w-full min-w-[880px] text-[13px]">
+          <table className="w-full min-w-[880px] text-[0.8125rem]">
             <thead className="bg-nen-2 text-left text-[11px] text-mo"><tr><th className="px-4 py-3">NGƯỜI DÙNG</th><th className="px-2">ĐIỆN THOẠI</th><th className="px-2">ĐƠN VỊ</th><th className="px-2">VAI TRÒ</th><th className="px-2">TRẠNG THÁI</th><th className="px-4 text-right">THAO TÁC</th></tr></thead>
             <tbody>{data.nd.map((n) => (
               <tr key={n.id} className="border-t border-[#F1EEE7]">
@@ -81,15 +81,15 @@ function TaiKhoan() {
                         <span className="so font-semibold">{hienSdt(l.so_dien_thoai)}</span>
                         {l.nhan_zalo && <MessageCircle className="h-3.5 w-3.5 text-xanh" aria-label="Nhận Zalo" />}
                         {l.nhan_goi && <PhoneCall className="h-3.5 w-3.5 text-xanh" aria-label="Nhận cuộc gọi" />}
-                      </> : <span className="font-semibold text-[#A4161A]">+ Thêm SĐT</span>}
+                      </> : <span className="font-semibold text-[#8E1B22]">+ Thêm SĐT</span>}
                     </button>
                   );
                 })()}</td>
-                <td className="px-2"><select aria-label="Đơn vị" className={cx(lopO, 'min-h-9 w-[200px] text-[13px]')} value={n.don_vi_id ?? ''} onChange={(e) => doi(n.id, { don_vi_id: e.target.value || null })}><option value="">—</option>{data.dv.map((d) => <option key={d.id} value={d.id}>{d.ten}</option>)}</select></td>
-                <td className="px-2"><select aria-label="Vai trò" className={cx(lopO, 'min-h-9 text-[13px]')} value={n.vai_tro} onChange={(e) => doi(n.id, { vai_tro: e.target.value })}>{Object.entries(VT).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}</select></td>
+                <td className="px-2"><select aria-label="Đơn vị" className={cx(lopO, 'min-h-9 w-[200px] text-[0.8125rem]')} value={n.don_vi_id ?? ''} onChange={(e) => doi(n.id, { don_vi_id: e.target.value || null })}><option value="">—</option>{data.dv.map((d) => <option key={d.id} value={d.id}>{d.ten}</option>)}</select></td>
+                <td className="px-2"><select aria-label="Vai trò" className={cx(lopO, 'min-h-9 text-[0.8125rem]')} value={n.vai_tro} onChange={(e) => doi(n.id, { vai_tro: e.target.value })}>{Object.entries(VT).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}</select></td>
                 <td className="px-2"><Chip nen={n.hoat_dong ? 'bg-xanh-nhat' : 'bg-cam-nhat'} chu={n.hoat_dong ? 'text-xanh' : 'text-cam-dam'}>{n.hoat_dong ? 'Đang hoạt động' : 'Đã khoá'}</Chip></td>
                 <td className="whitespace-nowrap px-4 text-right">
-                  <button className="mr-3 font-semibold text-[#A4161A]" onClick={() => datLaiMk(n)}>Đặt lại MK</button>
+                  <button className="mr-3 font-semibold text-[#8E1B22]" onClick={() => datLaiMk(n)}>Đặt lại MK</button>
                   <button className={cx('font-semibold', n.hoat_dong ? 'text-nguy' : 'text-xanh')} onClick={() => doi(n.id, { hoat_dong: !n.hoat_dong })}>{n.hoat_dong ? 'Khoá' : 'Mở khoá'}</button>
                 </td>
               </tr>
@@ -173,7 +173,7 @@ function DauMoi() {
       <Hang nhan="Hạn nộp tổng hợp lĩnh vực">
         <input type="number" min={0} max={10} aria-label="Số ngày sau hạn đơn vị" className={cx(lopO, 'so w-20')} defaultValue={data.ngay}
           onBlur={(e) => chay(supabase.from('cau_hinh').update({ gia_tri: { sau_han_don_vi_ngay: Number(e.target.value) || 0 } }).eq('khoa', 'tong_hop_linh_vuc'))} />
-        <span className="text-[13px] text-mo">ngày sau hạn đơn vị</span>
+        <span className="text-[0.8125rem] text-mo">ngày sau hạn đơn vị</span>
       </Hang>
     </The>
   );
@@ -192,7 +192,7 @@ function DonVi() {
       {dangTai && !data && <DangTai />}
       {data && (
         <The className="overflow-hidden"><div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-[13px]">
+          <table className="w-full min-w-[640px] text-[0.8125rem]">
             <thead className="bg-nen-2 text-left text-[11px] text-mo"><tr><th className="px-4 py-3">MÃ</th><th className="px-2">TÊN ĐƠN VỊ</th><th className="px-2">PHẢI NỘP BÁO CÁO ĐỊNH KỲ</th><th className="px-2">HOẠT ĐỘNG</th></tr></thead>
             <tbody>{data.map((d) => (
               <tr key={d.id} className="border-t border-[#F1EEE7]">
@@ -348,7 +348,7 @@ function NhatKy() {
   };
   return (
     <The className="overflow-hidden"><div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] text-[12.5px]">
+      <table className="w-full min-w-[720px] text-[0.7812rem]">
         <thead className="bg-nen-2 text-left text-[11px] text-mo"><tr><th className="px-4 py-3">THỜI ĐIỂM</th><th className="px-2">NGƯỜI THỰC HIỆN</th><th className="px-2">DỮ LIỆU</th><th className="px-2">THAO TÁC</th><th className="px-4">THAY ĐỔI</th></tr></thead>
         <tbody>{data?.nk.map((n) => (
           <tr key={n.id} className="border-t border-[#F1EEE7] align-top">
@@ -439,7 +439,7 @@ function LuuTru() {
               <span className="flex items-center gap-2 font-semibold text-[#166534]"><CheckCircle2 className="h-4 w-4" />Đã kết nối · {drive.cach_xac_thuc}</span>
               <span>Tài khoản: <b>{drive.tai_khoan}</b>{drive.ten ? ` (${drive.ten})` : ''}</span>
               <span>Dung lượng: {gb(drive.da_dung)} / {drive.gioi_han ? gb(drive.gioi_han) : 'không giới hạn'}</span>
-              {drive.thu_muc_goc && <span>Thư mục gốc: <a className="font-semibold text-[#A4161A]" href={drive.thu_muc_goc.url} target="_blank" rel="noreferrer">{drive.thu_muc_goc.ten}</a></span>}
+              {drive.thu_muc_goc && <span>Thư mục gốc: <a className="font-semibold text-[#8E1B22]" href={drive.thu_muc_goc.url} target="_blank" rel="noreferrer">{drive.thu_muc_goc.ten}</a></span>}
             </div>
           ) : (
             <div className="flex flex-col gap-1 rounded-xl bg-nguy-nhat p-3 text-sm text-nguy">
@@ -452,10 +452,10 @@ function LuuTru() {
 
         <The className="flex flex-col gap-3 p-5">
           <TieuDeThe>Lịch chạy tự động</TieuDeThe>
-          {data?.biMat === false && <div className="rounded-xl bg-cam-nhat p-3 text-[13px] text-cam-dam">Chưa đặt bí mật cho lịch chạy. Chạy trong SQL Editor của Supabase: <code>select dat_bi_mat_lich('https://&lt;mã-dự-án&gt;.supabase.co', '&lt;CRON_SECRET&gt;');</code></div>}
-          {data?.loiLich && <span className="text-[13px] text-mo">Chưa đọc được lịch chạy ({data.loiLich}). Kiểm tra đã chạy migration 13 và bật pg_cron.</span>}
+          {data?.biMat === false && <div className="rounded-xl bg-cam-nhat p-3 text-[0.8125rem] text-cam-dam">Chưa đặt bí mật cho lịch chạy. Chạy trong SQL Editor của Supabase: <code>select dat_bi_mat_lich('https://&lt;mã-dự-án&gt;.supabase.co', '&lt;CRON_SECRET&gt;');</code></div>}
+          {data?.loiLich && <span className="text-[0.8125rem] text-mo">Chưa đọc được lịch chạy ({data.loiLich}). Kiểm tra đã chạy migration 13 và bật pg_cron.</span>}
           {data?.lich?.map((l) => (
-            <div key={l.ten} className="flex flex-wrap items-center gap-2 border-t border-[#F1EEE7] pt-2 text-[13px] first:border-0 first:pt-0">
+            <div key={l.ten} className="flex flex-wrap items-center gap-2 border-t border-[#F1EEE7] pt-2 text-[0.8125rem] first:border-0 first:pt-0">
               <span className="flex-1 font-semibold">{TEN_VIEC[l.ten] ?? l.ten}</span>
               {l.lan_cuoi ? <Chip nen={l.trang_thai === 'succeeded' ? 'bg-[#DCFCE7]' : 'bg-nguy-nhat'} chu={l.trang_thai === 'succeeded' ? 'text-[#166534]' : 'text-nguy'}>{l.trang_thai === 'succeeded' ? 'OK' : l.trang_thai} · {ngayGio(l.lan_cuoi)}</Chip> : <Chip>Chưa chạy</Chip>}
             </div>
@@ -472,7 +472,7 @@ function LuuTru() {
             ['Zalo (ZNS)', data.dt.zalo, `${data.dt.co_sdt} tài khoản có SĐT · ${data.dt.chua_sdt} chưa có`, 'Chưa đặt khoá Zalo OA'],
             ['Gọi điện tự động', data.dt.goi, 'Máy đọc lời nhắc', 'Chưa đặt khoá Stringee'],
           ] as const).map(([ten, ok, phu, thieu]) => (
-            <div key={ten} className="flex items-center gap-3 border-t border-[#F1EEE7] pt-2.5 text-[13px] first:border-0 first:pt-0">
+            <div key={ten} className="flex items-center gap-3 border-t border-[#F1EEE7] pt-2.5 text-[0.8125rem] first:border-0 first:pt-0">
               {ok ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#166534]" /> : <XCircle className="h-4 w-4 shrink-0 text-mo" />}
               <span className="w-36 shrink-0 font-semibold">{ten}</span>
               <span className={cx('min-w-0 flex-1', ok ? 'text-mo-2' : 'text-mo')}>{ok ? phu : thieu}</span>
@@ -486,7 +486,7 @@ function LuuTru() {
           Sao lưu dữ liệu (tự động 23:30 hằng ngày, giữ 30 ngày + bản ngày 01 hằng tháng)
         </TieuDeThe>
         {data?.saoLuu.map((s) => (
-          <div key={s.id} className="flex flex-wrap items-center gap-3 border-t border-[#F1EEE7] pt-2 text-[13px]">
+          <div key={s.id} className="flex flex-wrap items-center gap-3 border-t border-[#F1EEE7] pt-2 text-[0.8125rem]">
             <span className="so text-xs">{ngayGio(s.luc)}</span><Chip>{s.tu_dong ? 'Tự động' : 'Bấm tay'}</Chip><span className="flex-1">{s.ket_qua}</span>
             {s.drive_file_id && <NutTepDrive loai="sao_luu" id={String(s.id)} ten={`bcd57-sao-luu-${s.luc.slice(0, 10)}.json`} cheDo="tai" />}
           </div>

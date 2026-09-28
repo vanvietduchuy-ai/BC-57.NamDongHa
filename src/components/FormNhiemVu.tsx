@@ -96,14 +96,14 @@ export default function FormNhiemVu({ mo, dong, id, dau, xong, tieuDe }: {
         </div>
         <O nhan="Thẩm quyền (ai giao, ai ký)"><input className={lopO} value={g.tham_quyen} onChange={(e) => dat('tham_quyen', e.target.value)} /></O>
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 text-[13px] font-semibold text-mo-2">Đơn vị phối hợp</legend>
+          <legend className="mb-1.5 text-[0.8125rem] font-semibold text-mo-2">Đơn vị phối hợp</legend>
           <div className="flex flex-wrap gap-2">
             {dm.dv.filter((d) => d.loai !== 'lanh_dao_bcd' && d.id !== g.chu_tri_don_vi_id).map((d) => {
               const chon = g.phoi_hop.includes(d.id);
               return (
                 <button type="button" key={d.id} aria-pressed={chon}
                   onClick={() => dat('phoi_hop', chon ? g.phoi_hop.filter((x) => x !== d.id) : [...g.phoi_hop, d.id])}
-                  className={cx('min-h-9 rounded-lg border px-3 text-[13px]', chon ? 'border-ink bg-ink text-white' : 'border-vien-2 bg-white text-den')}>{d.ten}</button>
+                  className={cx('min-h-9 rounded-lg border px-3 text-[0.8125rem]', chon ? 'border-ink bg-ink text-white' : 'border-vien-2 bg-white text-den')}>{d.ten}</button>
               );
             })}
           </div>
@@ -113,7 +113,7 @@ export default function FormNhiemVu({ mo, dong, id, dau, xong, tieuDe }: {
             <option value="">— Không —</option>
             {dm.vb.map((v) => <option key={v.id} value={v.id}>{v.so_ky_hieu ? `${v.so_ky_hieu} · ` : ''}{v.trich_yeu.slice(0, 70)}</option>)}</select></O>
         </div>
-        {thieu.length > 0 && <div className="rounded-xl bg-cam-nhat px-3 py-2 text-[13px] text-cam-dam">Chưa đủ 6 rõ: thiếu {thieu.join(', ')}.</div>}
+        {thieu.length > 0 && <div className="rounded-xl bg-cam-nhat px-3 py-2 text-[0.8125rem] text-cam-dam">Chưa đủ 6 rõ: thiếu {thieu.join(', ')}.</div>}
         {loi && <HopLoi loi={loi} />}
         <div className="flex justify-end gap-2">
           <Nut onClick={dong}>Huỷ</Nut>

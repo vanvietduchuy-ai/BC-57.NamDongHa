@@ -83,9 +83,9 @@ export default function OVanBanPdf({ meta, doiMeta, tep, chonTep, driveId, hienC
   if (!coTep) return (
     <div className="flex flex-col gap-2">
       <label className={cx('flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#9AA1AE] bg-white px-4 text-center', dangDoc && 'opacity-70')}>
-        <FileUp className="h-8 w-8 text-do" />
-        <span className="text-[15px] font-bold">{dangDoc ?? tieuDe}</span>
-        <span className="text-[13px] text-mo">PDF đã ký, đóng dấu</span>
+        <FileUp className="h-8 w-8 text-xanh" />
+        <span className="text-[0.9375rem] font-bold">{dangDoc ?? tieuDe}</span>
+        <span className="text-[0.8125rem] text-mo">PDF đã ký, đóng dấu</span>
         {chon}
       </label>
       {loi && <HopLoi loi={loi} />}
@@ -95,22 +95,22 @@ export default function OVanBanPdf({ meta, doiMeta, tep, chonTep, driveId, hienC
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div className="flex min-w-0 flex-col gap-2">
-        <div className="flex items-center gap-2 text-[13px]">
+        <div className="flex items-center gap-2 text-[0.8125rem]">
           <FileCheck2 className="h-4 w-4 shrink-0 text-xanh" />
           <span className="min-w-0 flex-1 truncate font-semibold">{tep?.name ?? 'Văn bản đã nộp'}</span>
-          <label className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg px-2 font-semibold text-[#A4161A] hover:bg-do/5">
+          <label className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg px-2 font-semibold text-[#8E1B22] hover:bg-xanh-nhat/50">
             <RefreshCw className="h-4 w-4" />Đổi tệp{chon}
           </label>
         </div>
         {xem
           ? <iframe title="Xem văn bản PDF" src={xem} className="h-[420px] w-full rounded-xl border border-vien bg-nen lg:h-[560px]" />
-          : <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[13px] text-mo">Bản thử — không có tệp trên Google Drive</div>}
+          : <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[0.8125rem] text-mo">Bản thử — không có tệp trên Google Drive</div>}
       </div>
       <div className="flex min-w-0 flex-col gap-3">
-        {dangDoc && <div className="rounded-xl bg-xanh-nhat px-3 py-2 text-[13px] text-xanh">{dangDoc}</div>}
-        {meta.mat && <div className="flex items-center gap-2 rounded-xl bg-nguy-nhat px-3 py-2 text-[13px] font-semibold text-nguy"><ShieldAlert className="h-4 w-4" />Văn bản có độ mật — không nộp lên hệ thống.</div>}
+        {dangDoc && <div className="rounded-xl bg-xanh-nhat px-3 py-2 text-[0.8125rem] text-xanh">{dangDoc}</div>}
+        {meta.mat && <div className="flex items-center gap-2 rounded-xl bg-nguy-nhat px-3 py-2 text-[0.8125rem] font-semibold text-nguy"><ShieldAlert className="h-4 w-4" />Văn bản có độ mật — không nộp lên hệ thống.</div>}
         {tep && !dangDoc && (
-          <div className="flex items-center gap-2 rounded-xl bg-nen-3 px-3 py-2 text-[12.5px] text-mo-2">
+          <div className="flex items-center gap-2 rounded-xl bg-nen-3 px-3 py-2 text-[0.7812rem] text-mo-2">
             <ScanText className="h-4 w-4 shrink-0" />{meta.ocr ? 'Bản scan: đã nhận dạng chữ.' : 'Đã đọc tự động.'} Kiểm tra, sửa nếu sai.
           </div>
         )}
@@ -156,10 +156,10 @@ export function ThongTinVanBan({ vb, xemTruoc = true, them }: { vb: VanBanDaNop;
         {them}
       </dl>
       {xemTruoc && (!coTep
-        ? <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[13px] text-mo">Bản thử — không có tệp trên Google Drive</div>
+        ? <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[0.8125rem] text-mo">Bản thử — không có tệp trên Google Drive</div>
         : xt.url ? <iframe title="Xem văn bản" src={xt.url} className="h-[480px] w-full rounded-xl border border-vien bg-nen" />
         : xt.loi ? <iframe title="Xem văn bản" src={`https://drive.google.com/file/d/${vb.drive_file_id}/preview`} className="h-[480px] w-full rounded-xl border border-vien bg-nen" />
-        : <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[13px] text-mo">Đang tải văn bản từ Google Drive…</div>)}
+        : <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-vien text-[0.8125rem] text-mo">Đang tải văn bản từ Google Drive…</div>)}
     </div>
   );
 }

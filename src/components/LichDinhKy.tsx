@@ -10,7 +10,7 @@ import { CAP_LICH, chuoiKyTiepTheo, TEN_LOAI_LICH, type LichDk, type QuyTacLich 
 import { DangTai, Hang, HopLoi, lopO, Nut, The, ThanhThaoTac, TieuDeThe, cx } from './ui';
 
 type LichSua = LichDk & { mau_bieu_id: string | null; don_vi_ap_dung: string[] | null; don_vi_id: string | null };
-type DonVi = { id: string; ten: string; phai_bao_cao: boolean };
+type DonVi = { id: string; ten: string; phai_bao_cao: boolean; nop_cho_dau_moi: string | null };
 
 
 export default function LichDinhKy({ chuTri, hanMacDinh = 8 }: { chuTri: string | null; hanMacDinh?: number }) {
@@ -25,7 +25,7 @@ export default function LichDinhKy({ chuTri, hanMacDinh = 8 }: { chuTri: string 
     q = chuTri ? q.eq('don_vi_id', chuTri) : q.is('don_vi_id', null);
     const [a, b, c, d] = await Promise.all([
       q,
-      supabase.from('don_vi').select('id, ten, phai_bao_cao').eq('hoat_dong', true).order('thu_tu'),
+      supabase.from('don_vi').select('id, ten, phai_bao_cao, nop_cho_dau_moi').eq('hoat_dong', true).order('thu_tu'),
       supabase.from('mau_bieu').select('id, ten').ilike('ten', 'Báo cáo tháng%').limit(1).maybeSingle(),
       supabase.from('dau_moi_linh_vuc').select('don_vi_id'),
     ]);
@@ -46,7 +46,7 @@ export default function LichDinhKy({ chuTri, hanMacDinh = 8 }: { chuTri: string 
     quy_tac: MAC_DINH[loai], mau_bieu_id: data.mau, don_vi_ap_dung: null, don_vi_id: chuTri,
   });
   // Đơn vị phải nộp (dùng chung cho 4 lịch của đơn vị giao)
-  const coTheNop = data.donVi.filter((d) => d.id !== chuTri && (chuTri ? d.phai_bao_cao : data.dauMoi.includes(d.id)));
+  const coTheNop = data.donVi.filter((d) => d.id !== chuTri && (chuTri ? d.phai_bao_cao || d.nop_cho_dau_moi === chuTri : data.dauMoi.includes(d.id)));
   const nhanHienTai = nhan ?? data.lich.find((l) => l.don_vi_ap_dung?.length)?.don_vi_ap_dung ?? coTheNop.map((d) => d.id);
   const doi = (l: LichSua, x: Partial<LichSua> | { qt: Partial<QuyTacLich> }) => {
     const moi = 'qt' in x ? { ...l, quy_tac: { ...l.quy_tac, ...x.qt } } : { ...l, ...x };
@@ -56,7 +56,7 @@ export default function LichDinhKy({ chuTri, hanMacDinh = 8 }: { chuTri: string 
     <input type="number" min={1} max={28} aria-label={`${k} ${l.loai}`} className={cx(lopO, 'w-[4.5rem] text-center')} value={String(l.quy_tac[k] ?? md)}
       onChange={(e) => doi(l, { qt: { [k]: Math.min(28, Math.max(1, Number(e.target.value) || md)) } })} />
   );
-  const chuoi = chuoiKyTiepTheo(ds.map((l) => ({ ...l, id: l.id || l.loai })), 6);
+  const chuoi = chuoiKyTiepTheo(ds.map((l) => ({ ...l, id: l.id || l.loai })), 6, !!chuTri);
   const coDoi = Object.keys(sua).length > 0 || nhan !== null;
 
   const luu = async () => {
@@ -109,7 +109,7 @@ export default function LichDinhKy({ chuTri, hanMacDinh = 8 }: { chuTri: string 
                 const chon = nhanHienTai.includes(d.id);
                 return (
                   <button type="button" key={d.id} aria-pressed={chon} onClick={() => { setNhan(chon ? nhanHienTai.filter((x) => x !== d.id) : [...nhanHienTai, d.id]); setTb(null); }}
-                    className={cx('min-h-9 rounded-lg border px-3 text-[13px]', chon ? 'border-ink bg-ink text-white' : 'border-vien-2 bg-white text-den')}>{d.ten}</button>
+                    className={cx('min-h-9 rounded-lg border px-3 text-[0.8125rem]', chon ? 'border-ink bg-ink text-white' : 'border-vien-2 bg-white text-den')}>{d.ten}</button>
                 );
               })}
             </div>

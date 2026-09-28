@@ -78,14 +78,14 @@ export default function SoanBaoCaoChung() {
     <>
       <TieuDeTrang tren={<><Link to={`/ky-bao-cao/${data.ky.id}`} className="text-mo">{data.ky.ten}</Link> / Báo cáo chung</>}
         ten="Báo cáo gửi Công an tỉnh (PV01)"
-        phai={quanTri && !data.banGui && <Nut kieu="chinh" icon={<FileUp className="h-4 w-4" />} onClick={() => setMoGan(true)}>Gắn bản đã ký (PDF)</Nut>} />
+        phai={quanTri && !data.banGui && <Nut kieu="chinh" icon={<FileUp className="h-4 w-4" />} onClick={() => setMoGan(true)} ngan="Gắn PDF">Gắn bản đã ký (PDF)</Nut>} />
       {data.banGui && (
         <The className="flex flex-col gap-3 border-[#16A34A]/40 p-4">
           <TieuDeThe phai={<Chip nen="bg-[#DCFCE7]" chu="text-[#166534]">Đã vào sổ đi</Chip>}>Bản đã ký, đóng dấu gửi Công an tỉnh</TieuDeThe>
           <ThongTinVanBan vb={data.banGui} xemTruoc={false} />
         </The>
       )}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-vien bg-white px-4 py-3 text-[13px]">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-vien bg-white px-4 py-3 text-[0.8125rem]">
         <span className="font-bold">Căn cứ</span>
         {nguon.map((x) => (
           <span key={x.ten} className="flex items-center gap-1.5">{x.ten}: {x.b?.don_vi.ten ?? '—'}

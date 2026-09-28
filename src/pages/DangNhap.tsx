@@ -12,11 +12,11 @@ const ghiEmail = (e: string) => { try { localStorage.setItem(KHOA_EMAIL, e); } c
 
 function OVao({ nhan, icon, phai, ...p }: React.InputHTMLAttributes<HTMLInputElement> & { nhan: string; icon: ReactNode; phai?: ReactNode }) {
   return (
-    <label className="flex flex-col gap-1.5 text-[13px] font-semibold text-mo-2">
+    <label className="flex flex-col gap-1.5 text-[0.8125rem] font-semibold text-mo-2">
       {nhan}
       <span className="relative flex items-center">
         <span className="pointer-events-none absolute left-3.5 text-mo">{icon}</span>
-        <input {...p} className="h-12 w-full rounded-xl border border-vien-2 bg-nen-2 pl-11 pr-12 text-[15px] font-normal text-den outline-none transition placeholder:text-[#9AA1AE] focus:border-do focus:bg-white focus:ring-4 focus:ring-do/10 focus-visible:outline-none" />
+        <input {...p} className="h-12 w-full rounded-xl border border-vien-2 bg-nen-2 pl-11 pr-12 text-[0.9375rem] font-normal text-den outline-none transition placeholder:text-[#9AA1AE] focus:border-do focus:bg-white focus:ring-4 focus:ring-do/10 focus-visible:outline-none" />
         {phai && <span className="absolute right-1.5">{phai}</span>}
       </span>
     </label>
@@ -85,16 +85,16 @@ export default function DangNhap() {
           <div className="flex items-center gap-3.5 self-start rounded-2xl bg-black/35 py-2 pl-2 pr-5 ring-1 ring-white/10 backdrop-blur-md">
             <LogoBcd className="h-11 w-11 rounded-xl ring-2 ring-vang/50 lg:h-14 lg:w-14 lg:rounded-2xl" />
             <div className="flex flex-col">
-              <span className="text-[15px] font-bold lg:text-base">Ban Chỉ đạo 57</span>
-              <span className="text-xs text-white/80 lg:text-[13px]">Phường Nam Đông Hà · tỉnh Quảng Trị</span>
+              <span className="text-[0.9375rem] font-bold lg:text-base">Ban Chỉ đạo 57</span>
+              <span className="text-xs text-white/80 lg:text-[0.8125rem]">Phường Nam Đông Hà · tỉnh Quảng Trị</span>
             </div>
           </div>
 
           <div className="flex max-w-xl flex-col gap-3 [text-shadow:0_2px_16px_rgba(0,0,0,.5)] lg:gap-4">
             <span className="hidden self-start rounded-full border border-vang-nhat/40 sm:inline-block bg-black/25 px-3 py-1 text-[10.5px] font-semibold tracking-wider text-vang-nhat backdrop-blur-sm lg:text-[11.5px]">KHCN · ĐỔI MỚI SÁNG TẠO · CHUYỂN ĐỔI SỐ · ĐỀ ÁN 06</span>
-            <span className="text-[13px] font-extrabold uppercase tracking-[0.14em] text-vang lg:text-[15px]">{TEN_PHAN_MEM}</span>
-            <h2 className="m-0 text-[26px] font-extrabold leading-[1.15] tracking-tight lg:text-[42px]">Điều hành Ban Chỉ đạo<br />trên một màn hình.</h2>
-            <p className="m-0 max-w-md text-[13.5px] leading-relaxed text-white/85 lg:text-[15px]">Báo cáo định kỳ, đột xuất và nhiệm vụ của các đơn vị.</p>
+            <span className="text-[0.8125rem] font-extrabold uppercase tracking-[0.14em] text-vang lg:text-[0.9375rem]">{TEN_PHAN_MEM}</span>
+            <h2 className="m-0 text-[1.625rem] font-extrabold leading-[1.15] tracking-tight lg:text-[2.625rem]">Điều hành Ban Chỉ đạo<br />trên một màn hình.</h2>
+            <p className="m-0 max-w-md text-[0.8438rem] leading-relaxed text-white/85 lg:text-[0.9375rem]">Báo cáo định kỳ, đột xuất và nhiệm vụ của các đơn vị.</p>
           </div>
         </div>
       </aside>
@@ -104,18 +104,18 @@ export default function DangNhap() {
         <div className="flex w-full max-w-[420px] flex-col gap-6">
           <div className="flex flex-col gap-1.5">
             {(cheDo === 'quen' || cheDo === 'da_gui') && (
-              <button type="button" onClick={() => doiCheDo('dang_nhap')} className="-ml-2 mb-2 flex min-h-10 items-center gap-1.5 self-start rounded-lg px-2 text-[13px] font-semibold text-mo hover:bg-nen-3">
+              <button type="button" onClick={() => doiCheDo('dang_nhap')} className="-ml-2 mb-2 flex min-h-10 items-center gap-1.5 self-start rounded-lg px-2 text-[0.8125rem] font-semibold text-mo hover:bg-nen-3">
                 <ArrowLeft className="h-4 w-4" />Quay lại đăng nhập
               </button>
             )}
-            <h1 className="m-0 text-[28px] font-extrabold tracking-tight">{TIEU_DE[cheDo][0]}</h1>
-            {TIEU_DE[cheDo][1] && <p className="m-0 text-[14.5px] text-mo">{TIEU_DE[cheDo][1]}</p>}
+            <h1 className="m-0 text-[1.75rem] font-extrabold tracking-tight">{TIEU_DE[cheDo][0]}</h1>
+            {TIEU_DE[cheDo][1] && <p className="m-0 text-[0.90625rem] text-mo">{TIEU_DE[cheDo][1]}</p>}
           </div>
 
           {CHE_DO_THU && !import.meta.env.VITE_THU_FORM && cheDo === 'dang_nhap' ? (
             <div className="flex flex-col gap-3 rounded-3xl border border-vien bg-white p-5 shadow-sm">
               {loiHien && <HopLoi loi={loiHien} />}
-              <div className="flex items-center gap-2 rounded-xl bg-cam-nhat px-3 py-2 text-[13px] text-cam-dam"><TriangleAlert className="h-4 w-4" />Chế độ thử nghiệm — chọn tài khoản mẫu</div>
+              <div className="flex items-center gap-2 rounded-xl bg-cam-nhat px-3 py-2 text-[0.8125rem] text-cam-dam"><TriangleAlert className="h-4 w-4" />Chế độ thử nghiệm — chọn tài khoản mẫu</div>
               {Object.entries(taiKhoanThu()).map(([ten, token]) => (
                 <Nut key={ten} type="button" kieu="phu" className="justify-start" onClick={() => dangNhapThu(token)}>{ten}</Nut>
               ))}
@@ -123,8 +123,8 @@ export default function DangNhap() {
           ) : cheDo === 'da_gui' ? (
             <div className="flex flex-col items-center gap-3 rounded-3xl border border-vien bg-white p-7 text-center shadow-sm">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-xanh-nhat text-xanh"><Mail className="h-6 w-6" /></span>
-              <p className="m-0 text-[15px]">Nếu <b>{email.trim()}</b> là email của một tài khoản, hệ thống đã gửi liên kết đặt lại mật khẩu.</p>
-              <p className="m-0 text-[13px] text-mo">Mở email trên thiết bị này và bấm vào liên kết. Không thấy thư: kiểm tra mục Spam hoặc liên hệ Tổ Tổng hợp để được cấp lại mật khẩu.</p>
+              <p className="m-0 text-[0.9375rem]">Nếu <b>{email.trim()}</b> là email của một tài khoản, hệ thống đã gửi liên kết đặt lại mật khẩu.</p>
+              <p className="m-0 text-[0.8125rem] text-mo">Mở email trên thiết bị này và bấm vào liên kết. Không thấy thư: kiểm tra mục Spam hoặc liên hệ Tổ Tổng hợp để được cấp lại mật khẩu.</p>
             </div>
           ) : (
             <form onSubmit={gui} noValidate={false} className="flex flex-col gap-4 rounded-3xl border border-vien bg-white p-5 shadow-sm sm:p-7">
@@ -139,7 +139,7 @@ export default function DangNhap() {
                     value={matKhau} onChange={(e) => setMatKhau(e.target.value)} onKeyUp={phim} onKeyDown={phim} autoFocus={!!email} phai={nutMat} />
                   <div className="flex min-h-6 items-center justify-between gap-2">
                     <span className={cx('flex items-center gap-1 text-xs font-semibold text-cam-dam', !capsLock && 'invisible')}><TriangleAlert className="h-3.5 w-3.5" />Đang bật Caps Lock</span>
-                    <button type="button" onClick={() => doiCheDo('quen')} className="rounded-md px-1 text-[13px] font-semibold text-[#A4161A] hover:underline">Quên mật khẩu?</button>
+                    <button type="button" onClick={() => doiCheDo('quen')} className="rounded-md px-1 text-[0.8125rem] font-semibold text-[#8E1B22] hover:underline">Quên mật khẩu?</button>
                   </div>
                 </div>
               )}
@@ -155,13 +155,13 @@ export default function DangNhap() {
                   {capsLock && <span className="flex items-center gap-1 text-xs font-semibold text-cam-dam"><TriangleAlert className="h-3.5 w-3.5" />Đang bật Caps Lock</span>}
                 </>
               )}
-              <Nut kieu="do" type="submit" dangChay={dangChay} className="mt-1 h-12 text-[15px]">
+              <Nut kieu="do" type="submit" dangChay={dangChay} className="mt-1 h-12 text-[0.9375rem]">
                 {cheDo === 'dang_nhap' ? 'Đăng nhập' : cheDo === 'quen' ? 'Gửi liên kết đặt lại' : 'Lưu mật khẩu mới'}
               </Nut>
             </form>
           )}
 
-          <p className="m-0 text-center text-[13px] text-mo">Chưa có tài khoản: liên hệ Tổ Tổng hợp – Công an phường.</p>
+          <p className="m-0 text-center text-[0.8125rem] text-mo">Chưa có tài khoản: liên hệ Tổ Tổng hợp – Công an phường.</p>
         </div>
       </main>
     </div>

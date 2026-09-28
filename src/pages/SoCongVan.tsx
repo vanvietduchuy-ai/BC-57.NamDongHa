@@ -78,7 +78,7 @@ export default function SoCongVan() {
       <div className="flex flex-wrap items-center gap-2">
         <div role="tablist" className="grid grid-cols-2 rounded-xl bg-[#E7E3D9] p-1">
           {([['den', 'Sổ đến'], ['di', 'Sổ đi']] as const).map(([k, t]) => (
-            <button key={k} role="tab" aria-selected={so === k} onClick={() => setSo(k)} className={cx('h-10 rounded-lg px-4 text-[13px]', so === k ? 'bg-white font-bold' : 'font-medium text-mo-2')}>{t} · {dem(k)}</button>
+            <button key={k} role="tab" aria-selected={so === k} onClick={() => setSo(k)} className={cx('h-10 rounded-lg px-4 text-[0.8125rem]', so === k ? 'bg-white font-bold' : 'font-medium text-mo-2')}>{t} · {dem(k)}</button>
           ))}
         </div>
         {xemMoi && (
@@ -98,7 +98,7 @@ export default function SoCongVan() {
       {ds.length === 0 ? <Rong>Sổ chưa có văn bản.</Rong> : (
         <The className="overflow-hidden">
           <div className="hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[900px] border-collapse text-[13px]">
+            <table className="w-full min-w-[900px] border-collapse text-[0.8125rem]">
               <thead className="bg-nen-2 text-left text-[11px] tracking-wide text-mo">
                 <tr>
                   <th className="px-4 py-3">{so === 'den' ? 'SỐ ĐẾN' : 'SỐ ĐI'}</th><th className="px-2">{so === 'den' ? 'NGÀY ĐẾN' : 'NGÀY GỬI'}</th>
@@ -117,7 +117,7 @@ export default function SoCongVan() {
                       <td className="max-w-md px-2 py-3">{d.trich_yeu}</td>
                       <td className="px-2 py-3">{(so === 'den' ? d.noi_gui : d.noi_nhan) ?? '—'}</td>
                       <td className="px-2 py-3">{d.nguoi_ky ?? '—'}</td>
-                      <td className="px-4 py-3">{link && !String(d.drive_file_id ?? '').startsWith('thu-') ? <button type="button" onClick={(e) => { e.stopPropagation(); void moTepDrive('van_ban', d.van_ban_id, d.ten_tep ?? `${d.so_ky_hieu ?? 'van-ban'}.pdf`, 'xem', d.drive_url); }} aria-label="Mở tệp" className="inline-flex min-h-9 items-center text-[#A4161A]"><ExternalLink className="h-4 w-4" /></button> : <span className="text-mo">—</span>}</td>
+                      <td className="px-4 py-3">{link && !String(d.drive_file_id ?? '').startsWith('thu-') ? <button type="button" onClick={(e) => { e.stopPropagation(); void moTepDrive('van_ban', d.van_ban_id, d.ten_tep ?? `${d.so_ky_hieu ?? 'van-ban'}.pdf`, 'xem', d.drive_url); }} aria-label="Mở tệp" className="inline-flex min-h-9 items-center text-[#8E1B22]"><ExternalLink className="h-4 w-4" /></button> : <span className="text-mo">—</span>}</td>
                     </tr>
                   );
                 })}

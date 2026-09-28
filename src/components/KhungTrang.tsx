@@ -11,7 +11,7 @@ import { CaiDatThongBao, GoiYUngDung } from './UngDung';
 import { dongBoDay } from '../lib/ungDung';
 import { HopLienHe } from './LienHe';
 
-type Muc = { den: string; ten: string; icon: ReactNode; nhom?: string };
+type Muc = { den: string; ten: string; icon: ReactNode; nhom?: string; ngan?: string; dem?: number };
 
 function menu(h: HoSo): Muc[] {
   const vt: VaiTro = h.vai_tro;
@@ -27,7 +27,7 @@ function menu(h: HoSo): Muc[] {
   const chung: Muc[] = [
     { den: '/', ten: 'Tổng quan', icon: i(LayoutGrid), nhom: 'ĐIỀU HÀNH' },
     { den: '/nhiem-vu', ten: 'Nhiệm vụ BCĐ', icon: i(CheckSquare), nhom: 'ĐIỀU HÀNH' },
-    { den: '/ky-bao-cao', ten: 'Kỳ báo cáo', icon: i(FileText), nhom: 'ĐIỀU HÀNH' },
+    { den: '/ky-bao-cao', ten: 'Theo dõi kỳ báo cáo', ngan: 'Theo dõi kỳ', icon: i(FileText), nhom: 'ĐIỀU HÀNH' },
   ];
   if (vt === 'lanh_dao') return [...chung,
     { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ' },
@@ -35,6 +35,7 @@ function menu(h: HoSo): Muc[] {
   ];
   if (vt === 'quan_tri') return [
     ...chung,
+    { den: '/viec-can-nop', ten: 'Việc cần nộp', icon: i(Send), nhom: 'ĐIỀU HÀNH' },
     { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ' },
     { den: '/so-cong-van', ten: 'Sổ công văn', icon: i(BookOpen), nhom: 'LƯU TRỮ' },
     { den: '/cai-dat', ten: 'Cài đặt', icon: i(SlidersHorizontal), nhom: 'LƯU TRỮ' },
@@ -54,8 +55,8 @@ function Logo({ toi = true }: { toi?: boolean }) {
     <div className="flex items-center gap-3">
       <LogoBcd className="h-11 w-11" />
       <div className="flex flex-col">
-        <span className={cx('text-[15px] font-bold', toi ? 'text-white' : 'text-den')}>BCĐ 57</span>
-        <span className={cx('whitespace-nowrap text-xs', toi ? 'text-[#E9CBC7]' : 'text-mo')}>Nam Đông Hà</span>
+        <span className={cx('text-[0.9375rem] font-bold', toi ? 'text-white' : 'text-den')}>BCĐ 57</span>
+        <span className={cx('whitespace-nowrap text-xs', toi ? 'text-[#F0C9C4]' : 'text-mo')}>Phường Nam Đông Hà</span>
       </div>
     </div>
   );
@@ -63,7 +64,7 @@ function Logo({ toi = true }: { toi?: boolean }) {
 
 type ThongBao = { id: number; tieu_de: string; noi_dung: string | null; duong_dan: string | null; da_doc: boolean; luc: string };
 
-function Chuong({ moSangPhai = false }: { moSangPhai?: boolean }) {
+export function Chuong({ moSangPhai = false, toi = false }: { moSangPhai?: boolean; toi?: boolean }) {
   const [ds, setDs] = useState<ThongBao[]>([]);
   const [mo, setMo] = useState(false);
   const nav = useNavigate();
@@ -87,7 +88,7 @@ function Chuong({ moSangPhai = false }: { moSangPhai?: boolean }) {
   return (
     <div className="relative">
       <button onClick={() => setMo(!mo)} aria-label={`Thông báo${chuaDoc ? `, ${chuaDoc} chưa đọc` : ''}`}
-        className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-vien bg-white text-den transition active:scale-95">
+        className={cx('relative flex items-center justify-center rounded-xl transition active:scale-95', toi ? 'h-9 w-9 bg-white/10 text-[#F6E3E0] hover:text-white' : 'h-10 w-10 border border-vien bg-white text-den sm:h-11 sm:w-11')}>
         <Bell className="h-5 w-5" strokeWidth={1.8} />
         {chuaDoc > 0 && <span className="cham-nhip absolute right-2 top-2 h-2 w-2 rounded-full bg-do" />}
       </button>
@@ -98,7 +99,7 @@ function Chuong({ moSangPhai = false }: { moSangPhai?: boolean }) {
           {ds.length === 0 && <div className="p-4 text-sm text-mo">Chưa có thông báo.</div>}
           {ds.map((t) => (
             <button key={t.id} onClick={() => bam(t)} className={cx('flex w-full flex-col gap-0.5 border-b border-[#F1EEE7] px-4 py-3 text-left hover:bg-nen-2', !t.da_doc && 'bg-xanh-nhat/40')}>
-              <span className="text-[13px] font-semibold">{t.tieu_de}</span>
+              <span className="text-[0.8125rem] font-semibold">{t.tieu_de}</span>
               {t.noi_dung && <span className="line-clamp-2 text-xs text-mo">{t.noi_dung}</span>}
               <span className="text-[11px] text-mo">{ngayGio(t.luc)}</span>
             </button>
@@ -117,6 +118,22 @@ export default function KhungTrang() {
   const [moThem, setMoThem] = useState(false);
   const [moLienHe, setMoLienHe] = useState(false);
   const nav = useNavigate();
+  // Số trên menu: bài chờ tiếp nhận (kỳ mình giao), việc mình còn phải nộp
+  const [dem, setDem] = useState<{ cho: number; nop: number }>({ cho: 0, nop: 0 });
+  useEffect(() => {
+    if (!hoSo) return;
+    const dauMoi = hoSo.vai_tro === 'don_vi' && laDauMoi(hoSo);
+    const giao = hoSo.vai_tro !== 'don_vi' || dauMoi;
+    void (async () => {
+      const [a, b] = await Promise.all([
+        giao ? (dauMoi ? supabase.from('v_tinh_hinh_nop').select('da_nop, da_duyet').eq('trang_thai_ky', 'mo').eq('cap', 'don_vi').eq('chu_tri_don_vi_id', hoSo.don_vi_id!)
+          : supabase.from('v_tinh_hinh_nop').select('da_nop, da_duyet').eq('trang_thai_ky', 'mo').eq('cap', 'don_vi')) : Promise.resolve({ data: [] }),
+        hoSo.don_vi_id && hoSo.vai_tro !== 'lanh_dao' ? supabase.from('v_viec_can_nop').select('nop_id').eq('don_vi_id', hoSo.don_vi_id) : Promise.resolve({ data: [] }),
+      ]);
+      const cho = ((a.data ?? []) as { da_nop: number; da_duyet: number }[]).reduce((n, k) => n + k.da_nop - k.da_duyet, 0);
+      setDem({ cho, nop: (b.data ?? []).length });
+    })();
+  }, [hoSo, location.pathname]);
   useEffect(() => {
     if (!hoSo) return;
     void dongBoDay();
@@ -125,16 +142,17 @@ export default function KhungTrang() {
     return () => navigator.serviceWorker?.removeEventListener('message', f);
   }, [hoSo, nav]);
   if (!hoSo) return null;
-  const ds = menu(hoSo);
+  const ds = menu(hoSo).map((m) => ({ ...m, dem: m.den === '/ky-bao-cao' ? dem.cho : m.den === '/viec-can-nop' ? dem.nop : undefined }));
   const nhom = [...new Set(ds.map((m) => m.nhom ?? 'ĐƠN VỊ'))];
   const chuTat = hoSo.ho_ten.split(' ').slice(-2).map((x) => x[0]).join('').toUpperCase();
 
   const Link = ({ m, gon = false }: { m: Muc; gon?: boolean }) => (
     <NavLink to={m.den} end={m.den === '/'}
       className={({ isActive }) => gon
-        ? cx('flex h-16 flex-col items-center justify-center gap-0.5 text-[11px] transition-colors active:scale-95', isActive ? 'font-bold text-do' : 'text-mo')
-        : cx('flex h-11 items-center gap-3 rounded-xl px-3 text-[14px] transition-colors duration-200', isActive ? 'bg-white/10 font-semibold text-white shadow-[inset_3px_0_0_var(--color-vang)]' : 'text-[#F6E3E0] hover:bg-white/5')}>
-      {m.icon}<span className={gon ? 'max-w-full truncate' : ''}>{m.ten}</span>
+        ? cx('flex h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10.5px] transition-colors active:scale-95', isActive ? 'font-semibold text-do' : 'text-mo')
+        : cx('flex h-11 items-center gap-2.5 rounded-[10px] px-2.5 text-[0.875rem] transition-colors duration-200', isActive ? 'bg-white/12 font-semibold text-white shadow-[inset_3px_0_0_#F5C518]' : 'text-[#F6E3E0] hover:bg-white/5')}>
+      {m.icon}<span className={gon ? 'max-w-full truncate whitespace-nowrap' : 'min-w-0 flex-1 truncate'}>{gon ? m.ngan ?? m.ten : m.ten}</span>
+      {!gon && !!m.dem && <span className="shrink-0 rounded-full bg-do px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">{m.dem}</span>}
     </NavLink>
   );
   const chinh = ds.length > 4 ? ds.slice(0, 3) : ds;
@@ -142,47 +160,47 @@ export default function KhungTrang() {
 
   return (
     <div className="flex min-h-screen">
-      <nav aria-label="Điều hướng chính" className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-7 bg-gradient-to-b from-[#6E0D12] via-ink to-[#3A0508] px-4 py-6 lg:flex">
-        <div className="flex items-center justify-between gap-2 px-2"><Logo /><Chuong moSangPhai /></div>
+      <nav aria-label="Điều hướng chính" className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-7 overflow-y-auto bg-gradient-to-b from-[#7C1419] via-ink to-ink-3 px-4 py-6 text-[#FFF4DA] lg:flex">
+        <div className="flex items-center justify-between gap-2 px-2"><Logo />{location.pathname !== '/' && <Chuong moSangPhai toi />}</div>
         {nhom.map((n) => (
           <div key={n} className="flex flex-col gap-1">
-            <div className="px-3 pb-2 text-[11px] font-semibold tracking-wider text-[#D2A19B]">{n}</div>
+            <div className="px-3 pb-2 text-[11px] font-semibold tracking-[1px] text-[#E0A9A3]">{n}</div>
             {ds.filter((m) => (m.nhom ?? 'ĐƠN VỊ') === n).map((m) => <Link key={m.den} m={m} />)}
           </div>
         ))}
         <div className="flex-1" />
         <button onClick={() => setMoLienHe(true)} aria-label="Tài khoản" className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-white/5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8ECF3] text-[13px] font-bold text-den">{chuTat}</span>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFF4DA] text-[0.8125rem] font-bold text-den">{chuTat}</span>
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="line-clamp-2 text-[13px] font-semibold leading-snug text-white">{hoSo.ho_ten}</span>
-            <span className="line-clamp-2 text-[11.5px] leading-snug text-[#E9CBC7]">{hoSo.vai_tro === 'don_vi' ? hoSo.don_vi?.ten : VAI_TRO[hoSo.vai_tro]}</span>
+            <span className="line-clamp-2 text-[0.8125rem] font-semibold leading-snug text-white">{hoSo.ho_ten}</span>
+            <span className="line-clamp-2 text-[11.5px] leading-snug text-[#F0C9C4]">{hoSo.vai_tro === 'don_vi' ? hoSo.don_vi?.ten : VAI_TRO[hoSo.vai_tro]}</span>
           </span>
-          <ChevronUp className="h-4 w-4 shrink-0 text-[#E9CBC7]" />
+          <ChevronUp className="h-4 w-4 shrink-0 text-[#F0C9C4]" />
         </button>
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-vien bg-nen/95 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur lg:hidden">
-          <LogoBcd className="h-10 w-10" />
+        <div className="sticky top-0 z-30 flex items-center gap-2.5 border-b border-vien bg-nen/95 px-3.5 pb-2 pt-[max(8px,env(safe-area-inset-top))] backdrop-blur lg:hidden">
+          <LogoBcd className="h-9 w-9" />
           <button onClick={() => setMoLienHe(true)} aria-label="Tài khoản" className="flex min-w-0 flex-1 items-center gap-1 text-left">
             <span className="flex min-w-0 flex-col">
               <span className="truncate text-[11.5px] text-mo">{hoSo.vai_tro === 'don_vi' ? 'Tài khoản đơn vị' : VAI_TRO[hoSo.vai_tro]}</span>
-              <span className="truncate text-[15px] font-bold">{hoSo.vai_tro === 'don_vi' ? hoSo.don_vi?.ten : hoSo.ho_ten}</span>
+              <span className="truncate text-[0.9375rem] font-bold">{hoSo.vai_tro === 'don_vi' ? hoSo.don_vi?.ten : hoSo.ho_ten}</span>
             </span>
             <ChevronDown className="mt-3 h-4 w-4 shrink-0 text-mo" />
           </button>
           <Chuong />
         </div>
-        <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-5 px-4 pb-[calc(96px+env(safe-area-inset-bottom))] pt-5 lg:px-8 lg:pb-10 lg:pt-6">
-          <div key={location.pathname} className="hien-trang flex flex-col gap-5"><Outlet /></div>
+        <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-4 px-3.5 pb-[calc(84px+env(safe-area-inset-bottom))] pt-3.5 sm:gap-5 sm:px-4 sm:pt-5 lg:px-8 lg:pb-10 lg:pt-6">
+          <div key={location.pathname} className="hien-trang flex flex-col gap-3.5 sm:gap-5"><Outlet /></div>
         </main>
       </div>
 
       <nav aria-label="Thanh điều hướng" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-vien bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur [transform:translateZ(0)] lg:hidden">
         {chinh.map((m) => <Link key={m.den} m={m} gon />)}
         {them.length > 0 && (
-          <button onClick={() => setMoThem(true)} className={cx('flex h-16 flex-col items-center justify-center gap-0.5 text-[11px]', them.some((m) => m.den !== '/' && location.pathname.startsWith(m.den)) ? 'font-bold text-do' : 'text-mo')}>
-            <Menu className="h-5 w-5" strokeWidth={1.8} /><span className="text-[11px]">Thêm</span>
+          <button onClick={() => setMoThem(true)} className={cx('flex h-14 flex-col items-center justify-center gap-0.5 text-[10.5px]', them.some((m) => m.den !== '/' && location.pathname.startsWith(m.den)) ? 'font-semibold text-do' : 'text-mo')}>
+            <Menu className="h-[22px] w-[22px]" strokeWidth={1.8} /><span>Thêm</span>
           </button>
         )}
       </nav>
@@ -190,10 +208,10 @@ export default function KhungTrang() {
       <HopLienHe mo={moLienHe} dong={() => setMoLienHe(false)} nguoiDungId={hoSo.id} ten={hoSo.ho_ten} xong={() => window.dispatchEvent(new Event('bcd57-lien-he'))}
         dau={
           <div className="flex items-center gap-3 rounded-2xl bg-nen-2 p-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-[14px] font-bold text-white">{chuTat}</div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-[0.875rem] font-bold text-white">{chuTat}</div>
             <div className="flex min-w-0 flex-col">
-              <span className="text-[15px] font-bold leading-snug">{hoSo.ho_ten}</span>
-              <span className="text-[13px] leading-snug text-mo">{hoSo.vai_tro === 'don_vi' ? hoSo.don_vi?.ten : VAI_TRO[hoSo.vai_tro]}</span>
+              <span className="text-[0.9375rem] font-bold leading-snug">{hoSo.ho_ten}</span>
+              <span className="text-[0.8125rem] leading-snug text-mo">{hoSo.vai_tro === 'don_vi' ? hoSo.don_vi?.ten : VAI_TRO[hoSo.vai_tro]}</span>
               {hoSo.email && <span className="break-all text-xs text-mo">{hoSo.email}</span>}
             </div>
           </div>
@@ -201,10 +219,10 @@ export default function KhungTrang() {
         cuoi={<Nut kieu="nguy" className="w-full" icon={<LogOut className="h-4 w-4" />} onClick={() => { setMoLienHe(false); void dangXuat(); }}>Đăng xuất</Nut>} />
       {moThem && (
         <div className="mo-dan fixed inset-0 z-40 bg-ink/40 lg:hidden" onClick={() => setMoThem(false)}>
-          <div role="dialog" aria-label="Mục khác" className="truot-len absolute inset-x-0 bottom-0 flex flex-col gap-1 rounded-t-3xl bg-white p-4 pb-[calc(88px+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
+          <div role="dialog" aria-label="Mục khác" className="truot-len absolute inset-x-0 bottom-0 flex flex-col gap-1 rounded-t-3xl bg-white p-4 pb-[calc(76px+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
             {them.map((m) => (
               <NavLink key={m.den} to={m.den} onClick={() => setMoThem(false)}
-                className={({ isActive }) => cx('flex min-h-12 items-center gap-3 rounded-xl px-3 text-[15px]', isActive ? 'bg-nen font-bold' : '')}>
+                className={({ isActive }) => cx('flex min-h-12 items-center gap-3 rounded-xl px-3 text-[0.9375rem]', isActive ? 'bg-nen font-bold' : '')}>
                 {m.icon}{m.ten}
               </NavLink>
             ))}

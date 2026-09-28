@@ -18,7 +18,7 @@ function Chon({ bat, dat, icon, chu }: { bat: boolean; dat: (v: boolean) => void
   return (
     <label className="flex min-h-12 items-center gap-3 rounded-xl border border-vien px-3">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-nen text-mo-2">{icon}</span>
-      <span className="flex-1 text-[14px] font-medium">{chu}</span>
+      <span className="flex-1 text-[0.875rem] font-medium">{chu}</span>
       <input type="checkbox" role="switch" className="h-5 w-5 shrink-0 accent-[#A4161A]" checked={bat} onChange={(e) => dat(e.target.checked)} />
     </label>
   );

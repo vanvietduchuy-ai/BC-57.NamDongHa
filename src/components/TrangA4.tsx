@@ -117,7 +117,7 @@ export default function TrangA4({ m, sua, doiSoTrang }: {
   };
   const oBang: CSSProperties = { border: '1px solid #111', padding: `${pt(3)}px ${pt(4)}px`, verticalAlign: 'top', fontSize: pt(13), lineHeight: 1.25 };
   const veKhoi = (x: KhoiA4, i: number): ReactNode => {
-    if (x.loai === 'tieu_de') return <div key={i} style={{ ...doan, fontWeight: 700 }}>{x.text}{x.batBuoc && sua && <span className="text-[#A4161A]"> *</span>}</div>;
+    if (x.loai === 'tieu_de') return <div key={i} style={{ ...doan, fontWeight: 700 }}>{x.text}{x.batBuoc && sua && <span className="text-[#8E1B22]"> *</span>}</div>;
     if (x.loai === 'bang') {
       const tong = x.rong.reduce((a, b) => a + b, 0);
       return (

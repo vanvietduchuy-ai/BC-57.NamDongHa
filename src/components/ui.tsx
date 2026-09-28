@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, MoreHorizontal, X } from 'lucide-react';
 import { conLai, conLaiNgan, hai, MAU_GAP, mucGap } from '../lib/dinhDang';
 import { useBayGio } from '../lib/useDuLieu';
 
@@ -12,39 +12,45 @@ export function The({ children, className, as: Tag = 'section' }: { children: Re
 export function TieuDeThe({ children, phai }: { children: ReactNode; phai?: ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <h2 className="m-0 flex-1 text-[15px] font-bold">{children}</h2>
+      <h2 className="m-0 flex-1 text-[0.9375rem] font-bold">{children}</h2>
       {phai}
     </div>
   );
 }
 
-type NutProps = ButtonHTMLAttributes<HTMLButtonElement> & { kieu?: 'chinh' | 'phu' | 'nguy' | 'nhe' | 'do'; dangChay?: boolean; icon?: ReactNode };
-export function Nut({ kieu = 'phu', dangChay, icon, children, className, disabled, ...p }: NutProps) {
+type NutProps = ButtonHTMLAttributes<HTMLButtonElement> & { kieu?: 'chinh' | 'phu' | 'nguy' | 'nhe' | 'do'; dangChay?: boolean; icon?: ReactNode; ngan?: string };
+export function Nut({ kieu = 'phu', dangChay, icon, children, className, disabled, ngan, ...p }: NutProps) {
+  const nhanChu = typeof children === 'string' ? children : Array.isArray(children) && children.every((x) => typeof x === 'string' || typeof x === 'number') ? children.join('') : undefined;
   const k = {
-    chinh: 'bg-do text-white hover:bg-do-2 border-transparent shadow-sm shadow-do/25',
+    chinh: 'nut-chinh bg-do text-white hover:bg-do-2 border-transparent shadow-sm shadow-do/20',
     phu: 'bg-white text-den border-vien-2 hover:bg-nen-2',
     nguy: 'bg-white text-nguy border-nguy/40 hover:bg-nguy-nhat',
-    nhe: 'bg-transparent text-do border-transparent hover:bg-do/5',
+    nhe: 'bg-transparent text-[#8E1B22] border-transparent hover:bg-do/5',
     do: 'bg-do text-white border-transparent hover:bg-do-2 shadow-sm shadow-do/25',
   }[kieu];
   return (
-    <button {...p} disabled={disabled || dangChay}
-      className={cx('inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 text-sm font-semibold transition duration-150 ease-out active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100', k, className)}>
+    <button title={nhanChu} {...p} disabled={disabled || dangChay}
+      className={cx('inline-flex min-h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-3.5 text-sm font-semibold transition duration-150 ease-out active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 sm:min-h-11 sm:px-4', !!icon && 'co-icon', k, className)}>
       {dangChay ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
-      {children}
+      {children != null && children !== false && <span className="nhan">{ngan ? <><span className="max-sm:hidden">{children}</span><span className="sm:hidden">{ngan}</span></> : children}</span>}
     </button>
   );
 }
 
-export function Chip({ children, nen = 'bg-nen-3', chu = 'text-mo-2', className }: { children: ReactNode; nen?: string; chu?: string; className?: string }) {
-  return <span className={cx('inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2 py-0.5 text-[11.5px] font-bold leading-5', nen, chu, className)}>{children}</span>;
+// cham: kiểu viên thuốc có chấm màu (trạng thái nộp báo cáo)
+export function Chip({ children, nen = 'bg-nen-3', chu = 'text-mo-2', className, cham }: { children: ReactNode; nen?: string; chu?: string; className?: string; cham?: boolean }) {
+  return (
+    <span className={cx('inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap font-bold leading-5', cham ? 'rounded-full px-2.5 py-0.5 text-[0.75rem] font-semibold' : 'rounded-md px-2 py-0.5 text-[11.5px]', nen, chu, className)}>
+      {cham && <span className="h-1.5 w-1.5 rounded-full bg-current" />}{children}
+    </span>
+  );
 }
 
 export function TheSo({ nhan, giaTri, phu, mau = 'text-den' }: { nhan: string; giaTri: ReactNode; phu?: ReactNode; mau?: string }) {
   return (
     <The as="div" className="flex flex-col gap-1 p-4">
-      <span className="text-[13px] text-mo">{nhan}</span>
-      <span className={cx('so text-[26px] font-bold leading-tight', mau)}>{typeof giaTri === 'number' ? <DemSo n={giaTri} /> : giaTri}</span>
+      <span className="text-[0.8125rem] text-mo">{nhan}</span>
+      <span className={cx('so text-[1.625rem] font-bold leading-tight', mau)}>{typeof giaTri === 'number' ? <DemSo n={giaTri} /> : giaTri}</span>
       {phu && <span className="text-xs text-mo">{phu}</span>}
     </The>
   );
@@ -90,12 +96,13 @@ export function Rong({ children }: { children: ReactNode }) {
 
 export function TieuDeTrang({ tren, ten, phai }: { tren?: ReactNode; ten: ReactNode; phai?: ReactNode }) {
   return (
-    <header className="flex flex-wrap items-end gap-3">
-      <div className="flex min-w-[min(100%,260px)] flex-1 flex-col gap-1">
-        {tren && <div className="text-[13px] text-mo">{tren}</div>}
-        <h1 className="m-0 text-[22px] font-extrabold tracking-tight md:text-[26px]">{ten}</h1>
+    <header className="flex flex-wrap items-end gap-2 sm:gap-3">
+      <div className="flex min-w-[58%] flex-1 flex-col gap-0.5 sm:min-w-[min(100%,260px)] sm:gap-1">
+        {tren && <div className="truncate text-[0.8125rem] text-mo">{tren}</div>}
+        <h1 className="m-0 truncate text-[1.25rem] font-bold tracking-tight sm:whitespace-normal sm:text-[1.375rem] sm:font-extrabold md:text-[1.625rem]">{ten}</h1>
       </div>
-      {phai && <div className="flex flex-wrap gap-2">{phai}</div>}
+      {/* Điện thoại: nút phụ chỉ còn biểu tượng để không rớt hàng */}
+      {phai && <div className="tieu-de-nut flex shrink-0 gap-1.5 sm:flex-wrap sm:gap-2">{phai}</div>}
     </header>
   );
 }
@@ -106,11 +113,11 @@ export function DongHo({ han, toi = true }: { han: string; toi?: boolean }) {
   const c = conLai(han, t);
   const o = [[c.ngay, 'NGÀY'], [c.gio, 'GIỜ'], [c.phut, 'PHÚT'], [c.giay, 'GIÂY']] as const;
   return (
-    <div className="flex gap-2 sm:gap-3" aria-label={`Còn ${c.ngay} ngày ${c.gio} giờ ${c.phut} phút`}>
+    <div className="flex w-full gap-2 sm:w-auto sm:gap-3" aria-label={`Còn ${c.ngay} ngày ${c.gio} giờ ${c.phut} phút`}>
       {o.map(([v, l]) => (
-        <div key={l} className={cx('flex h-20 w-[72px] flex-col items-center justify-center gap-1 rounded-2xl sm:h-[92px] sm:w-24', toi ? 'bg-ink-3' : 'bg-nen')}>
-          <span className="so text-[30px] font-bold leading-none sm:text-[38px]">{hai(v)}</span>
-          <span className={cx('text-[11px] tracking-widest', toi ? 'text-[#E9CBC7]' : 'text-mo')}>{l}</span>
+        <div key={l} className={cx('flex h-[62px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl sm:h-[92px] sm:w-[94px] sm:flex-none sm:rounded-2xl', toi ? 'bg-ink-2' : 'bg-nen')}>
+          <span className="mono text-[1.5rem] font-bold leading-none sm:text-[2.375rem]">{hai(v)}</span>
+          <span className={cx('text-[10px] tracking-widest sm:text-[11px]', toi ? 'text-[#F0C9C4]' : 'text-mo')}>{l}</span>
         </div>
       ))}
     </div>
@@ -120,7 +127,7 @@ export function DongHo({ han, toi = true }: { han: string; toi?: boolean }) {
 export function ChipHan({ han, className }: { han: string; className?: string }) {
   const t = useBayGio();
   const m = MAU_GAP[mucGap(new Date(han).getTime() - t)];
-  return <span className={cx('so inline-flex shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold', m.nen, m.chu, className)}>{conLaiNgan(han, t)}</span>;
+  return <span className={cx('mono inline-flex shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11.5px] font-bold', m.nen, m.chu, className)}>{conLaiNgan(han, t)}</span>;
 }
 
 export function NhanGap({ han }: { han: string }) {
@@ -165,16 +172,17 @@ export function HopThoai({ mo, dong, tieuDe, children, rong = 'max-w-lg' }: { mo
 
 export function O({ nhan, children, goiY }: { nhan: string; children: ReactNode; goiY?: string }) {
   return (
-    <label className="flex flex-col gap-1.5 text-[13px] font-semibold text-mo-2">
+    <label className="flex flex-col gap-1.5 text-[0.8125rem] font-semibold text-mo-2">
       {nhan}
       {children}
       {goiY && <span className="text-xs font-normal text-mo">{goiY}</span>}
     </label>
   );
 }
-export const lopO = 'min-h-11 min-w-0 max-w-full rounded-xl border border-vien-2 bg-nen-2 px-3 text-base font-normal text-den sm:text-[15px] outline-none focus:border-do focus:bg-white disabled:opacity-60';
+export const lopO = 'min-h-11 min-w-0 max-w-full rounded-xl border border-vien-2 bg-nen-2 px-3 text-base font-normal text-den sm:text-[0.9375rem] outline-none focus:border-xanh focus:bg-white disabled:opacity-60';
 
 // Biểu trưng dùng chung (ảnh cờ Đảng — public/logo.jpg)
+// Biểu trưng: cờ Đảng
 export function LogoBcd({ className = 'h-11 w-11' }: { className?: string }) {
   return <img src="/logo.jpg" alt="Biểu trưng Ban Chỉ đạo 57" width={96} height={96} className={cx('shrink-0 rounded-xl object-cover ring-1 ring-black/10', className)} />;
 }
@@ -196,6 +204,52 @@ export function ThanhThaoTac({ children, trai }: { children: ReactNode; trai?: R
       {trai && <div className="min-w-0 flex-1 text-sm font-semibold text-[#166534]">{trai}</div>}
       {!trai && <span className="hidden flex-1 sm:block" />}
       <div className="grid auto-cols-fr grid-flow-col gap-2 sm:flex sm:justify-end">{children}</div>
+    </div>
+  );
+}
+
+// Đếm ngược dạng chữ đơn cách: "12 ngày" / "01:36:20" (khung chi tiết kỳ)
+export function DongHoChu({ han, className }: { han: string; className?: string }) {
+  const t = useBayGio();
+  const c = conLai(han, t);
+  const qua = c.ms <= 0;
+  return (
+    <div className={cx('mono flex flex-col font-bold leading-tight', qua ? 'text-nguy' : 'text-xanh', className)} aria-label={qua ? 'Đã quá hạn' : `Còn ${c.ngay} ngày ${c.gio} giờ ${c.phut} phút`}>
+      {qua ? <span className="text-[1.5rem]">Quá hạn</span> : <>
+        <span className="text-[1.5rem]">{c.ngay} ngày</span>
+        <span className="text-[1.5rem]">{hai(c.gio)}:{hai(c.phut)}:{hai(c.giay)}</span>
+      </>}
+    </div>
+  );
+}
+
+// Nút "⋯" mở danh sách thao tác
+export type MucThaoTac = { ten: string; icon?: ReactNode; bam: () => void; nguy?: boolean; an?: boolean };
+export function MenuThaoTac({ ds, nhan = 'Thao tác', className }: { ds: MucThaoTac[]; nhan?: string; className?: string }) {
+  const [mo, setMo] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!mo) return;
+    const f = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setMo(false); };
+    document.addEventListener('mousedown', f);
+    return () => document.removeEventListener('mousedown', f);
+  }, [mo]);
+  const hien = ds.filter((m) => !m.an);
+  if (!hien.length) return null;
+  return (
+    <div ref={ref} className={cx('relative', className)}>
+      <button type="button" onClick={() => setMo(!mo)} aria-haspopup="menu" aria-expanded={mo}
+        aria-label={nhan} className="inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-xl border border-vien-2 bg-white px-3 text-sm font-semibold text-den hover:bg-nen-2 sm:min-h-11 sm:px-4">
+        <MoreHorizontal className="h-4 w-4" /><span className="max-sm:hidden">{nhan}</span>
+      </button>
+      {mo && (
+        <div role="menu" className="bat-len absolute right-0 z-40 mt-2 flex w-56 origin-top-right flex-col overflow-hidden rounded-2xl border border-vien bg-white py-1.5 shadow-xl">
+          {hien.map((m) => (
+            <button key={m.ten} role="menuitem" type="button" onClick={() => { setMo(false); m.bam(); }}
+              className={cx('flex min-h-11 items-center gap-2.5 px-4 text-left text-sm hover:bg-nen-2', m.nguy ? 'text-nguy' : 'text-den')}>{m.icon}{m.ten}</button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
