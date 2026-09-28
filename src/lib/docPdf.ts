@@ -54,23 +54,60 @@ function ghepDong(muc: Muc[], rong: number): Dong[] {
   return kq.map((x) => ({ ...x, text: nfc(x.text) })).filter((x) => x.text).sort((a, b) => a.y - b.y || a.x - b.x);
 }
 
-async function nhanDangAnh(canvas: HTMLCanvasElement, heSo: number, baoTienDo?: (s: string) => void): Promise<Dong[]> {
+type TesWorker = Awaited<ReturnType<typeof import('tesseract.js')['createWorker']>>;
+async function taoWorker(baoTienDo?: (s: string) => void): Promise<TesWorker> {
   const { createWorker } = await import('tesseract.js');
   const w = await createWorker('vie', 1, {
     workerPath: '/ocr/worker.min.js', corePath: '/ocr', langPath: '/ocr', gzip: true,
-    logger: (m: { status: string; progress: number }) => baoTienDo?.(`Nhận dạng chữ: ${Math.round((m.progress ?? 0) * 100)}%`),
+    logger: (m: { status: string; progress: number }) => { if (m.status === 'recognizing text') baoTienDo?.(`${Math.round((m.progress ?? 0) * 100)}%`); },
   });
-  try {
-    const { data } = await w.recognize(canvas, {}, { blocks: true });
-    // Ghép lại từng từ theo toạ độ (tách được 2 cột phần đầu, phần ký như PDF có lớp chữ)
-    const muc: Muc[] = [];
-    for (const b of data.blocks ?? []) for (const p of b.paragraphs) for (const l of p.lines) {
-      const co = (l.bbox.y1 - l.bbox.y0) / heSo;
-      for (const t of l.words) if (t.text.trim()) muc.push({ str: `${t.text} `, x: t.bbox.x0 / heSo, y: l.bbox.y0 / heSo, w: (t.bbox.x1 - t.bbox.x0) / heSo, co });
-    }
-    return ghepDong(muc, canvas.width / heSo);
-  } finally { await w.terminate(); }
+  await w.setParameters({ preserve_interword_spaces: '1', user_defined_dpi: '300' } as never);
+  return w;
 }
+
+// Làm sạch ảnh scan trước khi nhận dạng: lấy kênh đỏ (dấu đỏ, chữ ký đỏ mờ đi, chữ đen giữ nguyên) + kéo giãn độ tương phản
+function lamSach(cv: HTMLCanvasElement) {
+  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+  const img = ctx.getImageData(0, 0, cv.width, cv.height);
+  const d = img.data; const hist = new Uint32Array(256);
+  for (let i = 0; i < d.length; i += 4) { const r = d[i]; const g = d[i + 1]; const b = d[i + 2];
+    const v = r > 140 && r > g + 45 && r > b + 45 ? 255 : Math.min(r, Math.round(0.3 * r + 0.59 * g + 0.11 * b) + 20);  // mực đỏ → trắng
+    d[i] = v; hist[v]++; }
+  // Kéo giãn: điểm 2% tối nhất → 0, 60% sáng (nền giấy) → 255
+  const tong = d.length / 4; let dem = 0, den = 0, trang = 255;
+  for (let v = 0; v < 256; v++) { dem += hist[v]; if (dem > tong * 0.02 && !den) den = v; if (dem > tong * 0.4) { trang = v; break; } }
+  const k = 255 / Math.max(30, trang - den);
+  for (let i = 0; i < d.length; i += 4) { const v = Math.max(0, Math.min(255, (d[i] - den) * k)); d[i] = d[i + 1] = d[i + 2] = v; }
+  ctx.putImageData(img, 0, 0);
+}
+
+// Nhận dạng 1 vùng của trang (tuTi..denTi: tỉ lệ chiều cao) ở độ phân giải ~300 dpi, trả về dòng chữ theo toạ độ PDF
+async function nhanDangVung(w: TesWorker, p: PdfTrangOcr, tuTi: number, denTi: number): Promise<Dong[]> {
+  const goc = p.getViewport({ scale: 1 });
+  const heSo = Math.min(4, 1800 / goc.width);                       // ~ 1800 px chiều ngang (A4 ≈ 300 dpi)
+  const vp = p.getViewport({ scale: heSo });
+  const y0 = Math.floor(vp.height * tuTi), cao = Math.ceil(vp.height * (denTi - tuTi));
+  const cv = document.createElement('canvas');
+  cv.width = Math.ceil(vp.width); cv.height = cao;
+  try {
+    const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+    await p.render({ canvasContext: ctx, viewport: vp, transform: [1, 0, 0, 1, 0, -y0] }).promise;
+    lamSach(cv);
+    const { data } = await w.recognize(cv, {}, { blocks: true });
+    const muc: Muc[] = [];
+    for (const b of data.blocks ?? []) for (const pa of b.paragraphs) for (const l of pa.lines) {
+      const co = (l.bbox.y1 - l.bbox.y0) / heSo;
+      for (const t of l.words) if (t.text.trim() && (t.confidence ?? 100) > 25)
+        muc.push({ str: `${t.text} `, x: t.bbox.x0 / heSo, y: (l.bbox.y0 + y0) / heSo, w: (t.bbox.x1 - t.bbox.x0) / heSo, co });
+    }
+    return ghepDong(muc, goc.width);
+  } finally { cv.width = 0; cv.height = 0; }                         // giải phóng bộ nhớ (iPhone hay tải lại trang khi thiếu bộ nhớ)
+}
+type PdfTrangOcr = {
+  getViewport: (o: { scale: number }) => { width: number; height: number };
+  render: (o: { canvasContext: CanvasRenderingContext2D; viewport: unknown; transform?: number[] }) => { promise: Promise<void> };
+};
 
 export async function docTrang(file: File, baoTienDo?: (s: string) => void): Promise<{ trang: Trang[]; ocr: boolean; soTrang: number }> {
   baoTienDo?.('Đang đọc PDF…');
@@ -100,21 +137,19 @@ export async function docTrang(file: File, baoTienDo?: (s: string) => void): Pro
   const soChu = trang[0]?.dong.reduce((a, d) => a + d.text.length, 0) ?? 0;
   if (soChu >= 60) return { trang, ocr: false, soTrang: pdf.numPages };
 
-  // Bản scan: nhận dạng trang đầu và trang cuối
-  const can = [1, ...(pdf.numPages > 1 ? [pdf.numPages] : [])];
+  // Bản scan: nhận dạng phần đầu trang 1 (thể thức, trích yếu) và phần cuối trang cuối (người ký) — 1 lần tạo bộ nhận dạng
   const ocr: Trang[] = [];
-  for (const [k, so] of can.entries()) {
-    baoTienDo?.(`Bản scan — đang nhận dạng chữ trang ${so}…`);
-    const p = await pdf.getPage(so);
-    const heSo = 2.2;
-    const vp = p.getViewport({ scale: heSo });
-    const cv = document.createElement('canvas');
-    cv.width = Math.ceil(vp.width); cv.height = Math.ceil(vp.height);
-    await p.render({ canvasContext: cv.getContext('2d')!, viewport: vp }).promise;
-    const dong = await nhanDangAnh(cv, heSo, (s) => baoTienDo?.(`Trang ${so}/${pdf.numPages} · ${s}`));
-    ocr.push({ rong: vp.width / heSo, cao: vp.height / heSo, dong });
-    void k;
-  }
+  const cuoi = pdf.numPages;
+  const w = await taoWorker((pt) => baoTienDo?.(`Bản scan — nhận dạng chữ ${pt}`));
+  try {
+    for (const [so, tu, den] of (cuoi > 1 ? [[1, 0, 0.62], [cuoi, 0.3, 1]] : [[1, 0, 1]]) as [number, number, number][]) {
+      baoTienDo?.(`Bản scan — đang nhận dạng chữ trang ${so}/${cuoi}…`);
+      const p = await pdf.getPage(so);
+      const vp = p.getViewport({ scale: 1 });
+      ocr.push({ rong: vp.width, cao: vp.height, dong: await nhanDangVung(w, p as unknown as PdfTrangOcr, tu, den) });
+      p.cleanup();
+    }
+  } finally { await w.terminate(); void pdf.destroy(); }
   return { trang: ocr, ocr: true, soTrang: pdf.numPages };
 }
 
@@ -154,10 +189,19 @@ export function phanTich(trang: Trang[], ocr = false, soTrang = trang.length): M
   const reNN = /Số\s*[:.]?\s*(\d+)\s*\/\s*(\p{Lu}[\p{Lu}\p{Ll}\d.\-/()]*)/u;
   const so = (dang ? chu1.match(reDang) ?? chu1.match(reNN) : chu1.match(reNN) ?? chu1.match(reDang));
   if (so) { m.so_van_ban = so[1]; m.ky_hieu = so[2].replace(/\s+/g, ''); }
+  else {
+    // Số viết tay / nhận dạng lỗi: vẫn lấy ký hiệu sau dấu "/" trên dòng "Số"
+    const d = chu1.match(/S[ốôo6ó]\s*[:.;]?\s*([^\s/]{0,8})\s*[/|]\s*([A-ZĐ]{1,5}(?:\s*-\s*[A-ZĐ0-9]{1,8}){0,3}(?:\s*\/\s*[A-ZĐ0-9-]{1,10})?)/u);
+    if (d) { m.ky_hieu = d[2].replace(/\s+/g, ''); const n = d[1].replace(/[Oo]/g, '0').replace(/[Il|]/g, '1'); if (/^\d{1,5}$/.test(n)) m.so_van_ban = n; }
+  }
 
   // Ngày ban hành
-  const ng = chu1.match(/ngày\s*(\d{1,2})\s*tháng\s*(\d{1,2})\s*năm[\s\S]{0,12}?(\d{4})/i);
-  if (ng) m.ngay_ban_hanh = `${ng[3]}-${ng[2].padStart(2, '0')}-${ng[1].padStart(2, '0')}`;
+  const so_ = (x: string) => x.replace(/[Oo]/g, '0').replace(/[Il|]/g, '1');
+  const ng = chu1.match(/ng[àa]y\s*([0-9OoIl|]{1,2})\s*[^\d\n]{0,4}?th[áa]ng\s*([0-9OoIl|]{1,2})\s*[^\d\n]{0,4}?n[ăa]m[\s\S]{0,12}?(\d{4})/i);
+  if (ng) {
+    const dd = Number(so_(ng[1])), mm = Number(so_(ng[2]));
+    if (dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12) m.ngay_ban_hanh = `${ng[3]}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+  }
 
   // Tên loại + trích yếu; yThan = nơi bắt đầu phần nội dung
   let yThan = -1;
@@ -224,7 +268,10 @@ export function phanTich(trang: Trang[], ocr = false, soTrang = trang.length): M
   const ten = [...phai].reverse().find((d) => TEN_NGUOI.test(d.text) && !laHoa(d.text));
   if (ten) {
     m.nguoi_ky = ten.text;
-    const cv = phai.filter((d) => d.y < ten.y && laHoa(d.text) && !laVach(d.text));
+    // Chức vụ: dòng chữ in hoa phía trên tên, có từ chỉ chức danh (bỏ dòng nhiễu do dấu, chữ ký)
+    const CHUC = /(TRƯỞNG|PHÓ|GIÁM ĐỐC|CHỦ TỊCH|BÍ THƯ|CHÁNH|CHỈ HUY|ỦY VIÊN|UỶ VIÊN|THƯỜNG TRỰC|TỔNG|CHỦ NHIỆM|HIỆU)/;
+    const sach = (t: string) => { const chu = t.replace(/[^\p{L}]/gu, '').length; return chu >= 5 && chu / t.replace(/\s/g, '').length >= 0.8; };
+    const cv = phai.filter((d) => d.y < ten.y && d.y > ten.y - 260 && laHoa(d.text) && !laVach(d.text) && sach(d.text) && CHUC.test(d.text.toUpperCase()));
     const cuoi = cv[cv.length - 1]?.text.replace(/^(KT|TM|TL|TUQ|Q|T\/M|K\/T)[.\s]+/i, '').trim();
     if (cuoi) m.chuc_vu_nguoi_ky = cauThuong(cuoi);
   }
