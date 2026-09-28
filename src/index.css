@@ -58,7 +58,9 @@
   @media (max-width: 639px) { input, select, textarea { font-size: 16px !important; } }
   /* Ô chọn có dòng dài (VD văn bản căn cứ) không được làm tràn ngang */
   select { max-width: 100%; text-overflow: ellipsis; }
-  input[type='date'], input[type='time'] { min-width: 0; }
+  /* iPhone: ô ngày/giờ có bề rộng tối thiểu riêng -> tràn khung. Bỏ giao diện gốc, co theo ô chứa */
+  input[type='date'], input[type='time'], input[type='datetime-local'] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; width: 100%; display: block; min-height: 2.75rem; line-height: 2.75rem; }
+  input[type='date']::-webkit-date-and-time-value, input[type='time']::-webkit-date-and-time-value { text-align: left; min-height: 1.5em; }
   /* Điện thoại: chữ, khoảng cách nhỏ gọn hơn (cỡ chữ dùng rem nên thu theo) */
   @media (max-width: 639px) { html { font-size: 15px; } }
   /* Điện thoại: tiêu đề trang gọn — nút phụ chỉ hiện biểu tượng, nút chính rút gọn */
