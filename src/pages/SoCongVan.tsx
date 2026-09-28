@@ -22,24 +22,21 @@ type Dong = {
 export default function SoCongVan() {
   const { hoSo } = useAuth();
   const quanTri = laQuanTri(hoSo);
-  const xemMoi = hoSo?.vai_tro !== 'don_vi';
+  // Sổ công văn đến / đi của Cơ quan Thường trực BCĐ (Tổ Tổng hợp theo dõi); các đơn vị không theo dõi sổ này
+  const duocXem = hoSo?.vai_tro !== 'don_vi';
   const [so, setSo] = useState<'den' | 'di'>('den');
   const [nam, setNam] = useState(new Date().getFullYear());
-  const [dv, setDv] = useState<string>('');
   const [tim, setTim] = useState('');
   const [chon, setChon] = useState<Dong | null>(null);
   const [them, setThem] = useState(false);
 
   const { data, loi, dangTai, taiLai } = useDuLieu(async () => {
-    const [dvs, tt] = await Promise.all([
-      xemMoi ? supabase.from('don_vi').select('id, ten, loai').eq('hoat_dong', true).order('thu_tu') : Promise.resolve({ data: [], error: null }),
-      supabase.rpc('don_vi_thuong_truc'),
-    ]);
-    const dsDv = (kq(dvs) ?? []) as { id: string; ten: string; loai: string }[];
-    const chu = dv || (xemMoi ? (tt.data as string | null) ?? dsDv[0]?.id : hoSo?.don_vi_id) || '';
+    if (!duocXem) return { dong: [] as Dong[] };
+    const tt = await supabase.rpc('don_vi_thuong_truc');
+    const chu = (tt.data as string | null) ?? '';
     const r = await supabase.from('v_so_van_ban').select('*').eq('don_vi_id', chu).eq('nam', nam).order('so_thu_tu', { ascending: false });
-    return { dsDv, chu, dong: (kq(r) ?? []) as Dong[] };
-  }, [dv, nam]);
+    return { dong: (kq(r) ?? []) as Dong[] };
+  }, [nam]);
 
   const ds = useMemo(() => {
     const t = khongDau(tim.trim());
@@ -64,13 +61,13 @@ export default function SoCongVan() {
     XLSX.writeFile(wb, `so-cong-van-${so === 'den' ? 'den' : 'di'}-${nam}.xlsx`);
   };
 
+  if (!duocXem) return <><TieuDeTrang ten="Sổ công văn" /><Rong>Sổ công văn đến, đi do Cơ quan Thường trực BCĐ (Tổ Tổng hợp) theo dõi.</Rong></>;
   if (loi) return <HopLoi loi={loi} taiLai={taiLai} />;
   if (dangTai && !data) return <DangTai />;
-  const tenChu = data?.dsDv.find((d) => d.id === data.chu)?.ten ?? hoSo?.don_vi?.ten;
 
   return (
     <>
-      <TieuDeTrang tren={tenChu} ten="Sổ công văn"
+      <TieuDeTrang tren="Cơ quan Thường trực BCĐ 57 · Tổ Tổng hợp theo dõi" ten="Sổ công văn"
         phai={<>
           <Nut icon={<FileSpreadsheet className="h-4 w-4" />} onClick={xuatExcel}>Xuất Excel</Nut>
           {quanTri && <Nut kieu="chinh" icon={<Plus className="h-4 w-4" />} onClick={() => setThem(true)}>Vào sổ văn bản</Nut>}
@@ -81,11 +78,6 @@ export default function SoCongVan() {
             <button key={k} role="tab" aria-selected={so === k} onClick={() => setSo(k)} className={cx('h-10 rounded-lg px-4 text-[0.8125rem]', so === k ? 'bg-white font-bold' : 'font-medium text-mo-2')}>{t} · {dem(k)}</button>
           ))}
         </div>
-        {xemMoi && (
-          <select aria-label="Sổ của đơn vị" className={cx(lopO, 'min-h-11')} value={data?.chu ?? ''} onChange={(e) => setDv(e.target.value)}>
-            {data?.dsDv.map((d) => <option key={d.id} value={d.id}>{d.ten}</option>)}
-          </select>
-        )}
         <select aria-label="Năm" className={cx(lopO, 'min-h-11')} value={nam} onChange={(e) => setNam(Number(e.target.value))}>
           {[0, 1, 2].map((i) => new Date().getFullYear() - i).map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
