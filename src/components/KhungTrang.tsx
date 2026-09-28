@@ -17,11 +17,12 @@ function menu(h: HoSo): Muc[] {
   const vt: VaiTro = h.vai_tro;
   const i = (C: typeof Home) => <C className="h-5 w-5" strokeWidth={1.8} />;
   if (vt === 'don_vi') return [
+    // 3 mục đầu nằm ở thanh dưới trên điện thoại
     { den: '/', ten: 'Trang chủ', icon: i(Home) },
+    { den: '/so-lieu', ten: 'Cập nhật số liệu', ngan: 'Cập nhật số liệu', icon: i(BarChart3) },
+    { den: '/viec-can-nop', ten: 'Văn bản cần nộp', ngan: 'Văn bản cần nộp', icon: i(FileText) },
     ...(laDauMoi(h) ? [{ den: '/theo-doi', ten: 'Theo dõi đơn vị', icon: i(Radar) }, { den: '/ky-bao-cao', ten: 'Giao báo cáo', icon: i(Send) }] : []),
-    ...(coQuanLyCt(h) ? [{ den: '/chi-tieu', ten: 'Quản lý chỉ tiêu', ngan: 'Chỉ tiêu', icon: i(Target) }] : []),
-    { den: '/viec-can-nop', ten: 'Việc cần nộp', icon: i(FileText) },
-    { den: '/so-lieu', ten: 'Cập nhật số liệu', ngan: 'Số liệu', icon: i(BarChart3) },
+    ...(coQuanLyCt(h) ? [{ den: '/chi-tieu', ten: 'Theo dõi chỉ tiêu', icon: i(Target) }] : []),
     { den: '/nhiem-vu', ten: 'Nhiệm vụ', icon: i(CheckSquare) },
     { den: '/van-ban', ten: 'Văn bản đến – đi', ngan: 'Văn bản', icon: i(Mail) },
     { den: '/kho-van-ban', ten: 'Văn bản', icon: i(Archive) },
@@ -30,7 +31,7 @@ function menu(h: HoSo): Muc[] {
     { den: '/', ten: 'Tổng quan', icon: i(LayoutGrid), nhom: 'ĐIỀU HÀNH' },
     { den: '/nhiem-vu', ten: 'Nhiệm vụ BCĐ', icon: i(CheckSquare), nhom: 'ĐIỀU HÀNH' },
     { den: '/ky-bao-cao', ten: 'Theo dõi kỳ báo cáo', ngan: 'Theo dõi kỳ', icon: i(FileText), nhom: 'ĐIỀU HÀNH' },
-    { den: '/chi-tieu', ten: 'Số liệu chỉ tiêu', ngan: 'Chỉ tiêu', icon: i(BarChart3), nhom: 'ĐIỀU HÀNH' },
+    { den: '/chi-tieu', ten: 'Theo dõi chỉ tiêu', ngan: 'Chỉ tiêu', icon: i(Target), nhom: 'ĐIỀU HÀNH' },
   ];
   if (vt === 'lanh_dao') return [...chung,
     { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ' },
@@ -38,7 +39,7 @@ function menu(h: HoSo): Muc[] {
   ];
   if (vt === 'quan_tri') return [
     ...chung,
-    { den: '/viec-can-nop', ten: 'Việc cần nộp', icon: i(Send), nhom: 'ĐIỀU HÀNH' },
+    { den: '/viec-can-nop', ten: 'Văn bản cần nộp', icon: i(Send), nhom: 'ĐIỀU HÀNH' },
     { den: '/so-lieu', ten: 'Cập nhật số liệu', icon: i(BarChart3), nhom: 'ĐIỀU HÀNH' },
     { den: '/van-ban', ten: 'Văn bản đến – đi', icon: i(Mail), nhom: 'ĐIỀU HÀNH' },
     { den: '/kho-van-ban', ten: 'Kho văn bản', icon: i(Archive), nhom: 'LƯU TRỮ' },
@@ -160,7 +161,7 @@ export default function KhungTrang() {
       className={({ isActive }) => gon
         ? cx('flex h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10.5px] transition-colors active:scale-95', isActive ? 'font-semibold text-do' : 'text-mo')
         : cx('flex h-11 items-center gap-2.5 rounded-[10px] px-2.5 text-[0.875rem] transition-colors duration-200', isActive ? 'bg-white/12 font-semibold text-white shadow-[inset_3px_0_0_#F5C518]' : 'text-[#F6E3E0] hover:bg-white/5')}>
-      {m.icon}<span className={gon ? 'max-w-full truncate whitespace-nowrap' : 'min-w-0 flex-1 truncate'}>{gon ? m.ngan ?? m.ten : m.ten}</span>
+      {m.icon}<span className={gon ? 'line-clamp-2 max-w-full text-center leading-[1.15]' : 'min-w-0 flex-1 truncate'}>{gon ? m.ngan ?? m.ten : m.ten}</span>
       {!gon && !!m.dem && <span className="shrink-0 rounded-full bg-do px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">{m.dem}</span>}
     </NavLink>
   );
