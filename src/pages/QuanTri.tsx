@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CheckCircle2, HardDrive, MessageCircle, PhoneCall, Play, Plus, XCircle } from 'lucide-react';
+import { CheckCircle2, HardDrive, Play, Plus, XCircle } from 'lucide-react';
 import { goiChucNang, loiDe, supabase } from '../lib/supabase';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { ngayGio } from '../lib/dinhDang';
@@ -73,8 +73,6 @@ function TaiKhoan() {
       <button onClick={() => setSdtCua(n)} className="flex min-h-9 items-center gap-2 rounded-lg px-2 hover:bg-nen" aria-label={`Số điện thoại ${n.ho_ten}`}>
         {l?.so_dien_thoai ? <>
           <span className="so font-semibold">{hienSdt(l.so_dien_thoai)}</span>
-          {l.nhan_zalo && <MessageCircle className="h-3.5 w-3.5 text-xanh" aria-label="Nhận Zalo" />}
-          {l.nhan_goi && <PhoneCall className="h-3.5 w-3.5 text-xanh" aria-label="Nhận cuộc gọi" />}
         </> : <span className="font-semibold text-[#8E1B22]">+ Thêm SĐT</span>}
       </button>
     );
@@ -171,7 +169,7 @@ function TaoTaiKhoan({ mo, dong, donVi, xong }: { mo: boolean; dong: () => void;
         <O nhan="Chức vụ"><input className={lopO} value={f.chuc_vu} onChange={(e) => setF({ ...f, chuc_vu: e.target.value })} /></O>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <O nhan="Email đăng nhập"><input className={lopO} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></O>
-          <O nhan="Số điện thoại (Zalo)"><input className={lopO} type="tel" inputMode="tel" placeholder="0912 345 678" value={f.sdt} onChange={(e) => setF({ ...f, sdt: e.target.value })} /></O>
+          <O nhan="Số điện thoại (Zalo cá nhân)"><input className={lopO} type="tel" inputMode="tel" placeholder="0912 345 678" value={f.sdt} onChange={(e) => setF({ ...f, sdt: e.target.value })} /></O>
         </div>
         <O nhan="Mật khẩu ban đầu (tối thiểu 8 ký tự)"><input className={lopO} type="text" value={f.mat_khau} onChange={(e) => setF({ ...f, mat_khau: e.target.value })} /></O>
         <div className="grid grid-cols-2 gap-3">
@@ -304,7 +302,7 @@ type NguoiKy = { chuc_danh: string; ho_ten: string };
 type TheThuc = { co_quan_cap_tren: string; co_quan: string; ky_hieu: string; dia_danh: string; truong_ban: NguoiKy; cqtt_ky_to_trinh: NguoiKy };
 
 
-// Trang Cài đặt của Cơ quan Thường trực (nhắc hạn, kênh Zalo/gọi điện, người ký, thể thức văn bản)
+// Trang Cài đặt của Cơ quan Thường trực (nhắc hạn, người ký, thể thức văn bản)
 export function CaiDatTrang() {
   return (<><TieuDeTrang ten="Cài đặt" /><CaiDat /></>);
 }
@@ -324,13 +322,10 @@ function CaiDat() {
 
   const nh = (data.ch.nhac_han ?? {}) as Record<string, unknown>;
   const kenh = (data.ch.kenh_nhac ?? ['web']) as string[];
-  const ndt = (data.ch.nhac_dien_thoai ?? {}) as { zalo?: string[]; goi?: string[]; goi_qua_han_1_lan?: boolean };
   const nk = (data.ch.nguoi_ky_bao_cao ?? { chuc_danh: '', ho_ten: '' }) as NguoiKy;
   const tt = (data.ch.the_thuc_bcd ?? {}) as TheThuc;
   const macDinh: Record<string, unknown> = {
-    n3: nh.truoc_3_ngay !== false, n1: nh.truoc_1_ngay !== false, nqh: nh.qua_han_hang_ngay !== false, nld: nh.bao_lanh_dao_sau_ngay ?? 2, email: kenh.includes('email'), zalo: kenh.includes('zalo'), goi: kenh.includes('goi'),
-    z_t1: (ndt.zalo ?? ['T-1', 'dung_han', 'qua_han']).includes('T-1'), z_dh: (ndt.zalo ?? ['dung_han']).includes('dung_han'), z_qh: (ndt.zalo ?? ['qua_han']).includes('qua_han'),
-    g_t1: (ndt.goi ?? []).includes('T-1'), g_dh: (ndt.goi ?? ['dung_han']).includes('dung_han'), g_qh: (ndt.goi ?? []).includes('qua_han'),
+    n3: nh.truoc_3_ngay !== false, n1: nh.truoc_1_ngay !== false, nqh: nh.qua_han_hang_ngay !== false, nld: nh.bao_lanh_dao_sau_ngay ?? 2, email: kenh.includes('email'),
     nk_cd: nk.chuc_danh, nk_ht: nk.ho_ten,
     tb_cd: tt.truong_ban?.chuc_danh ?? 'TRƯỞNG BAN', tb_ht: tt.truong_ban?.ho_ten ?? '', cqt: tt.co_quan_cap_tren ?? '', cq: tt.co_quan ?? '', kh: tt.ky_hieu ?? 'BCĐ',
   };
@@ -345,11 +340,7 @@ function CaiDat() {
     const viec: PromiseLike<{ error: unknown }>[] = [
       supabase.from('cau_hinh').upsert([
         { khoa: 'nhac_han', gia_tri: { ...nh, truoc_3_ngay: v.n3, truoc_1_ngay: v.n1, qua_han_hang_ngay: v.nqh, bao_lanh_dao_sau_ngay: Number(v.nld) }, mo_ta: 'Quy tắc nhắc hạn' },
-        { khoa: 'kenh_nhac', gia_tri: ['web', v.email && 'email', v.zalo && 'zalo', v.goi && 'goi'].filter(Boolean), mo_ta: 'Kênh nhắc hạn' },
-        { khoa: 'nhac_dien_thoai', gia_tri: {
-          zalo: [v.z_t1 && 'T-1', v.z_dh && 'dung_han', v.z_qh && 'qua_han'].filter(Boolean),
-          goi: [v.g_t1 && 'T-1', v.g_dh && 'dung_han', v.g_qh && 'qua_han'].filter(Boolean), goi_qua_han_1_lan: true,
-        }, mo_ta: 'Nhắc qua Zalo, gọi điện' },
+        { khoa: 'kenh_nhac', gia_tri: ['web', v.email && 'email'].filter(Boolean), mo_ta: 'Kênh nhắc hạn' },
         { khoa: 'nguoi_ky_bao_cao', gia_tri: { chuc_danh: v.nk_cd, ho_ten: v.nk_ht }, mo_ta: 'Người ký báo cáo gửi Công an tỉnh' },
         { khoa: 'the_thuc_bcd', gia_tri: { ...tt, co_quan_cap_tren: v.cqt, co_quan: v.cq, ky_hieu: v.kh, truong_ban: { chuc_danh: v.tb_cd, ho_ten: v.tb_ht } }, mo_ta: 'Thể thức văn bản Ban Chỉ đạo' },
       ]),
@@ -372,18 +363,6 @@ function CaiDat() {
           </Hang>
           <Hang nhan="Báo lãnh đạo khi quá hạn">sau {so_('nld', 1, 30)} ngày</Hang>
           <Hang nhan="Gửi thêm qua email"><label className="flex min-h-10 items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-[#A4161A]" checked={!!v.email} onChange={(e) => dat('email', e.target.checked)} />Có</label></Hang>
-        </The>
-        <The className="flex flex-col px-5 py-3">
-          <TieuDeThe>Nhắc qua Zalo, gọi điện tự động</TieuDeThe>
-          {([['zalo', 'Nhắn Zalo', 'z'], ['goi', 'Gọi điện', 'g']] as const).map(([k, t, p]) => (
-            <Hang key={k} nhan={<label className="flex items-center gap-2"><input type="checkbox" className="h-5 w-5 accent-[#A4161A]" checked={!!v[k]} onChange={(e) => dat(k, e.target.checked)} />{t}</label>}>
-              {([[`${p}_t1`, 'Trước 1 ngày'], [`${p}_dh`, 'Ngày hạn'], [`${p}_qh`, k === 'goi' ? 'Quá hạn (1 lần)' : 'Quá hạn']] as const).map(([kk, tt]) => (
-                <label key={kk} className={cx('flex min-h-10 items-center gap-2 rounded-lg bg-nen px-3', !v[k] && 'opacity-50')}>
-                  <input type="checkbox" disabled={!v[k]} className="h-5 w-5 accent-[#A4161A]" checked={!!v[kk]} onChange={(e) => dat(kk, e.target.checked)} />{tt}
-                </label>
-              ))}
-            </Hang>
-          ))}
         </The>
         <The className="flex flex-col px-5 py-3">
           <TieuDeThe>Người ký báo cáo gửi Công an tỉnh</TieuDeThe>
@@ -495,13 +474,12 @@ function LuuTru() {
   const [dang, setDang] = useState<string | null>(null);
   const [tb, setTb] = useState<{ loi?: string; ok?: string } | null>(null);
   const { data, taiLai } = useDuLieu(async () => {
-    const [a, b, c, d, e, f, g] = await Promise.all([
+    const [a, b, c, d, e, g] = await Promise.all([
       supabase.from('sao_luu').select('id, luc, drive_file_id, kich_thuoc, ket_qua, tu_dong').order('luc', { ascending: false }).limit(15),
       supabase.rpc('tinh_trang_lich'),
       supabase.rpc('da_dat_bi_mat_lich'),
       supabase.rpc('thong_ke_push'),
       goiChucNang('gui-thong-bao-day', { loai: 'khoa' }).then(() => true, () => false),
-      goiChucNang<{ zalo: boolean; goi: boolean }>('nhac-dien-thoai', { loai: 'tinh_trang' }).catch(() => ({ zalo: false, goi: false })),
       supabase.rpc('tinh_trang_lien_he'),
     ]);
     return {
@@ -509,7 +487,7 @@ function LuuTru() {
       lich: b.error ? null : (b.data ?? []) as LichChay[], loiLich: b.error ? loiDe(b.error) : null,
       biMat: c.error ? null : !!c.data,
       day: { ...((d.data as { so_nguoi: number; so_may: number }[] | null)?.[0] ?? { so_nguoi: 0, so_may: 0 }), mayChu: e },
-      dt: { ...f, ...((g.data as { co_sdt: number; chua_sdt: number }[] | null)?.[0] ?? { co_sdt: 0, chua_sdt: 0 }) },
+      dt: { ...((g.data as { co_sdt: number; chua_sdt: number }[] | null)?.[0] ?? { co_sdt: 0, chua_sdt: 0 }) },
     };
   });
   const kiemTra = async () => {
@@ -564,8 +542,7 @@ function LuuTru() {
           <TieuDeThe>Kênh nhắc việc</TieuDeThe>
           {data && ([
             ['Thông báo đẩy', data.day.mayChu, `${data.day.so_may} máy · ${data.day.so_nguoi} người đã bật`, 'Chưa đặt khoá VAPID'],
-            ['Zalo (ZNS)', data.dt.zalo, `${data.dt.co_sdt} tài khoản có SĐT · ${data.dt.chua_sdt} chưa có`, 'Chưa đặt khoá Zalo OA'],
-            ['Gọi điện tự động', data.dt.goi, 'Máy đọc lời nhắc', 'Chưa đặt khoá Stringee'],
+            ['Gọi, SMS, Zalo cá nhân', data.dt.chua_sdt === 0, `${data.dt.co_sdt} tài khoản có SĐT · gọi trực tiếp từ máy người nhắc`, `${data.dt.chua_sdt} tài khoản chưa có SĐT · ${data.dt.co_sdt} đã có`],
           ] as const).map(([ten, ok, phu, thieu]) => (
             <div key={ten} className="flex items-center gap-3 border-t border-[#F1EEE7] pt-2.5 text-[0.8125rem] first:border-0 first:pt-0">
               {ok ? <CheckCircle2 className="h-4 w-4 shrink-0 text-[#166534]" /> : <XCircle className="h-4 w-4 shrink-0 text-mo" />}

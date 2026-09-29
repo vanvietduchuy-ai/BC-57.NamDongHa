@@ -2,7 +2,7 @@
 //   · Đơn vị chủ trì (Phòng VH-XH: CĐS; Tổ CSKV: Đề án 06): cài đặt chỉ tiêu, giao đơn vị cập nhật, theo dõi, nhắc
 //   · Thường trực, lãnh đạo BCĐ: xem số liệu cả 2 lĩnh vực, xuất Excel
 import { useMemo, useState, type ReactNode } from 'react';
-import { BellRing, Check, ChevronLeft, ChevronRight, Download, Pencil, Plus, Settings2, TrendingDown, TrendingUp } from 'lucide-react';
+import { BellRing, Check, PhoneCall, ChevronLeft, ChevronRight, Download, Pencil, Plus, Settings2, TrendingDown, TrendingUp } from 'lucide-react';
 import { laCQTTHoacLanhDao, quyenCt, useAuth } from '../lib/auth';
 import { kq, useDuLieu } from '../lib/useDuLieu';
 import { loiDe, supabase } from '../lib/supabase';
@@ -11,6 +11,7 @@ import {
   datMucTieu, dinhDangGt, dinhDangMucTieu, dauNam, giaTriDong, gopSoLieu, gtTheoKy, hanKy, ketQuaKy, KIEU_CT, TONG_HOP, type TongHop, kyLui, kyMacDinh, kyNay, LV_CT, tenKyCt, tenKyNgan, tienDo, vachMucTieu,
   type ChiTieu as Ct, type KieuChiTieu, type LvChiTieu, type SoLieu,
 } from '../lib/chiTieu';
+import { LienLacDonVi } from '../components/LienLacTrucTiep';
 import { Chip, ChipHan, cx, DangTai, HopLoi, HopThoai, lopO, Nut, Rong, The, ThanhTyLe, TieuDeTrang } from '../components/ui';
 
 type Dv = { id: string; ten: string; loai: string };
@@ -406,20 +407,29 @@ function NhanO({ nhan, children }: { nhan: string; children: ReactNode }) {
 
 // ---------- Nhắc đơn vị chưa cập nhật ----------
 function HopNhacCt({ lv, ky, han, ds, dong }: { lv: LvChiTieu; ky: string; han: string | null; ds: Dv[]; dong: () => void }) {
-  const [dang, setDang] = useState(false); const [loi, setLoi] = useState<string | null>(null); const [xong, setXong] = useState(false);
+  const [dang, setDang] = useState(false); const [loi, setLoi] = useState<string | null>(null); const [xong, setXong] = useState(false); const [lienLac, setLienLac] = useState(false);
   const gui = async () => {
     setDang(true); setLoi(null);
     const { error } = await supabase.rpc('chi_tieu_nhac', { p_linh_vuc: lv, p_ky: ky });
-    setDang(false); if (error) setLoi(loiDe(error)); else setXong(true);
+    setDang(false); if (error) setLoi(loiDe(error)); else { setXong(true); setLienLac(true); }
   };
+  const noiDung = `BCĐ 57 phường Nam Đông Hà nhắc: đơn vị chưa cập nhật đủ số liệu chỉ tiêu ${tenKyCt(ky)}${han ? `, hạn ${ngayGio(han)}` : ''}. Đề nghị cập nhật đúng hạn. Trân trọng.`;
   return (
-    <HopThoai mo dong={dong} tieuDe={`Nhắc cập nhật · ${tenKyCt(ky)}`}>
+    <HopThoai mo dong={dong} tieuDe={lienLac ? 'Gọi, nhắn trực tiếp' : `Nhắc cập nhật · ${tenKyCt(ky)}`}>
       <div className="flex flex-col gap-3">
-        <p className="m-0 text-[0.875rem]">{ds.length} đơn vị chưa cập nhật đủ số liệu{han ? `, hạn ${ngayGio(han)}` : ''}. Gửi thông báo (web, điện thoại) cho các đơn vị:</p>
-        <ul className="m-0 flex list-none flex-col gap-1 rounded-xl border border-vien p-2">{ds.map((d) => <li key={d.id} className="px-1 text-[0.8125rem]">• {d.ten}</li>)}</ul>
-        {loi && <HopLoi loi={loi} />}
-        {xong ? <div className="rounded-xl bg-xanh-nhat px-3 py-2 text-[0.8125rem] font-semibold text-xanh">Đã gửi nhắc {ds.length} đơn vị.</div> : null}
-        <div className="flex justify-end gap-2"><Nut onClick={dong}>Đóng</Nut>{!xong && <Nut kieu="chinh" icon={<BellRing className="h-4 w-4" />} dangChay={dang} onClick={gui}>Gửi nhắc</Nut>}</div>
+        {lienLac ? <>
+          {xong && <div className="rounded-xl bg-xanh-nhat px-3 py-2 text-[0.8125rem] font-semibold text-xanh">Đã nhắc {ds.length} đơn vị trên web.</div>}
+          <LienLacDonVi ds={ds.map((d) => ({ id: d.id, ten: d.ten }))} noiDung={noiDung} />
+        </> : <>
+          <p className="m-0 text-[0.875rem]">{ds.length} đơn vị chưa cập nhật đủ số liệu{han ? `, hạn ${ngayGio(han)}` : ''}. Gửi thông báo (web, điện thoại) rồi gọi, nhắn trực tiếp cán bộ đơn vị:</p>
+          <ul className="m-0 flex list-none flex-col gap-1 rounded-xl border border-vien p-2">{ds.map((d) => <li key={d.id} className="px-1 text-[0.8125rem]">• {d.ten}</li>)}</ul>
+          {loi && <HopLoi loi={loi} />}
+        </>}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {!lienLac && <Nut icon={<PhoneCall className="h-4 w-4" />} onClick={() => setLienLac(true)}>Chỉ gọi, nhắn trực tiếp</Nut>}
+          {!lienLac && <Nut kieu="chinh" icon={<BellRing className="h-4 w-4" />} dangChay={dang} onClick={gui}>Gửi nhắc</Nut>}
+          {lienLac && <Nut kieu="chinh" onClick={dong}>Xong</Nut>}
+        </div>
       </div>
     </HopThoai>
   );
