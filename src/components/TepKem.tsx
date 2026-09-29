@@ -63,7 +63,7 @@ export function ChonTepKem({ ds, doi, baoLoi }: { ds: File[]; doi: (ds: File[]) 
   };
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2 text-[0.8125rem] font-semibold text-mo-2"><Paperclip className="h-4 w-4" />Tài liệu kèm theo (không bắt buộc)<span className="font-normal text-mo">· Word, Excel, ảnh, ZIP… tối đa 25 MB/tệp</span></div>
+      <div className="flex flex-col gap-0.5"><span className="flex items-center gap-1.5 text-[0.8125rem] font-semibold text-mo-2"><Paperclip className="h-4 w-4 shrink-0" />Tài liệu kèm theo (không bắt buộc)</span><span className="text-xs text-mo">Word, Excel, PowerPoint, ảnh, ZIP… tối đa 25 MB mỗi tệp</span></div>
       {ds.length > 0 && (
         <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
           {ds.map((f, i) => (
