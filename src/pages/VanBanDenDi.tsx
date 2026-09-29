@@ -12,6 +12,7 @@ import { khongDau } from '../lib/nhiemVu';
 import { LOAI_VB, type LoaiVb } from '../lib/vanBan';
 import { META_TRONG, type MetaVb } from '../lib/docPdf';
 import OVanBanPdf, { kiemTraMeta, taiPdfLenDrive, ThongTinVanBan, type VanBanDaNop } from '../components/VanBanPdf';
+import ChonDonVi, { type DvChon } from '../components/ChonDonVi';
 import { ChonTepKem, DemTepKem, DsTepKem, kiemTraTepKem, NHAN_TEP_KEM, taiTepKemCongVan, type TepKem } from '../components/TepKem';
 import { Chip, ChipHan, DangTai, HopLoi, HopThoai, lopO, Nut, O, Rong, The, TieuDeTrang, cx } from '../components/ui';
 
@@ -306,7 +307,7 @@ function XemGui({ x, dong, baoTin }: { x: Gui | null; dong: () => void; baoTin: 
 }
 
 // Gửi văn bản: PDF (tự đọc số, ngày, trích yếu, người ký) + nơi nhận + nội dung kèm theo + hạn phản hồi
-function GuiVanBan({ mo, dong, quanTri, dsDv, coQuan, xong }: { mo: boolean; dong: () => void; quanTri: boolean; dsDv: { id: string; ten: string }[]; coQuan: string; xong: (m: string) => void }) {
+function GuiVanBan({ mo, dong, quanTri, dsDv, coQuan, xong }: { mo: boolean; dong: () => void; quanTri: boolean; dsDv: DvChon[]; coQuan: string; xong: (m: string) => void }) {
   const macDinh = (): MetaVb => ({ ...META_TRONG, loai: 'cong_van', co_quan_ban_hanh: coQuan });
   const [meta, setMeta] = useState<MetaVb>(macDinh);
   const [tep, setTep] = useState<File | null>(null);
@@ -319,7 +320,6 @@ function GuiVanBan({ mo, dong, quanTri, dsDv, coQuan, xong }: { mo: boolean; don
   const [moCu, setMoCu] = useState(false);
   if (mo !== moCu) { setMoCu(mo); if (mo) { setMeta(macDinh()); setTep(null); setKem([]); setChon([]); setGhiChu(''); setHan(''); setLoi(null); } }
   if (!mo) return null;
-  const tatCa = chon.length === dsDv.length && dsDv.length > 0;
   const gui = async () => {
     setLoi(null);
     if (!tep) { setLoi('Chọn tệp PDF văn bản'); return; }
@@ -344,23 +344,12 @@ function GuiVanBan({ mo, dong, quanTri, dsDv, coQuan, xong }: { mo: boolean; don
     <HopThoai mo dong={dong} tieuDe="Gửi văn bản" rong="max-w-4xl">
       <div className="flex flex-col gap-4">
         <OVanBanPdf meta={meta} doiMeta={setMeta} tep={tep} chonTep={(f, m) => { setTep(f); setMeta({ ...m, loai: m.loai || 'cong_van', co_quan_ban_hanh: m.co_quan_ban_hanh || coQuan }); }} hienCoQuan tieuDe="Chọn văn bản PDF đã ký, đóng dấu" khoaNhap="cong_van:gui" />
-        <ChonTepKem ds={kem} doi={setKem} baoLoi={setLoi} />
         {quanTri ? (
-          <fieldset className="m-0 flex flex-col gap-2 rounded-2xl border border-vien p-3">
-            <legend className="px-1 text-[0.8125rem] font-semibold text-mo-2">Nơi nhận ({chon.length}/{dsDv.length})</legend>
-            <label className="flex min-h-10 items-center gap-2.5 rounded-xl bg-nen-2 px-3 text-[0.875rem] font-semibold">
-              <input type="checkbox" className="h-5 w-5 accent-[#8E1B22]" checked={tatCa} onChange={(e) => setChon(e.target.checked ? dsDv.map((d) => d.id) : [])} />Tất cả phòng, đơn vị
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {dsDv.map((d) => { const on = chon.includes(d.id); return (
-                <button key={d.id} type="button" aria-pressed={on} onClick={() => setChon(on ? chon.filter((x) => x !== d.id) : [...chon, d.id])}
-                  className={cx('min-h-9 rounded-full border px-3 text-[0.8125rem] transition-colors', on ? 'border-ink bg-ink font-semibold text-white' : 'border-vien-2 bg-white text-mo-2')}>{d.ten}</button>
-              ); })}
-            </div>
-          </fieldset>
+          <ChonDonVi ds={dsDv} chon={chon} doi={setChon} />
         ) : (
           <div className="flex items-start gap-2 rounded-xl bg-nen-2 px-3 py-2.5 text-[0.875rem]"><Send className="mt-0.5 h-4 w-4 shrink-0 text-mo" /><span>Gửi đến: <b>Cơ quan Thường trực BCĐ 57 (Tổ Tổng hợp)</b></span></div>
         )}
+        <ChonTepKem ds={kem} doi={setKem} baoLoi={setLoi} />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
           <O nhan="Nội dung kèm theo (không bắt buộc)"><textarea className={cx(lopO, 'min-h-20 py-2')} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} placeholder="VD: Đề nghị các đơn vị triển khai, báo cáo kết quả…" /></O>
           <O nhan="Hạn phản hồi (nếu có)"><input type="date" className={lopO} value={han} onChange={(e) => setHan(e.target.value)} /></O>
