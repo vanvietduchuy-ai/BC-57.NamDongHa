@@ -150,7 +150,7 @@ function FormBaoCao({ nop, suaDuoc, xong }: { nop: Nop; suaDuoc: boolean; xong: 
           </label>
           <div className="flex items-center gap-2.5">
             <Nut className="min-h-12" dangChay={dangChay === 'nhap'} onClick={() => luu('nhap')}>{doiChua ? 'Lưu nháp' : 'Đã lưu'}</Nut>
-            <Nut kieu="chinh" className="min-h-12 flex-1" dangChay={dangChay === 'nop'} onClick={() => luu('da_nop')}>{guiToi}<ArrowRight className="h-4 w-4" /></Nut>
+            <Nut kieu="chinh" className="min-h-12 flex-1 whitespace-nowrap" dangChay={dangChay === 'nop'} onClick={() => luu('da_nop')}>{guiToi}<ArrowRight className="h-4 w-4 max-sm:hidden" /></Nut>
           </div>
         </div>
       )}
