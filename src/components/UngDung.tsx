@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BellRing, Download, MessageCircle, Share, SquarePlus, X } from 'lucide-react';
+import { BellRing, Download, Share, SquarePlus, X } from 'lucide-react';
 import { batDay, guiThuDay, laIOS, tatDay, trangThaiDay, useCaiDat, type TrangThaiDay } from '../lib/ungDung';
-import { loiDe, supabase } from '../lib/supabase';
-import { useAuth } from '../lib/auth';
+import { loiDe } from '../lib/supabase';
 import { cx, HopThoai, LogoBcd, Nut } from './ui';
 
 const KHOA_AN = 'bcd57-an-goi-y';
@@ -40,37 +39,20 @@ export function HuongDanIOS({ mo, dong }: { mo: boolean; dong: () => void }) {
 }
 
 // Thẻ gợi ý nổi: cài ứng dụng, sau đó bật thông báo
-// Tài khoản chưa có SĐT nhận nhắc việc
-function useThieuSdt() {
-  const { hoSo } = useAuth();
-  const [thieu, setThieu] = useState(false);
-  useEffect(() => {
-    if (!hoSo) return;
-    const tai = () => void supabase.from('lien_he_nguoi_dung').select('so_dien_thoai').eq('nguoi_dung_id', hoSo.id).maybeSingle()
-      .then(({ data, error }) => setThieu(!error && !data?.so_dien_thoai));
-    tai();
-    window.addEventListener('bcd57-lien-he', tai);
-    return () => window.removeEventListener('bcd57-lien-he', tai);
-  }, [hoSo]);
-  return thieu;
-}
-
-export function GoiYUngDung({ moLienHe }: { moLienHe: () => void }) {
+export function GoiYUngDung() {
   const { kieu, cai } = useCaiDat();
   const [tt, taiTt] = useTrangThaiDay();
-  const thieuSdt = useThieuSdt();
   const [, lamMoi] = useState(0);
   const [huongDan, setHuongDan] = useState(false);
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
 
-  const loai = kieu && !daAn('cai') ? 'cai' : tt === 'chua_bat' && !daAn('day') ? 'day' : thieuSdt && !daAn('sdt') ? 'sdt' : null;
+  const loai = kieu && !daAn('cai') ? 'cai' : tt === 'chua_bat' && !daAn('day') ? 'day' : null;
   if (!loai) return <HuongDanIOS mo={huongDan} dong={() => setHuongDan(false)} />;
 
   const dong = () => { an(loai); lamMoi((x) => x + 1); };
   const bam = async () => {
     setLoi(null);
-    if (loai === 'sdt') { moLienHe(); return; }
     if (loai === 'cai') { if (kieu === 'ios') setHuongDan(true); else await cai(); return; }
     setDang(true);
     try { await batDay(); taiTt(); } catch (e) { setLoi(loiDe(e)); } finally { setDang(false); }
@@ -80,14 +62,14 @@ export function GoiYUngDung({ moLienHe }: { moLienHe: () => void }) {
     <>
       <div role="status" className="truot-len fixed inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-vien bg-white/95 p-3 shadow-[0_12px_40px_-12px_rgba(60,10,12,0.35)] backdrop-blur lg:inset-x-auto lg:bottom-6 lg:right-6">
         {loai === 'cai' ? <LogoBcd className="h-11 w-11" /> : (
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-xanh-nhat text-xanh">{loai === 'sdt' ? <MessageCircle className="h-5 w-5" /> : <BellRing className="lac-chuong h-5 w-5" />}</span>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-xanh-nhat text-xanh"><BellRing className="lac-chuong h-5 w-5" /></span>
         )}
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[0.875rem] font-bold">{loai === 'cai' ? 'Cài BCĐ 57 ra màn hình chính' : loai === 'day' ? 'Bật thông báo trên máy này' : 'Thêm số điện thoại'}</span>
-          <span className={cx('text-xs', loi ? 'text-nguy' : 'text-mo')}>{loi ?? (loai === 'cai' ? 'Mở nhanh như ứng dụng, nhận nhắc hạn' : loai === 'day' ? 'Nhận nhắc hạn kể cả khi không mở web' : 'Nhận nhắc việc qua Zalo, cuộc gọi')}</span>
+          <span className="text-[0.875rem] font-bold">{loai === 'cai' ? 'Cài BCĐ 57 ra màn hình chính' : loai === 'day' ? 'Bật thông báo trên máy này' : ''}</span>
+          <span className={cx('text-xs', loi ? 'text-nguy' : 'text-mo')}>{loi ?? (loai === 'cai' ? 'Mở nhanh như ứng dụng, nhận nhắc hạn' : 'Nhận nhắc hạn kể cả khi không mở web')}</span>
         </div>
         <Nut kieu="chinh" className="min-h-10 px-3" dangChay={dang} onClick={bam} icon={loai === 'cai' ? <Download className="h-4 w-4" /> : undefined}>
-          {loai === 'cai' ? (kieu === 'ios' ? 'Cách cài' : 'Cài') : loai === 'day' ? 'Bật' : 'Thêm'}
+          {loai === 'cai' ? (kieu === 'ios' ? 'Cách cài' : 'Cài') : 'Bật'}
         </Nut>
         <button onClick={dong} aria-label="Để sau" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-mo hover:bg-nen"><X className="h-4 w-4" /></button>
       </div>

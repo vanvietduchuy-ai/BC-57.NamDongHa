@@ -9,7 +9,7 @@ import { ngayGio } from '../lib/dinhDang';
 import { cx, LogoBcd, Nut } from './ui';
 import { CaiDatThongBao, GoiYUngDung } from './UngDung';
 import { dongBoDay } from '../lib/ungDung';
-import { HopLienHe } from './LienHe';
+import { CongBatBuocSdt, HopLienHe, useThieuSdt } from './LienHe';
 
 type Muc = { den: string; ten: string; icon: ReactNode; nhom?: string; ngan?: string; dem?: number };
 
@@ -139,6 +139,7 @@ export default function KhungTrang() {
   }, []);
   const [moThem, setMoThem] = useState(false);
   const [moLienHe, setMoLienHe] = useState(false);
+  const thieuSdt = useThieuSdt();
   const nav = useNavigate();
   // Số trên menu: bài chờ tiếp nhận (kỳ mình giao), việc mình còn phải nộp
   const [dem, setDem] = useState<{ cho: number; nop: number }>({ cho: 0, nop: 0 });
@@ -229,7 +230,8 @@ export default function KhungTrang() {
         )}
       </nav>
       </div>
-      {location.pathname === '/' && <GoiYUngDung moLienHe={() => setMoLienHe(true)} />}
+      {location.pathname === '/' && <GoiYUngDung />}
+      {thieuSdt === true && <CongBatBuocSdt nguoiDungId={hoSo.id} ten={hoSo.ho_ten} dangXuat={() => void dangXuat()} />}
       <HopLienHe mo={moLienHe} dong={() => setMoLienHe(false)} nguoiDungId={hoSo.id} ten={hoSo.ho_ten} xong={() => window.dispatchEvent(new Event('bcd57-lien-he'))}
         dau={
           <div className="flex items-center gap-3 rounded-2xl bg-nen-2 p-3">
